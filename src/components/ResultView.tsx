@@ -68,13 +68,13 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <ProvenanceTag hasDictionary={hasDict} hasAi={hasAi} />
           </header>
           <p class="translation-primary">
-            <span>{result.translation.primary}</span>
+            <span lang={targetLang}>{result.translation.primary}</span>
             <CopyButton text={result.translation.primary} />
             <SpeakButton text={result.translation.primary} lang={targetLang} />
           </p>
           {result.translation.alternatives.length > 0 && (
             <p class="translation-alternatives">
-              Also: {result.translation.alternatives.join(", ")}
+              Also: <span lang={targetLang}>{result.translation.alternatives.join(", ")}</span>
             </p>
           )}
         </section>
@@ -90,14 +90,24 @@ export function ResultView({ result }: { result: EiwaResult }) {
             {result.dictionary.map((entry) => (
               <li key={entry.id} class="dictionary-entry">
                 <div class="dictionary-entry-head">
-                  <strong>{entry.headword}</strong>
-                  {entry.reading && <span class="reading">（{entry.reading}）</span>}
+                  <strong lang={entry.lang}>{entry.headword}</strong>
+                  {entry.reading && (
+                    <span class="reading" lang={entry.lang}>
+                      （{entry.reading}）
+                    </span>
+                  )}
                   {entry.pos.length > 0 && <span class="pos-tags">{entry.pos.join(", ")}</span>}
                 </div>
-                <p class="translations">{entry.translations.map((t) => t.text).join(", ")}</p>
+                <p class="translations">
+                  {entry.translations.map((t) => (
+                    <span key={t.text} lang={t.lang}>
+                      {t.text}
+                    </span>
+                  ))}
+                </p>
                 <ol class="senses">
                   {entry.senses.map((sense) => (
-                    <li key={sense.gloss}>
+                    <li key={sense.gloss} lang="en">
                       {sense.gloss}
                       {sense.tags && sense.tags.length > 0 ? ` (${sense.tags.join(", ")})` : ""}
                     </li>
@@ -115,7 +125,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <h2 id="nuance-heading">Nuance</h2>
             <ProvenanceTag hasDictionary={false} hasAi={true} />
           </header>
-          <ul>
+          <ul lang="ja">
             {result.nuance.map((note) => (
               <li key={note}>{note}</li>
             ))}
@@ -131,12 +141,14 @@ export function ResultView({ result }: { result: EiwaResult }) {
           </header>
           {result.correction.corrected !== null && (
             <p class="corrected-text">
-              <span>{result.correction.corrected}</span>
+              <span lang={sourceLang}>{result.correction.corrected}</span>
               <CopyButton text={result.correction.corrected} />
             </p>
           )}
           {result.correction.explanation !== null && (
-            <p class="correction-explanation">{result.correction.explanation}</p>
+            <p class="correction-explanation" lang="ja">
+              {result.correction.explanation}
+            </p>
           )}
         </section>
       )}
@@ -147,7 +159,9 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <h2 id="etymology-heading">Etymology</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
-          <p class="collapsible-text">{result.etymology}</p>
+          <p class="collapsible-text" lang="en">
+            {result.etymology}
+          </p>
         </section>
       )}
 
@@ -159,7 +173,11 @@ export function ResultView({ result }: { result: EiwaResult }) {
           </header>
           <p class="pronunciation">
             {result.pronunciation.ipa && <span class="ipa">{result.pronunciation.ipa}</span>}
-            {result.pronunciation.kana && <span class="kana">{result.pronunciation.kana}</span>}
+            {result.pronunciation.kana && (
+              <span class="kana" lang="ja">
+                {result.pronunciation.kana}
+              </span>
+            )}
             <SpeakButton text={result.pronunciation.audioText ?? result.input} lang={sourceLang} />
           </p>
         </section>
@@ -171,7 +189,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <h2 id="derived-heading">Derived words</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
-          <p>{result.derivedWords.join(", ")}</p>
+          <p lang={sourceLang}>{result.derivedWords.join(", ")}</p>
         </section>
       )}
 
@@ -181,7 +199,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <h2 id="examples-heading">Examples</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
-          <ul>
+          <ul lang={sourceLang}>
             {examples.map((example) => (
               <li key={example}>{example}</li>
             ))}

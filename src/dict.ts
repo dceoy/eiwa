@@ -8,7 +8,10 @@ let manifestPromise: Promise<DictManifest> | null = null;
 async function loadManifest(): Promise<DictManifest> {
   if (!manifestPromise) {
     manifestPromise = (async () => {
-      const response = await cachedFetch("/dict/manifest.json");
+      // Always fetch fresh: the manifest is small, and it's the source of
+      // truth for the checksums that make shard caching below content-
+      // addressed, so it can never itself be served stale from a cache.
+      const response = await fetch("/dict/manifest.json", { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`Failed to load dictionary manifest: HTTP ${response.status}`);
       }
@@ -39,7 +42,11 @@ async function loadShard(lang: DictLang, key: string): Promise<Record<string, Di
         return {};
       }
 
-      const response = await cachedFetch(`/${ref.path}`);
+      // The checksum makes this a content-addressed URL: if the shard's
+      // content ever changes, the URL changes with it, so a previously
+      // cached (now stale) response for the old URL is simply never
+      // requested again.
+      const response = await cachedFetch(`/${ref.path}?v=${encodeURIComponent(ref.checksum)}`);
       if (!response.ok) {
         throw new Error(`Failed to load dictionary shard ${ref.path}: HTTP ${response.status}`);
       }
@@ -87,4 +94,12 @@ export async function dictionaryManifestInfo(): Promise<DictionaryManifestInfo> 
     sourceVersions: manifest.sourceVersions,
     shardCount: manifest.shards.length,
   };
+}
+
+/** Drops in-memory manifest/shard state so the next lookup re-fetches from
+ * scratch. Pair with `clearDictionaryCache()` (CacheStorage) so "Clear local
+ * cache" actually clears everything, not just the persistent cache. */
+export function resetDictionaryCaches(): void {
+  manifestPromise = null;
+  shardCache.clear();
 }

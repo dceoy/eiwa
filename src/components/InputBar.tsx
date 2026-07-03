@@ -32,12 +32,15 @@ export function InputBar({
 }: InputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Re-run whenever `value` changes (not just on mount) so programmatic
+  // updates — e.g. Clear resetting the value via props rather than a DOM
+  // input event — also shrink the textarea back down.
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
-  }, []);
+  }, [value]);
 
   return (
     <form
@@ -87,12 +90,9 @@ export function InputBar({
           target.style.height = `${Math.min(target.scrollHeight, 240)}px`;
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
+          if (event.key === "Enter" && !event.shiftKey && !busy) {
             event.preventDefault();
             onSubmit();
-          }
-          if (event.key === "Escape") {
-            onClear();
           }
         }}
       />

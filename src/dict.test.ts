@@ -57,8 +57,8 @@ beforeEach(() => {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith("/dict/manifest.json")) return jsonResponse(manifest);
-      if (url.endsWith("/dict/en/c.json")) return jsonResponse(enShard);
-      if (url.endsWith("/dict/ja/ね.json")) return jsonResponse(jaShard);
+      if (url.includes("/dict/en/c.json")) return jsonResponse(enShard);
+      if (url.includes("/dict/ja/ね.json")) return jsonResponse(jaShard);
       return jsonResponse({ error: "not found" }, false);
     }),
   );
@@ -104,5 +104,42 @@ describe("dictionaryLicenses", () => {
   it("exposes bundled dictionary source attribution", async () => {
     const licenses = await dictionaryLicenses();
     expect(licenses).toEqual(manifest.licenses);
+  });
+});
+
+describe("resetDictionaryCaches", () => {
+  it("clears in-memory manifest/shard state so a subsequent lookup refetches instead of reusing stale data", async () => {
+    const { lookupDictionary: freshLookup, resetDictionaryCaches: freshReset } = await import(
+      "./dict"
+    );
+
+    const first = await freshLookup("cat", "en");
+    expect(first[0]?.translations[0]?.text).toBe("猫");
+
+    const updatedShard = {
+      entries: {
+        cat: [
+          {
+            ...enShard.entries.cat[0],
+            translations: [{ text: "ねこ (updated)", lang: "ja" }],
+          },
+        ],
+      },
+    };
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/dict/manifest.json")) return jsonResponse(manifest);
+      if (url.includes("/dict/en/c.json")) return jsonResponse(updatedShard);
+      return jsonResponse({ error: "not found" }, false);
+    });
+
+    // Without a reset, the in-memory shard cache still serves the old data.
+    const stillStale = await freshLookup("cat", "en");
+    expect(stillStale[0]?.translations[0]?.text).toBe("猫");
+
+    freshReset();
+
+    const afterReset = await freshLookup("cat", "en");
+    expect(afterReset[0]?.translations[0]?.text).toBe("ねこ (updated)");
   });
 });

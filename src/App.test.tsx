@@ -39,7 +39,7 @@ beforeEach(() => {
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith("/dict/manifest.json")) return jsonResponse(manifest);
-      if (url.endsWith("/dict/en/c.json")) return jsonResponse(enShard);
+      if (url.includes("/dict/en/c.json")) return jsonResponse(enShard);
       return new Response("not found", { status: 404 });
     }),
   );
@@ -91,5 +91,24 @@ describe("App", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
     expect(screen.getByText(/nothing you type is sent to a server/i)).toBeTruthy();
+  });
+
+  it("settles cleanly (not stuck busy) after rapid repeated submissions of the same query", async () => {
+    render(<App />);
+    const textarea = screen.getByLabelText(/english or japanese/i);
+    fireEvent.input(textarea, { target: { value: "cat" } });
+
+    const translateButton = screen.getByRole("button", { name: /translate/i });
+    fireEvent.click(translateButton);
+    fireEvent.click(translateButton);
+    fireEvent.click(translateButton);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("猫").length).toBeGreaterThan(0);
+    });
+    // Busy resolved back to a non-busy state: Translate is rendered again
+    // (not stuck showing Cancel), and there is exactly one Dictionary card.
+    expect(screen.getByRole("button", { name: /translate/i })).toBeTruthy();
+    expect(screen.getAllByRole("heading", { name: "Dictionary" })).toHaveLength(1);
   });
 });

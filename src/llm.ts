@@ -56,6 +56,9 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
   let engine: MLCEngineInterface | null = null;
   let worker: Worker | null = null;
   let initPromise: Promise<void> | null = null;
+  /** Rejects any in-flight explain() immediately when dispose() runs, so a
+   * terminated Worker can never leave that call hanging forever. */
+  let disposeReject: ((reason: unknown) => void) | null = null;
 
   async function ensureReady(
     onStatus?: (status: AiStatus) => void,
@@ -86,19 +89,19 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
       setStatus("ready");
     })().catch((error: unknown) => {
       setStatus("failed");
+      // Let a future ensureReady() call retry instead of replaying the same
+      // rejected promise forever.
+      initPromise = null;
       throw error;
     });
 
     return initPromise;
   }
 
-  async function explain(params: ExplainParams): Promise<AiExplanationOutput> {
-    if (!engine) {
-      throw new Error("AI engine is not ready; call ensureReady() first.");
-    }
-    const activeEngine = engine;
-
-    status = "generating";
+  async function runGeneration(
+    activeEngine: MLCEngineInterface,
+    params: ExplainParams,
+  ): Promise<AiExplanationOutput> {
     const onAbort = () => activeEngine.interruptGenerate();
     params.signal?.addEventListener("abort", onAbort, { once: true });
 
@@ -139,6 +142,24 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
       return validated;
     } finally {
       params.signal?.removeEventListener("abort", onAbort);
+    }
+  }
+
+  async function explain(params: ExplainParams): Promise<AiExplanationOutput> {
+    if (!engine) {
+      throw new Error("AI engine is not ready; call ensureReady() first.");
+    }
+    const activeEngine = engine;
+    status = "generating";
+
+    const disposal = new Promise<never>((_resolve, reject) => {
+      disposeReject = reject;
+    });
+
+    try {
+      return await Promise.race([runGeneration(activeEngine, params), disposal]);
+    } finally {
+      disposeReject = null;
       if (status === "generating") {
         status = "ready";
       }
@@ -146,6 +167,8 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
   }
 
   function dispose(): void {
+    disposeReject?.(new Error("AI engine was disposed"));
+    disposeReject = null;
     worker?.terminate();
     worker = null;
     engine = null;

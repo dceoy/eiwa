@@ -4,7 +4,7 @@ import { ResultView } from "./components/ResultView";
 import { SettingsSheet } from "./components/SettingsSheet";
 import { SourcesModal } from "./components/SourcesModal";
 import { type BannerState, StatusBanner } from "./components/StatusBanner";
-import { dictionaryLicenses, dictionaryManifestInfo } from "./dict";
+import { dictionaryLicenses, dictionaryManifestInfo, resetDictionaryCaches } from "./dict";
 import { clearDictionaryCache } from "./dict-cache";
 import type { DictionarySource } from "./dict-types";
 import { lookupError } from "./errors";
@@ -39,7 +39,17 @@ export function App() {
 
   const engineRef = useRef<AiEngine | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const activeLookupRef = useRef<Promise<void> | null>(null);
+  const requestIdRef = useRef(0);
   const webGpuSupported = isWebGpuSupported();
+
+  /** Cancels any in-flight lookup and waits for it to fully unwind, so the
+   * AI engine's status has settled before the caller disposes it or starts
+   * a new lookup that checks that status. */
+  const cancelActiveLookup = useCallback(async () => {
+    abortRef.current?.abort();
+    await activeLookupRef.current?.catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,41 +79,58 @@ export function App() {
   const handleSubmit = useCallback(async () => {
     if (input.trim() === "") return;
 
-    abortRef.current?.abort();
+    // Cancel and fully await any previous lookup first, so a stale AI
+    // generation can't leave the engine's status as "generating" (or the
+    // shared `busy` flag reset to false) by the time this lookup checks it.
+    await cancelActiveLookup();
+
     const controller = new AbortController();
     abortRef.current = controller;
+    const requestId = ++requestIdRef.current;
+    const isCurrent = () => requestIdRef.current === requestId;
 
-    setBusy(true);
-    setBanner(null);
-    setResult(null);
+    const run = (async () => {
+      setBusy(true);
+      setBanner(null);
+      setResult(null);
 
-    try {
-      for await (const event of lookup(input, {
-        signal: controller.signal,
-        aiEngine: aiEnabled ? engineRef.current : null,
-        direction: directionChoice === "auto" ? undefined : directionChoice,
-      })) {
-        switch (event.type) {
-          case "ai-status":
-            setAiStatus(event.status);
-            break;
-          case "error":
-            setBanner({ kind: "error", message: event.error.message });
-            break;
-          case "result":
-            setResult(event.result);
-            break;
-          case "cancelled":
-            setBanner({ kind: "info", message: "Cancelled." });
-            break;
-          default:
-            break;
+      try {
+        for await (const event of lookup(input, {
+          signal: controller.signal,
+          aiEngine: aiEnabled ? engineRef.current : null,
+          direction: directionChoice === "auto" ? undefined : directionChoice,
+        })) {
+          if (!isCurrent()) return;
+          switch (event.type) {
+            case "ai-status":
+              setAiStatus(event.status);
+              break;
+            case "error":
+              setBanner({ kind: "error", message: event.error.message });
+              break;
+            case "result":
+              setResult(event.result);
+              // Avoid showing the same failure text in both the banner and
+              // the result's own Warnings card.
+              setBanner((current) =>
+                current && event.result.warnings.includes(current.message) ? null : current,
+              );
+              break;
+            case "cancelled":
+              setBanner({ kind: "info", message: "Cancelled." });
+              break;
+            default:
+              break;
+          }
         }
+      } finally {
+        if (isCurrent()) setBusy(false);
       }
-    } finally {
-      setBusy(false);
-    }
-  }, [input, aiEnabled, directionChoice]);
+    })();
+
+    activeLookupRef.current = run;
+    await run;
+  }, [input, aiEnabled, directionChoice, cancelActiveLookup]);
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
@@ -141,7 +168,12 @@ export function App() {
   );
 
   const handleSelectModel = useCallback(
-    (modelId: string) => {
+    async (modelId: string) => {
+      // A lookup mid-generation on the old engine must be cancelled (and
+      // settled) before that engine is disposed, or its pending explain()
+      // call would otherwise hang forever waiting on a terminated Worker.
+      await cancelActiveLookup();
+
       engineRef.current?.dispose();
       engineRef.current = null;
       setAiStatus("idle");
@@ -151,23 +183,25 @@ export function App() {
       if (aiEnabled) {
         const engine = createLocalAiEngine(modelId);
         engineRef.current = engine;
-        void engine.ensureReady(setAiStatus, setAiProgress).catch(() => {
+        await engine.ensureReady(setAiStatus, setAiProgress).catch(() => {
           setBanner({ kind: "error", message: lookupError("model-load-failed").message });
         });
       }
     },
-    [aiEnabled],
+    [aiEnabled, cancelActiveLookup],
   );
 
   const handleClearCache = useCallback(async () => {
+    await cancelActiveLookup();
     await clearDictionaryCache();
+    resetDictionaryCaches();
     await clearModelCache(selectedModelId).catch(() => undefined);
     engineRef.current?.dispose();
     engineRef.current = null;
     setAiStatus("idle");
     setAiProgress(null);
     setBanner({ kind: "info", message: "Local cache cleared." });
-  }, [selectedModelId]);
+  }, [selectedModelId, cancelActiveLookup]);
 
   return (
     <div class="shell">

@@ -26,7 +26,7 @@ async function listFiles(dir: string): Promise<string[]> {
     entries.map(async (entry) => {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) return listFiles(fullPath);
-      if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".test.ts")) return [fullPath];
+      if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) return [fullPath];
       return [];
     }),
   );
