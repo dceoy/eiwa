@@ -1,0 +1,209 @@
+[
+  {
+    "headword": "猫",
+    "reading": "ねこ",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "ねこ" },
+    "translations": [{ "text": "cat", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A small domesticated carnivorous mammal.", "translation": "cat" }]
+  },
+  {
+    "headword": "犬",
+    "reading": "いぬ",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "いぬ" },
+    "translations": [{ "text": "dog", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A domesticated carnivorous mammal kept as a pet or working animal.", "translation": "dog" }]
+  },
+  {
+    "headword": "水",
+    "reading": "みず",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "みず" },
+    "translations": [{ "text": "water", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A colorless, transparent liquid essential for life.", "translation": "water" }]
+  },
+  {
+    "headword": "本",
+    "reading": "ほん",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "ほん" },
+    "translations": [{ "text": "book", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A set of printed or written pages bound together.", "translation": "book" }]
+  },
+  {
+    "headword": "友達",
+    "reading": "ともだち",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "ともだち" },
+    "translations": [{ "text": "friend", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A person with whom one has a bond of mutual affection.", "translation": "friend" }]
+  },
+  {
+    "headword": "時間",
+    "reading": "じかん",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "じかん" },
+    "translations": [{ "text": "time", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "The indefinite continued progress of existence, measured in units.", "translation": "time" }]
+  },
+  {
+    "headword": "お金",
+    "reading": "おかね",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "おかね" },
+    "translations": [{ "text": "money", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A medium of exchange used to buy goods and services.", "translation": "money" }]
+  },
+  {
+    "headword": "食べる",
+    "reading": "たべる",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "たべる" },
+    "translations": [{ "text": "eat", "lang": "en", "priority": 1 }],
+    "senses": [
+      {
+        "gloss": "To put food into the mouth and swallow it.",
+        "translation": "eat",
+        "examples": ["朝ごはんを食べる。"]
+      }
+    ]
+  },
+  {
+    "headword": "走る",
+    "reading": "はしる",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "はしる" },
+    "translations": [{ "text": "run", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "To move at a speed faster than a walk.", "translation": "run" }]
+  },
+  {
+    "headword": "勉強する",
+    "reading": "べんきょうする",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "べんきょうする" },
+    "translations": [{ "text": "study", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "To devote time and attention to learning a subject.", "translation": "study" }]
+  },
+  {
+    "headword": "話す",
+    "reading": "はなす",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "はなす" },
+    "translations": [{ "text": "speak", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "To say words in order to convey information.", "translation": "speak" }]
+  },
+  {
+    "headword": "愛する",
+    "reading": "あいする",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "あいする" },
+    "translations": [{ "text": "love", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "To feel deep affection for someone or something.", "translation": "love" }]
+  },
+  {
+    "headword": "行く",
+    "reading": "いく",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "いく" },
+    "translations": [{ "text": "go", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "To move or travel from one place to another.", "translation": "go" }]
+  },
+  {
+    "headword": "読む",
+    "reading": "よむ",
+    "pos": ["verb"],
+    "pronunciation": { "kana": "よむ" },
+    "translations": [{ "text": "read", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "To look at and understand written words.", "translation": "read" }]
+  },
+  {
+    "headword": "幸せな",
+    "reading": "しあわせな",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "しあわせな" },
+    "translations": [{ "text": "happy", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Feeling or showing pleasure or contentment.", "translation": "happy" }]
+  },
+  {
+    "headword": "美しい",
+    "reading": "うつくしい",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "うつくしい" },
+    "translations": [{ "text": "beautiful", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Pleasing the senses or mind aesthetically.", "translation": "beautiful" }]
+  },
+  {
+    "headword": "難しい",
+    "reading": "むずかしい",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "むずかしい" },
+    "translations": [{ "text": "difficult", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Needing much effort or skill to accomplish.", "translation": "difficult" }]
+  },
+  {
+    "headword": "簡単な",
+    "reading": "かんたんな",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "かんたんな" },
+    "translations": [{ "text": "easy", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Achieved without great effort.", "translation": "easy" }]
+  },
+  {
+    "headword": "大きい",
+    "reading": "おおきい",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "おおきい" },
+    "translations": [{ "text": "big", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Of considerable size or extent.", "translation": "big" }]
+  },
+  {
+    "headword": "小さい",
+    "reading": "ちいさい",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "ちいさい" },
+    "translations": [{ "text": "small", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Of a size that is less than normal or usual.", "translation": "small" }]
+  },
+  {
+    "headword": "新しい",
+    "reading": "あたらしい",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "あたらしい" },
+    "translations": [{ "text": "new", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Recently made, introduced, or discovered.", "translation": "new" }]
+  },
+  {
+    "headword": "寿司",
+    "reading": "すし",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "すし" },
+    "translations": [{ "text": "sushi", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A Japanese dish of vinegared rice, typically with raw fish.", "translation": "sushi" }]
+  },
+  {
+    "headword": "津波",
+    "reading": "つなみ",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "つなみ" },
+    "translations": [{ "text": "tsunami", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A long, high sea wave caused by an underwater disturbance.", "translation": "tsunami" }]
+  },
+  {
+    "headword": "侍",
+    "reading": "さむらい",
+    "pos": ["noun"],
+    "pronunciation": { "kana": "さむらい" },
+    "translations": [{ "text": "samurai", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "A member of the pre-modern Japanese warrior class.", "translation": "samurai" }],
+    "etymology": "From classical Japanese 侍う (saburau), \"to serve.\""
+  },
+  {
+    "headword": "可愛い",
+    "reading": "かわいい",
+    "pos": ["adjective"],
+    "pronunciation": { "kana": "かわいい" },
+    "translations": [{ "text": "cute", "lang": "en", "priority": 1 }],
+    "senses": [{ "gloss": "Endearingly charming or lovable in appearance.", "translation": "cute" }]
+  }
+]

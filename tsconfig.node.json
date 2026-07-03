@@ -1,11 +1,17 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "lib": ["ES2022"],
     "types": ["node"],
-    "noEmit": true,
-    "outDir": "./dist-ts/node"
+    "noEmit": true
   },
-  "include": ["scripts", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
+  "include": [
+    "scripts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "src/dict-types.ts",
+    "src/dict-normalize.ts",
+    "src/dict-validate.ts"
+  ]
 }

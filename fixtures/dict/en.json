@@ -1,0 +1,218 @@
+[
+  {
+    "headword": "cat",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/kæt/" },
+    "translations": [{ "text": "猫", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A small domesticated carnivorous mammal.", "translation": "猫" }
+    ],
+    "derivedWords": ["kitten", "catlike"]
+  },
+  {
+    "headword": "dog",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/dɒg/" },
+    "translations": [{ "text": "犬", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A domesticated carnivorous mammal kept as a pet or working animal.", "translation": "犬" }
+    ],
+    "derivedWords": ["doggy", "puppy"]
+  },
+  {
+    "headword": "water",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/ˈwɔːtər/" },
+    "translations": [{ "text": "水", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A colorless, transparent liquid essential for life.", "translation": "水" }
+    ]
+  },
+  {
+    "headword": "book",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/bʊk/" },
+    "translations": [{ "text": "本", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A set of printed or written pages bound together.", "translation": "本" }
+    ],
+    "derivedWords": ["booklet", "bookish"]
+  },
+  {
+    "headword": "friend",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/frend/" },
+    "translations": [{ "text": "友達", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A person with whom one has a bond of mutual affection.", "translation": "友達" }
+    ],
+    "derivedWords": ["friendship", "friendly"]
+  },
+  {
+    "headword": "time",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/taɪm/" },
+    "translations": [{ "text": "時間", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "The indefinite continued progress of existence, measured in units.", "translation": "時間" }
+    ]
+  },
+  {
+    "headword": "day",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/deɪ/" },
+    "translations": [{ "text": "日", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "A 24-hour period; the time between sunrise and sunset.", "translation": "日" }]
+  },
+  {
+    "headword": "money",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/ˈmʌni/" },
+    "translations": [{ "text": "お金", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "A medium of exchange used to buy goods and services.", "translation": "お金" }]
+  },
+  {
+    "headword": "eat",
+    "pos": ["verb"],
+    "pronunciation": { "ipa": "/iːt/" },
+    "translations": [{ "text": "食べる", "lang": "ja", "priority": 1 }],
+    "senses": [
+      {
+        "gloss": "To put food into the mouth and swallow it.",
+        "translation": "食べる",
+        "examples": ["I eat breakfast at seven."]
+      }
+    ]
+  },
+  {
+    "headword": "run",
+    "pos": ["verb"],
+    "pronunciation": { "ipa": "/rʌn/" },
+    "translations": [{ "text": "走る", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "To move at a speed faster than a walk.", "translation": "走る", "examples": ["She runs every morning."] }
+    ]
+  },
+  {
+    "headword": "study",
+    "pos": ["verb", "noun"],
+    "pronunciation": { "ipa": "/ˈstʌdi/" },
+    "translations": [{ "text": "勉強する", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "To devote time and attention to learning a subject.", "translation": "勉強する" }
+    ]
+  },
+  {
+    "headword": "speak",
+    "pos": ["verb"],
+    "pronunciation": { "ipa": "/spiːk/" },
+    "translations": [{ "text": "話す", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "To say words in order to convey information.", "translation": "話す" }]
+  },
+  {
+    "headword": "love",
+    "pos": ["verb", "noun"],
+    "pronunciation": { "ipa": "/lʌv/" },
+    "translations": [{ "text": "愛する", "lang": "ja", "priority": 1 }, { "text": "愛", "lang": "ja", "priority": 2 }],
+    "senses": [
+      { "gloss": "An intense feeling of deep affection.", "translation": "愛", "tags": ["noun-sense"] },
+      { "gloss": "To feel deep affection for someone or something.", "translation": "愛する", "tags": ["verb-sense"] }
+    ]
+  },
+  {
+    "headword": "go",
+    "pos": ["verb"],
+    "pronunciation": { "ipa": "/gəʊ/" },
+    "translations": [{ "text": "行く", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "To move or travel from one place to another.", "translation": "行く" }]
+  },
+  {
+    "headword": "read",
+    "pos": ["verb"],
+    "pronunciation": { "ipa": "/riːd/" },
+    "translations": [{ "text": "読む", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "To look at and understand written words.", "translation": "読む" }]
+  },
+  {
+    "headword": "happy",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/ˈhæpi/" },
+    "translations": [{ "text": "幸せな", "lang": "ja", "priority": 1 }, { "text": "嬉しい", "lang": "ja", "priority": 2 }],
+    "senses": [{ "gloss": "Feeling or showing pleasure or contentment.", "translation": "幸せな" }],
+    "derivedWords": ["happiness", "happily"]
+  },
+  {
+    "headword": "beautiful",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/ˈbjuːtɪfʊl/" },
+    "translations": [{ "text": "美しい", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "Pleasing the senses or mind aesthetically.", "translation": "美しい" }],
+    "derivedWords": ["beauty", "beautifully"]
+  },
+  {
+    "headword": "difficult",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/ˈdɪfɪkəlt/" },
+    "translations": [{ "text": "難しい", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "Needing much effort or skill to accomplish.", "translation": "難しい" }],
+    "derivedWords": ["difficulty"]
+  },
+  {
+    "headword": "easy",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/ˈiːzi/" },
+    "translations": [{ "text": "簡単な", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "Achieved without great effort.", "translation": "簡単な" }]
+  },
+  {
+    "headword": "big",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/bɪg/" },
+    "translations": [{ "text": "大きい", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "Of considerable size or extent.", "translation": "大きい" }]
+  },
+  {
+    "headword": "small",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/smɔːl/" },
+    "translations": [{ "text": "小さい", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "Of a size that is less than normal or usual.", "translation": "小さい" }]
+  },
+  {
+    "headword": "new",
+    "pos": ["adjective"],
+    "pronunciation": { "ipa": "/njuː/" },
+    "translations": [{ "text": "新しい", "lang": "ja", "priority": 1 }],
+    "senses": [{ "gloss": "Recently made, introduced, or discovered.", "translation": "新しい" }]
+  },
+  {
+    "headword": "sushi",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/ˈsuːʃi/" },
+    "translations": [{ "text": "寿司", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A Japanese dish of vinegared rice, typically with raw fish.", "translation": "寿司" }
+    ],
+    "etymology": "Borrowed directly from Japanese 寿司/鮨 (sushi), originally referring to the vinegared rice rather than the fish."
+  },
+  {
+    "headword": "tsunami",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/(t)suːˈnɑːmi/" },
+    "translations": [{ "text": "津波", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A long, high sea wave caused by an underwater disturbance.", "translation": "津波" }
+    ],
+    "etymology": "From Japanese 津波 (tsunami), literally \"harbor wave\" (津 tsu \"harbor\" + 波 nami \"wave\")."
+  },
+  {
+    "headword": "karaoke",
+    "pos": ["noun"],
+    "pronunciation": { "ipa": "/ˌkæriˈəʊki/" },
+    "translations": [{ "text": "カラオケ", "lang": "ja", "priority": 1 }],
+    "senses": [
+      { "gloss": "A form of entertainment in which people sing along to recorded music.", "translation": "カラオケ" }
+    ],
+    "etymology": "From Japanese カラオケ (karaoke), a blend of 空 (kara, \"empty\") and オーケストラ (ōkesutora, \"orchestra\")."
+  }
+]

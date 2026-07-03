@@ -1,11 +1,9 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "lib": ["ES2022"],
     "types": ["@cloudflare/workers-types"],
-    "noEmit": true,
-    "outDir": "./dist-ts/worker"
+    "noEmit": true
   },
   "include": ["worker"]
 }

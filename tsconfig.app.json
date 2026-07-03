@@ -1,13 +1,11 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "composite": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "noEmit": true,
-    "types": ["vite/client"],
-    "outDir": "./dist-ts/app"
+    "types": ["vite/client"]
   },
   "include": ["src", "vite-env.d.ts"]
 }
