@@ -23,15 +23,16 @@
     "dict:build": "tsx scripts/build-dict-shards.ts",
     "dict:validate": "tsx scripts/validate-dict.ts",
     "deploy:temporary": "wrangler deploy --temporary",
-    "smoke:url": "tsx scripts/smoke-url.ts"
+    "smoke:url": "tsx scripts/smoke-url.ts",
+    "audit": "pnpm audit --prod"
   },
   "dependencies": {
-    "@mlc-ai/web-llm": "0.2.84",
     "preact": "10.29.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.2",
     "@cloudflare/workers-types": "5.20260703.1",
+    "@mlc-ai/web-llm": "0.2.84",
     "@playwright/test": "1.61.1",
     "@preact/preset-vite": "2.10.5",
     "@testing-library/preact": "3.2.4",

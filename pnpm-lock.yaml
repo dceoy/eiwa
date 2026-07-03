@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@mlc-ai/web-llm':
-        specifier: 0.2.84
-        version: 0.2.84
       preact:
         specifier: 10.29.4
         version: 10.29.4
@@ -21,6 +18,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 5.20260703.1
         version: 5.20260703.1
+      '@mlc-ai/web-llm':
+        specifier: 0.2.84
+        version: 0.2.84
       '@playwright/test':
         specifier: 1.61.1
         version: 1.61.1

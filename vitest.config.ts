@@ -5,7 +5,12 @@ export default defineConfig({
   plugins: [preact()],
   test: {
     environment: "happy-dom",
-    include: ["src/**/*.test.{ts,tsx}", "worker/**/*.test.ts", "scripts/**/*.test.ts"],
+    include: [
+      "src/**/*.test.{ts,tsx}",
+      "worker/**/*.test.ts",
+      "scripts/**/*.test.ts",
+      "tests/**/*.test.ts",
+    ],
     css: false,
   },
 });

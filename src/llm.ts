@@ -4,6 +4,7 @@ import type { Direction } from "./language";
 import { DEFAULT_MODEL_ID } from "./model-config";
 import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import { type AiExplanationOutput, validateAiExplanationOutput } from "./result-schema";
+import { loadWebLlm } from "./webllm-cdn";
 
 export type AiStatus = "idle" | "loading-model" | "ready" | "generating" | "failed";
 
@@ -35,7 +36,7 @@ export function isWebGpuSupported(): boolean {
 
 /** Deletes a downloaded model's cached weights/config from browser storage. */
 export async function clearModelCache(modelId: string): Promise<void> {
-  const { deleteModelAllInfoInCache } = await import("@mlc-ai/web-llm");
+  const { deleteModelAllInfoInCache } = await loadWebLlm();
   await deleteModelAllInfoInCache(modelId);
 }
 
@@ -75,7 +76,7 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
 
     setStatus("loading-model");
     initPromise = (async () => {
-      const { CreateWebWorkerMLCEngine } = await import("@mlc-ai/web-llm");
+      const { CreateWebWorkerMLCEngine } = await loadWebLlm();
       worker = new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" });
       engine = await CreateWebWorkerMLCEngine(worker, modelId, {
         initProgressCallback: (report) => {
