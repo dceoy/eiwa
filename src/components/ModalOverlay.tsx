@@ -13,6 +13,8 @@ const FOCUSABLE_SELECTOR =
 /** Shared bottom-sheet/dialog chrome for Settings and Sources modals. */
 export function ModalOverlay({ onClose, labelledBy, children }: ModalOverlayProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -22,7 +24,7 @@ export function ModalOverlay({ onClose, labelledBy, children }: ModalOverlayProp
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab" || !dialog) return;
@@ -46,7 +48,11 @@ export function ModalOverlay({ onClose, labelledBy, children }: ModalOverlayProp
       document.removeEventListener("keydown", onKeyDown);
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+    // Mount/unmount only: onCloseRef.current always has the latest onClose,
+    // so this focus-trap effect must not re-run just because the caller
+    // passed a new inline onClose function (which would steal focus back to
+    // the dialog's first control on every re-render while open).
+  }, []);
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: backdrop click-to-dismiss is a pointer-only convenience.

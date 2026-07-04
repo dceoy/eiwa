@@ -1,6 +1,26 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import type { AiEngine } from "./llm";
+
+vi.mock("./llm", async () => {
+  const actual = await vi.importActual<typeof import("./llm")>("./llm");
+  return {
+    ...actual,
+    isWebGpuSupported: () => true,
+    createLocalAiEngine: vi.fn(
+      (): AiEngine => ({
+        getStatus: () => "ready",
+        ensureReady: vi.fn(async (onStatus) => {
+          onStatus?.("ready");
+        }),
+        explain: vi.fn(),
+        dispose: vi.fn(),
+      }),
+    ),
+    clearModelCache: vi.fn(async () => undefined),
+  };
+});
 
 const manifest = {
   schemaVersion: 1,
@@ -110,5 +130,18 @@ describe("App", () => {
     // (not stuck showing Cancel), and there is exactly one Dictionary card.
     expect(screen.getByRole("button", { name: /translate/i })).toBeTruthy();
     expect(screen.getAllByRole("heading", { name: "Dictionary" })).toHaveLength(1);
+  });
+
+  it("turns AI off when clearing the local cache, instead of leaving it silently disabled", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+
+    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    fireEvent.click(aiToggle);
+    await waitFor(() => expect(aiToggle).toHaveProperty("checked", true));
+
+    fireEvent.click(screen.getByRole("button", { name: /clear local cache/i }));
+
+    await waitFor(() => expect(aiToggle).toHaveProperty("checked", false));
   });
 });

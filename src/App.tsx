@@ -198,6 +198,10 @@ export function App() {
     await clearModelCache(selectedModelId).catch(() => undefined);
     engineRef.current?.dispose();
     engineRef.current = null;
+    // The model's cached weights were just deleted, so AI can no longer be
+    // silently "on" with no engine behind it; require the user to
+    // re-enable it (and accept the re-download) explicitly.
+    setAiEnabled(false);
     setAiStatus("idle");
     setAiProgress(null);
     setBanner({ kind: "info", message: "Local cache cleared." });
