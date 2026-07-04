@@ -9,6 +9,7 @@
     "node": ">=22.13"
   },
   "scripts": {
+    "predev": "pnpm run dict:build",
     "dev": "vite",
     "build": "pnpm run dict:build && pnpm run dict:validate && tsc --noEmit -p tsconfig.app.json && vite build",
     "preview": "vite preview",

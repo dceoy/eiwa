@@ -31,6 +31,15 @@ test("Japanese input returns a dictionary-backed English translation", async ({ 
   await expect(page.getByText("cat").first()).toBeVisible();
 });
 
+test("Japanese kana reading input resolves the kanji dictionary entry", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel(/english or japanese/i).fill("ネコ");
+  await page.getByRole("button", { name: /translate/i }).click();
+
+  await expect(page.getByRole("heading", { name: "Dictionary" })).toBeVisible();
+  await expect(page.getByText("cat").first()).toBeVisible();
+});
+
 test("a dictionary miss shows no dictionary card and no crash", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel(/english or japanese/i).fill("zzznotarealword");

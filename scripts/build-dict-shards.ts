@@ -23,7 +23,7 @@ const FIXTURE_SOURCE: DictionarySource = {
 
 type FixtureEntry = Omit<DictionaryEntry, "id" | "lang" | "source">;
 
-interface ShardFile {
+export interface ShardFile {
   lang: DictLang;
   key: string;
   entries: Record<string, DictionaryEntry[]>;
@@ -61,7 +61,10 @@ function makeId(lang: DictLang, headword: string, reading: string | undefined, s
   return id;
 }
 
-async function loadFixtures(lang: DictLang, seenIds: Set<string>): Promise<DictionaryEntry[]> {
+export async function loadFixtures(
+  lang: DictLang,
+  seenIds: Set<string>,
+): Promise<DictionaryEntry[]> {
   const file = path.join(FIXTURES_DIR, `${lang}.json`);
   const raw = JSON.parse(await readFile(file, "utf8"));
   if (!Array.isArray(raw)) {
@@ -79,19 +82,39 @@ async function loadFixtures(lang: DictLang, seenIds: Set<string>): Promise<Dicti
   });
 }
 
-function groupByShard(entries: DictionaryEntry[], lang: DictLang): Map<string, ShardFile> {
+function addToShard(
+  shards: Map<string, ShardFile>,
+  lang: DictLang,
+  key: string,
+  normalized: string,
+  entry: DictionaryEntry,
+) {
+  let shard = shards.get(key);
+  if (!shard) {
+    shard = { lang, key, entries: {} };
+    shards.set(key, shard);
+  }
+  shard.entries[normalized] ??= [];
+  shard.entries[normalized].push(entry);
+}
+
+export function groupByShard(entries: DictionaryEntry[], lang: DictLang): Map<string, ShardFile> {
   const shards = new Map<string, ShardFile>();
 
   for (const entry of entries) {
-    const normalized = normalizeHeadword(entry.headword, lang);
-    const key = shardKeyFor(normalized, lang);
-    let shard = shards.get(key);
-    if (!shard) {
-      shard = { lang, key, entries: {} };
-      shards.set(key, shard);
+    const normalizedHeadword = normalizeHeadword(entry.headword, lang);
+    addToShard(shards, lang, shardKeyFor(normalizedHeadword, lang), normalizedHeadword, entry);
+
+    // Japanese fixtures commonly store kanji headwords with a kana reading
+    // (e.g. 猫 / ねこ). Index the reading as an alias so a user typing the
+    // kana form (as most users do, since IMEs convert kana to kanji rather
+    // than the other way around) can still find the entry.
+    if (lang === "ja" && entry.reading) {
+      const normalizedReading = normalizeHeadword(entry.reading, lang);
+      if (normalizedReading && normalizedReading !== normalizedHeadword) {
+        addToShard(shards, lang, shardKeyFor(normalizedReading, lang), normalizedReading, entry);
+      }
     }
-    shard.entries[normalized] ??= [];
-    shard.entries[normalized].push(entry);
   }
 
   return shards;
@@ -171,7 +194,9 @@ async function main() {
   );
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
