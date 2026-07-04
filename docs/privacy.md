@@ -36,7 +36,7 @@ your browser** via [WebLLM](https://webllm.mlc.ai/), using WebGPU:
   browser from Hugging Face and cached locally; your lookup text is never
   sent there — only the model file downloads happen over the network from
   that source, no user text.
-- The `@mlc-ai/web-llm` *library code* (not the model weights) is loaded
+- The `@mlc-ai/web-llm` _library code_ (not the model weights) is loaded
   from a CDN (jsDelivr) at runtime because it exceeds Cloudflare's static
   asset size limit — see
   [`docs/architecture.md`](./architecture.md#why-webllm-is-loaded-from-a-cdn).
@@ -58,7 +58,7 @@ is to serve static assets and answer `/api/health`.
 
 Dictionary lookups fetch small, pre-built, non-personal JSON shard files
 (`/dict/<lang>/<key>.json`) that contain the dictionary itself, not your
-query. Your search term determines *which* shard is requested (e.g. looking
+query. Your search term determines _which_ shard is requested (e.g. looking
 up "cat" fetches `/dict/en/c.json`), but the request never includes your
 full input as a parameter or body — it's just a normal static-file GET.
 

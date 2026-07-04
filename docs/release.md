@@ -6,13 +6,13 @@ there's something worth keeping a permanent URL for.
 
 ## Roadmap status
 
-| Phase | Scope | Status |
-| --- | --- | --- |
-| 0 — Deployable shell | Workers Static Assets app shell, `/api/health`, temporary deploy (#1) | Done |
-| 1 — Dictionary-first MVP | Fixture-backed dictionary, mobile-first UI, PWA shell, sources/licenses modal (#3, #5) | Done |
-| 2 — Browser-side AI | WebLLM in a Web Worker, structured JSON, dictionary+AI merge, WebGPU fallback (#2, #4) | Done |
-| 3 — Quality & privacy hardening | CI, unit + e2e tests, privacy guard, free-tier guardrails (#6) | Done |
-| 4 — Permanent Cloudflare account | Claim or otherwise provision a permanent account; production deployment instructions | Not started — see below |
+| Phase                            | Scope                                                                                  | Status                  |
+| -------------------------------- | -------------------------------------------------------------------------------------- | ----------------------- |
+| 0 — Deployable shell             | Workers Static Assets app shell, `/api/health`, temporary deploy (#1)                  | Done                    |
+| 1 — Dictionary-first MVP         | Fixture-backed dictionary, mobile-first UI, PWA shell, sources/licenses modal (#3, #5) | Done                    |
+| 2 — Browser-side AI              | WebLLM in a Web Worker, structured JSON, dictionary+AI merge, WebGPU fallback (#2, #4) | Done                    |
+| 3 — Quality & privacy hardening  | CI, unit + e2e tests, privacy guard, free-tier guardrails (#6)                         | Done                    |
+| 4 — Permanent Cloudflare account | Claim or otherwise provision a permanent account; production deployment instructions   | Not started — see below |
 
 ## Temporary Accounts workflow
 
@@ -88,7 +88,7 @@ changes:
 - No D1, KV, R2, Durable Objects, Queues, or Workers AI. AI inference runs
   in the browser (WebLLM), never in the Worker.
 - No paid Cloudflare product is required for `pnpm install`, `pnpm run
-  check`, `pnpm run build`, `wrangler deploy --temporary`, or CI.
+check`, `pnpm run build`, `wrangler deploy --temporary`, or CI.
 - Any single static asset must stay under Cloudflare Workers Static Assets'
   5 MiB per-file limit — this is why `@mlc-ai/web-llm` is loaded from a CDN
   at runtime instead of bundled (see
