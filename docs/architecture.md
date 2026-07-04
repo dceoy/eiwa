@@ -42,19 +42,26 @@ SPA `not_found_handling` fallback).
 }
 ```
 
-With both `assets` and a Worker `main` script configured, Cloudflare's
-default behavior (no `run_worker_first`) is:
+`run_worker_first` is scoped to `["/api/health"]` only, so:
 
 1. If the request path matches a file under `dist/`, serve it directly — the
    Worker is never invoked, and it doesn't count against Worker request
    limits.
-2. Otherwise, the Worker's `fetch` handler runs. `worker/index.ts` handles
-   `/api/health` itself and otherwise calls `env.ASSETS.fetch(request)`,
-   which applies `not_found_handling: "single-page-application"` and returns
-   `index.html` for client-side routes.
+2. `/api/health` always invokes the Worker's `fetch` handler first, which
+   returns the health JSON directly. Without this, Cloudflare's
+   `single-page-application` fallback intercepts browser navigation requests
+   (`Sec-Fetch-Mode: navigate`) to unmatched paths — including `/api/health`
+   — and serves `index.html` before the Worker ever runs, so a plain browser
+   visit to `/api/health` would silently return the SPA shell instead of
+   JSON. Non-navigation requests (e.g. `fetch()`/`curl`) were never affected,
+   since only navigation requests get the SPA fallback treatment.
+3. Every other unmatched path falls through to `env.ASSETS.fetch(request)`
+   via the default asset handling, which applies
+   `not_found_handling: "single-page-application"` and returns `index.html`
+   for client-side routes.
 
-This keeps the dynamic Worker surface to a single route, per the free-tier
-guardrails in issue #6.
+This keeps the dynamic Worker surface to a single explicitly-routed route,
+per the free-tier guardrails in issue #6.
 
 ## Dictionary shard flow
 

@@ -41,7 +41,7 @@ model-generated explanation.
 
 ## Local development
 
-Requires Node.js 20+ and [pnpm](https://pnpm.io/).
+Requires Node.js 22.13+ and [pnpm](https://pnpm.io/).
 
 ```bash
 pnpm install

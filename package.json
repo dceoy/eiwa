@@ -6,7 +6,7 @@
   "description": "A mobile-first English-Japanese / Japanese-English dictionary web app with browser-side WebLLM translation.",
   "license": "AGPL-3.0-only",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "scripts": {
     "dev": "vite",
