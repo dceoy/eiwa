@@ -20,7 +20,9 @@ async function fetchManifest(): Promise<Response> {
     if (!response.ok) {
       throw new Error(`Failed to load dictionary manifest: HTTP ${response.status}`);
     }
-    await cacheManifestResponse(MANIFEST_URL, response.clone());
+    // Best-effort: a fresh response must still be used even if persisting it
+    // for offline fallback fails (e.g. CacheStorage quota/transient error).
+    await cacheManifestResponse(MANIFEST_URL, response.clone()).catch(() => undefined);
     return response;
   } catch (error) {
     const cached = await matchCachedManifest(MANIFEST_URL);

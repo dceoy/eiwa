@@ -146,6 +146,25 @@ describe("loadManifest offline fallback", () => {
     const { lookupDictionary: offlineLookup } = await import("./dict");
     await expect(offlineLookup("cat", "en")).rejects.toThrow("network down");
   });
+
+  it("still uses the freshly fetched manifest online even when persisting it for offline fallback fails", async () => {
+    const cache = {
+      match: async () => undefined,
+      put: async (url: RequestInfo | URL) => {
+        if (String(url).endsWith("manifest.json")) {
+          throw new Error("quota exceeded");
+        }
+      },
+    };
+    vi.stubGlobal("caches", {
+      open: async () => cache,
+      delete: async () => true,
+    } as unknown as CacheStorage);
+
+    const { lookupDictionary: freshLookup } = await import("./dict");
+    const entries = await freshLookup("cat", "en");
+    expect(entries[0]?.translations[0]?.text).toBe("猫");
+  });
 });
 
 describe("resetDictionaryCaches", () => {
