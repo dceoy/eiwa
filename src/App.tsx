@@ -32,7 +32,15 @@ export function App() {
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [aiEnabled, setAiEnabled] = useState(initialSettings.aiEnabled);
+  // A persisted "enabled" is only meaningful when paired with a known-cached
+  // model: without that, no engine gets (re)created on startup (see the
+  // `modelCached` gate below), so treating it as enabled here would leave
+  // the checkbox checked and the model controls visible while AI lookups
+  // silently no-op — and would force the user to uncheck before they could
+  // re-check to actually retry.
+  const [aiEnabled, setAiEnabled] = useState(
+    initialSettings.aiEnabled && initialSettings.modelCached,
+  );
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle");
   const [aiProgress, setAiProgress] = useState<ModelLoadProgress | null>(null);
   const [selectedModelId, setSelectedModelId] = useState(initialSettings.modelId);

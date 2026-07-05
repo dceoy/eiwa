@@ -193,8 +193,12 @@ describe("App", () => {
     const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
     await waitFor(() => expect(aiToggle).toHaveProperty("disabled", false));
 
-    expect(aiToggle).toHaveProperty("checked", true);
-    expect(screen.getByText(/status: idle/i)).toBeTruthy();
+    // aiEnabled without a known-cached model is not a usable "on" state, so
+    // it's normalized to unchecked on load rather than showing AI as
+    // enabled with no engine behind it — the user can re-check it directly
+    // to retry, with no need to uncheck first.
+    expect(aiToggle).toHaveProperty("checked", false);
+    expect(screen.queryByRole("group", { name: /model/i })).toBeNull();
     expect(ensureReadyMock).not.toHaveBeenCalled();
   });
 });
