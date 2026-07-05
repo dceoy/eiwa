@@ -13,24 +13,29 @@ import {
   type AiStatus,
   clearAllModelCaches,
   createLocalAiEngine,
-  isWebGpuSupported,
   type ModelLoadProgress,
+  probeWebGpuAdapter,
 } from "./llm";
 import { lookup } from "./lookup";
-import { DEFAULT_MODEL_ID, MODEL_OPTIONS } from "./model-config";
+import { MODEL_OPTIONS } from "./model-config";
 import type { EiwaResult } from "./result-schema";
+import { loadSettings, saveSettings } from "./settings";
 
 export function App() {
+  const [initialSettings] = useState(() => loadSettings());
+
   const [input, setInput] = useState("");
-  const [directionChoice, setDirectionChoice] = useState<DirectionChoice>("auto");
+  const [directionChoice, setDirectionChoice] = useState<DirectionChoice>(
+    initialSettings.directionChoice,
+  );
   const [result, setResult] = useState<EiwaResult | null>(null);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(initialSettings.aiEnabled);
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle");
   const [aiProgress, setAiProgress] = useState<ModelLoadProgress | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL_ID);
+  const [selectedModelId, setSelectedModelId] = useState(initialSettings.modelId);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -41,7 +46,9 @@ export function App() {
   const abortRef = useRef<AbortController | null>(null);
   const activeLookupRef = useRef<Promise<void> | null>(null);
   const requestIdRef = useRef(0);
-  const webGpuSupported = isWebGpuSupported();
+  // null while the async adapter probe is in flight (typically milliseconds);
+  // treated as "not yet supported" everywhere until it resolves.
+  const [webGpuSupported, setWebGpuSupported] = useState<boolean | null>(null);
 
   /** Cancels any in-flight lookup and waits for it to fully unwind, so the
    * AI engine's status has settled before the caller disposes it or starts
@@ -75,6 +82,34 @@ export function App() {
     },
     [],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void probeWebGpuAdapter().then((supported) => {
+      if (!cancelled) setWebGpuSupported(supported);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    saveSettings({ aiEnabled, modelId: selectedModelId, directionChoice });
+  }, [aiEnabled, selectedModelId, directionChoice]);
+
+  // Re-creates the engine on startup when AI was left enabled in a previous
+  // session, so the user doesn't have to re-open Settings and re-toggle just
+  // because the tab reloaded — the model's weights are already cached.
+  // Guarded by `engineRef.current` so it never fights with a manual toggle
+  // (handleToggleAi/handleSelectModel) that already created one.
+  useEffect(() => {
+    if (webGpuSupported !== true || !aiEnabled || engineRef.current) return;
+    const engine = createLocalAiEngine(selectedModelId);
+    engineRef.current = engine;
+    void engine.ensureReady(setAiStatus, setAiProgress).catch(() => {
+      setBanner({ kind: "error", message: lookupError("model-load-failed").message });
+    });
+  }, [webGpuSupported, aiEnabled, selectedModelId]);
 
   const handleSubmit = useCallback(async () => {
     if (input.trim() === "") return;

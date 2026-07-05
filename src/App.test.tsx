@@ -8,6 +8,7 @@ vi.mock("./llm", async () => {
   return {
     ...actual,
     isWebGpuSupported: () => true,
+    probeWebGpuAdapter: async () => true,
     createLocalAiEngine: vi.fn(
       (): AiEngine => ({
         getStatus: () => "ready",
@@ -137,6 +138,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
 
     const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    await waitFor(() => expect(aiToggle).toHaveProperty("disabled", false));
     fireEvent.click(aiToggle);
     await waitFor(() => expect(aiToggle).toHaveProperty("checked", true));
 

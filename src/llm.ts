@@ -34,6 +34,25 @@ export function isWebGpuSupported(): boolean {
   return typeof navigator !== "undefined" && "gpu" in navigator;
 }
 
+/**
+ * `navigator.gpu` existing does not mean a usable adapter exists —
+ * `requestAdapter()` resolves `null` on blocklisted/unsupported GPUs, common
+ * on Android devices and some Linux/driver combinations. Probing this ahead
+ * of time (cheap; no `requestDevice()`, so nothing is downloaded) lets the UI
+ * show the honest "WebGPU unavailable" message instead of letting the user
+ * opt in and hit a doomed engine-init attempt after the WebLLM library has
+ * already been fetched.
+ */
+export async function probeWebGpuAdapter(): Promise<boolean> {
+  if (!isWebGpuSupported()) return false;
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    return adapter !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Deletes every downloadable model's cached weights/config from browser
  * storage, not just the currently selected one, so switching models earlier
  * can't leave stale weights behind after "Clear local cache". Tolerates a

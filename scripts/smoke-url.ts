@@ -20,6 +20,9 @@ async function checkHomepage(baseUrl: string): Promise<string[]> {
   if (!body.includes('<div id="app">')) {
     errors.push('GET / did not contain the expected <div id="app"> app root');
   }
+  if (!response.headers.get("content-security-policy")) {
+    errors.push("GET / is missing the Content-Security-Policy header (check public/_headers)");
+  }
   return errors;
 }
 

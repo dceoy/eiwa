@@ -165,6 +165,20 @@ it contributes nothing to the production bundle. If the CDN is unreachable,
 `ensureReady()` rejects like any other model-load failure and the app stays
 usable in dictionary-only mode.
 
+Because dynamic `import()` has no `integrity` attribute, `loadWebLlm()`
+verifies the library manually instead of trusting jsDelivr: it `fetch()`es
+the file as bytes, hashes them with `crypto.subtle.digest("SHA-256", …)`,
+and compares against `WEBLLM_SHA256`, a hash pinned next to
+`WEBLLM_VERSION` in `src/webllm-cdn.ts`. Only on a match does it wrap the
+bytes in a `Blob` and `import()` the resulting `blob:` URL — a mismatch
+throws before any fetched code ever executes. Both the main thread
+(`src/llm.ts`) and the Web Worker (`src/llm-worker.ts`) go through this same
+function. `WEBLLM_SHA256` must be recomputed by hand whenever
+`WEBLLM_VERSION` is bumped (instructions are in a comment next to it);
+`src/webllm-cdn.test.ts` checks `WEBLLM_VERSION` against the
+`@mlc-ai/web-llm` devDependency pin in `package.json` so the two can't drift
+silently, though it can't verify the hash itself was recomputed correctly.
+
 The model weights themselves (hundreds of MB to ~1 GB) are always fetched
 by WebLLM directly from Hugging Face at runtime, cached by the browser —
 they were never a static-asset candidate in the first place.

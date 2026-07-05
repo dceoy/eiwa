@@ -18,6 +18,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
       - run: pnpm run build
+      - run: pnpm exec wrangler deploy --dry-run
+      - run: pnpm run audit
 
   e2e:
     runs-on: ubuntu-latest

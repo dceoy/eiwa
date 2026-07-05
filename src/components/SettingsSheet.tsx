@@ -9,7 +9,8 @@ export interface SettingsSheetProps {
   onToggleAi: (enabled: boolean) => void;
   aiStatus: AiStatus;
   aiProgress: ModelLoadProgress | null;
-  webGpuSupported: boolean;
+  /** null while the adapter probe is still in flight (typically milliseconds). */
+  webGpuSupported: boolean | null;
   modelOptions: ModelOption[];
   selectedModelId: string;
   onSelectModel: (id: string) => void;
@@ -50,7 +51,7 @@ export function SettingsSheet({
           Translation, nuance, and writing correction run entirely in your browser via WebLLM.
           Nothing you type is sent to a server. The model downloads on first use.
         </p>
-        {!webGpuSupported && (
+        {webGpuSupported === false && (
           <p class="settings-warning">
             This browser/device does not support WebGPU, so AI explanations are unavailable.
             Dictionary lookup still works.
@@ -61,7 +62,7 @@ export function SettingsSheet({
           <input
             type="checkbox"
             checked={aiEnabled}
-            disabled={!webGpuSupported}
+            disabled={webGpuSupported !== true}
             onChange={(event) => onToggleAi(event.currentTarget.checked)}
           />
         </label>
