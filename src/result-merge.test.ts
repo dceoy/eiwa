@@ -82,6 +82,39 @@ describe("mergeResult", () => {
     expect(result.translation.primary).toBe("");
   });
 
+  it("surfaces a dictionary-miss warning when there is no dictionary entry and no AI output", () => {
+    const result = mergeResult({
+      direction: "en-ja",
+      input: "zzznotaword",
+      dictionaryEntries: [],
+      ai: null,
+    });
+
+    expect(result.warnings).toEqual(["No dictionary entry was found for this input."]);
+  });
+
+  it("does not surface a dictionary-miss warning when AI produced output", () => {
+    const result = mergeResult({
+      direction: "en-ja",
+      input: "zzznotaword",
+      dictionaryEntries: [],
+      ai: aiOutput,
+    });
+
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("does not surface a dictionary-miss warning when dictionary entries were found", () => {
+    const result = mergeResult({
+      direction: "en-ja",
+      input: "cat",
+      dictionaryEntries: [catEntry],
+      ai: null,
+    });
+
+    expect(result.warnings).toEqual([]);
+  });
+
   it("appends extra warnings (e.g. AI failure notices) without dropping AI warnings", () => {
     const result = mergeResult({
       direction: "en-ja",

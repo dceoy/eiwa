@@ -1,4 +1,5 @@
 import type { DictionaryEntry } from "./dict-types";
+import { lookupError } from "./errors";
 import type { Direction } from "./language";
 import type { AiExplanationOutput, EiwaResult } from "./result-schema";
 
@@ -42,6 +43,12 @@ export function mergeResult({
     ...dictTranslations.filter((t) => t !== primary),
   ]);
 
+  // A miss with no AI output is a normal (not error) outcome, but the user
+  // still needs to know the lookup ran and found nothing rather than seeing
+  // a silently blank result.
+  const missWarning =
+    dictionaryEntries.length === 0 && ai === null ? [lookupError("dictionary-miss").message] : [];
+
   return {
     direction,
     input,
@@ -52,7 +59,7 @@ export function mergeResult({
     etymology: dictionaryEntries.find((e) => e.etymology)?.etymology ?? null,
     pronunciation: bestEntry?.pronunciation ?? null,
     derivedWords: uniqueStrings(dictionaryEntries.flatMap((e) => e.derivedWords ?? [])),
-    warnings: uniqueStrings([...(ai?.warnings ?? []), ...extraWarnings]),
+    warnings: uniqueStrings([...(ai?.warnings ?? []), ...extraWarnings, ...missWarning]),
     sourceKinds: [
       ...(dictionaryEntries.length > 0 ? (["dictionary"] as const) : []),
       ...(ai ? (["ai"] as const) : []),

@@ -4,6 +4,7 @@ import { type LookupError, lookupError } from "./errors";
 import { type Direction, detectDirection, sourceLangFor } from "./language";
 import type { AiEngine, AiStatus } from "./llm";
 import { normalizeInput } from "./normalize";
+import { MAX_INPUT_CHARS } from "./prompt";
 import { mergeResult } from "./result-merge";
 import type { EiwaResult } from "./result-schema";
 
@@ -86,6 +87,14 @@ export async function* lookup(
     return;
   }
 
+  // The prompt sent to the model truncates input beyond this length (see
+  // buildUserPrompt); tell the user so a long paste doesn't silently get a
+  // partial AI translation with no indication anything was dropped.
+  const truncationWarnings =
+    normalized.text.length > MAX_INPUT_CHARS
+      ? [`Input was truncated to the first ${MAX_INPUT_CHARS} characters for AI processing.`]
+      : [];
+
   yield { type: "ai-status", status: "generating" };
   try {
     const ai = await aiEngine.explain({
@@ -94,6 +103,7 @@ export async function* lookup(
       dictionaryContext: entries,
       signal,
     });
+    yield { type: "ai-status", status: aiEngine.getStatus() };
 
     if (signal?.aborted) {
       yield { type: "cancelled" };
@@ -102,9 +112,17 @@ export async function* lookup(
 
     yield {
       type: "result",
-      result: mergeResult({ direction, input: normalized.text, dictionaryEntries: entries, ai }),
+      result: mergeResult({
+        direction,
+        input: normalized.text,
+        dictionaryEntries: entries,
+        ai,
+        extraWarnings: truncationWarnings,
+      }),
     };
   } catch (error) {
+    yield { type: "ai-status", status: aiEngine.getStatus() };
+
     if (isAbortError(error) || signal?.aborted) {
       yield { type: "cancelled" };
       return;
@@ -123,7 +141,7 @@ export async function* lookup(
         input: normalized.text,
         dictionaryEntries: entries,
         ai: null,
-        extraWarnings: [failure.message],
+        extraWarnings: [failure.message, ...truncationWarnings],
       }),
     };
   }

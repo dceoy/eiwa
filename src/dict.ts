@@ -1,20 +1,38 @@
-import { cachedFetch } from "./dict-cache";
+import { cachedFetch, cacheManifestResponse, matchCachedManifest } from "./dict-cache";
 import { normalizeHeadword, shardKeyFor } from "./dict-normalize";
 import type { DictionaryEntry, DictionarySource, DictLang, DictManifest } from "./dict-types";
 import { validateManifest, validateShardPayload } from "./dict-validate";
 
+const MANIFEST_URL = "/dict/manifest.json";
+
 let manifestPromise: Promise<DictManifest> | null = null;
+
+/**
+ * Network-first with cache fallback: prefer a fresh manifest whenever the
+ * network is reachable (so checksums/shard references never go stale while
+ * online), but fall back to the last successfully fetched manifest so an
+ * offline launch can still serve previously cached shards instead of failing
+ * outright.
+ */
+async function fetchManifest(): Promise<Response> {
+  try {
+    const response = await fetch(MANIFEST_URL, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Failed to load dictionary manifest: HTTP ${response.status}`);
+    }
+    await cacheManifestResponse(MANIFEST_URL, response.clone());
+    return response;
+  } catch (error) {
+    const cached = await matchCachedManifest(MANIFEST_URL);
+    if (cached) return cached;
+    throw error;
+  }
+}
 
 async function loadManifest(): Promise<DictManifest> {
   if (!manifestPromise) {
     manifestPromise = (async () => {
-      // Always fetch fresh: the manifest is small, and it's the source of
-      // truth for the checksums that make shard caching below content-
-      // addressed, so it can never itself be served stale from a cache.
-      const response = await fetch("/dict/manifest.json", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Failed to load dictionary manifest: HTTP ${response.status}`);
-      }
+      const response = await fetchManifest();
       const data = await response.json();
       const issues = validateManifest(data);
       if (issues.length > 0) {

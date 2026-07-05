@@ -18,7 +18,7 @@ vi.mock("./llm", async () => {
         dispose: vi.fn(),
       }),
     ),
-    clearModelCache: vi.fn(async () => undefined),
+    clearAllModelCaches: vi.fn(async () => undefined),
   };
 });
 

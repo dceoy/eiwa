@@ -3,6 +3,7 @@ import { lookupDictionary } from "./dict";
 import type { DictionaryEntry } from "./dict-types";
 import type { AiEngine, AiStatus } from "./llm";
 import { type LookupEvent, lookup } from "./lookup";
+import { MAX_INPUT_CHARS } from "./prompt";
 
 vi.mock("./dict", () => ({
   lookupDictionary: vi.fn(),
@@ -109,6 +110,80 @@ describe("lookup", () => {
       expect(resultEvent.result.sourceKinds).toEqual(["dictionary", "ai"]);
     }
     expect(aiEngine.explain).toHaveBeenCalledOnce();
+  });
+
+  it("emits a terminal ai-status reflecting the engine's post-generation status before the result", async () => {
+    mockedLookupDictionary.mockResolvedValue([catEntry]);
+    const aiEngine = makeAiEngine({ status: "ready" });
+    const events = await collect("cat", { aiEngine });
+
+    expect(events.at(-2)).toEqual({ type: "ai-status", status: "ready" });
+    expect(events.at(-1)?.type).toBe("result");
+  });
+
+  it("emits a terminal ai-status reflecting the engine's post-generation status before an invalid-JSON error", async () => {
+    mockedLookupDictionary.mockResolvedValue([catEntry]);
+    const aiEngine = makeAiEngine({
+      status: "ready",
+      explain: vi.fn().mockRejectedValue(new Error("generation-invalid-json")),
+    });
+    const events = await collect("cat", { aiEngine });
+
+    const errorIndex = events.findIndex((e) => e.type === "error");
+    expect(events[errorIndex - 1]).toEqual({ type: "ai-status", status: "ready" });
+    expect(events.at(-1)?.type).toBe("result");
+  });
+
+  it("emits a terminal ai-status reflecting the engine's post-generation status before a cancellation", async () => {
+    mockedLookupDictionary.mockResolvedValue([catEntry]);
+    const aiEngine = makeAiEngine({
+      status: "ready",
+      explain: vi.fn().mockRejectedValue(new DOMException("Generation cancelled", "AbortError")),
+    });
+    const events = await collect("cat", { aiEngine });
+
+    expect(events.at(-2)).toEqual({ type: "ai-status", status: "ready" });
+    expect(events.at(-1)).toEqual({ type: "cancelled" });
+  });
+
+  it("warns when input exceeds the AI character limit and an AI engine is used", async () => {
+    mockedLookupDictionary.mockResolvedValue([]);
+    const aiEngine = makeAiEngine({ status: "ready" });
+    const longInput = "a".repeat(MAX_INPUT_CHARS + 1);
+    const events = await collect(longInput, { aiEngine });
+
+    const resultEvent = events.at(-1);
+    expect(resultEvent?.type).toBe("result");
+    if (resultEvent?.type === "result") {
+      expect(
+        resultEvent.result.warnings.some((w) => w.includes("truncated to the first 500")),
+      ).toBe(true);
+    }
+  });
+
+  it("does not warn when input is exactly at the AI character limit", async () => {
+    mockedLookupDictionary.mockResolvedValue([]);
+    const aiEngine = makeAiEngine({ status: "ready" });
+    const boundaryInput = "a".repeat(MAX_INPUT_CHARS);
+    const events = await collect(boundaryInput, { aiEngine });
+
+    const resultEvent = events.at(-1);
+    expect(resultEvent?.type).toBe("result");
+    if (resultEvent?.type === "result") {
+      expect(resultEvent.result.warnings.some((w) => w.includes("truncated"))).toBe(false);
+    }
+  });
+
+  it("does not warn about truncation when no AI engine is used, even for long input", async () => {
+    mockedLookupDictionary.mockResolvedValue([]);
+    const longInput = "a".repeat(MAX_INPUT_CHARS + 1);
+    const events = await collect(longInput);
+
+    const resultEvent = events.at(-1);
+    expect(resultEvent?.type).toBe("result");
+    if (resultEvent?.type === "result") {
+      expect(resultEvent.result.warnings.some((w) => w.includes("truncated"))).toBe(false);
+    }
   });
 
   it("falls back to dictionary-only when the AI engine is still loading", async () => {

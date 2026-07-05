@@ -11,7 +11,7 @@ import { lookupError } from "./errors";
 import {
   type AiEngine,
   type AiStatus,
-  clearModelCache,
+  clearAllModelCaches,
   createLocalAiEngine,
   isWebGpuSupported,
   type ModelLoadProgress,
@@ -195,7 +195,7 @@ export function App() {
     await cancelActiveLookup();
     await clearDictionaryCache();
     resetDictionaryCaches();
-    await clearModelCache(selectedModelId).catch(() => undefined);
+    await clearAllModelCaches().catch(() => undefined);
     engineRef.current?.dispose();
     engineRef.current = null;
     // The model's cached weights were just deleted, so AI can no longer be
@@ -205,7 +205,7 @@ export function App() {
     setAiStatus("idle");
     setAiProgress(null);
     setBanner({ kind: "info", message: "Local cache cleared." });
-  }, [selectedModelId, cancelActiveLookup]);
+  }, [cancelActiveLookup]);
 
   return (
     <div class="shell">

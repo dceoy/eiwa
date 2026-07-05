@@ -40,12 +40,15 @@ test("Japanese kana reading input resolves the kanji dictionary entry", async ({
   await expect(page.getByText("cat").first()).toBeVisible();
 });
 
-test("a dictionary miss shows no dictionary card and no crash", async ({ page }) => {
+test("a dictionary miss shows a 'no results' message instead of a blank result", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByLabel(/english or japanese/i).fill("zzznotarealword");
   await page.getByRole("button", { name: /translate/i }).click();
 
   await expect(page.getByRole("heading", { name: "Dictionary" })).toHaveCount(0);
+  await expect(page.getByText(/no dictionary entry was found/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: /eiwa/i })).toBeVisible();
 });
 
