@@ -1,19 +1,24 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import type { AiEngine } from "./llm";
+import type { AiEngine, AiStatus } from "./llm";
+import { probeWebGpuAdapter } from "./llm";
+import { MODEL_OPTIONS } from "./model-config";
+
+const ensureReadyMock = vi.fn(async (onStatus?: (status: AiStatus) => void) => {
+  onStatus?.("ready");
+});
 
 vi.mock("./llm", async () => {
   const actual = await vi.importActual<typeof import("./llm")>("./llm");
   return {
     ...actual,
     isWebGpuSupported: () => true,
+    probeWebGpuAdapter: vi.fn(async () => true),
     createLocalAiEngine: vi.fn(
       (): AiEngine => ({
         getStatus: () => "ready",
-        ensureReady: vi.fn(async (onStatus) => {
-          onStatus?.("ready");
-        }),
+        ensureReady: ensureReadyMock,
         explain: vi.fn(),
         dispose: vi.fn(),
       }),
@@ -54,6 +59,8 @@ function jsonResponse(body: unknown) {
 }
 
 beforeEach(() => {
+  localStorage.clear();
+  ensureReadyMock.mockClear();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -68,6 +75,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  localStorage.clear();
 });
 
 describe("App", () => {
@@ -137,11 +145,60 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
 
     const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    await waitFor(() => expect(aiToggle).toHaveProperty("disabled", false));
     fireEvent.click(aiToggle);
     await waitFor(() => expect(aiToggle).toHaveProperty("checked", true));
 
     fireEvent.click(screen.getByRole("button", { name: /clear local cache/i }));
 
     await waitFor(() => expect(aiToggle).toHaveProperty("checked", false));
+  });
+
+  it("clears a persisted AI-enabled setting when WebGPU turns out to be unavailable, instead of leaving the toggle stuck checked and disabled", async () => {
+    vi.mocked(probeWebGpuAdapter).mockResolvedValueOnce(false);
+    localStorage.setItem(
+      "eiwa:settings:v1",
+      JSON.stringify({
+        aiEnabled: true,
+        modelId: MODEL_OPTIONS[0]?.id,
+        directionChoice: "auto",
+        modelCached: true,
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+
+    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    await waitFor(() => expect(aiToggle).toHaveProperty("checked", false));
+    expect(aiToggle).toHaveProperty("disabled", true);
+    expect(screen.queryByRole("group", { name: /model/i })).toBeNull();
+    expect(ensureReadyMock).not.toHaveBeenCalled();
+  });
+
+  it("does not auto-resume downloading the model on reload when a previous download never completed", async () => {
+    localStorage.setItem(
+      "eiwa:settings:v1",
+      JSON.stringify({
+        aiEnabled: true,
+        modelId: MODEL_OPTIONS[0]?.id,
+        directionChoice: "auto",
+        modelCached: false,
+      }),
+    );
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+
+    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    await waitFor(() => expect(aiToggle).toHaveProperty("disabled", false));
+
+    // aiEnabled without a known-cached model is not a usable "on" state, so
+    // it's normalized to unchecked on load rather than showing AI as
+    // enabled with no engine behind it — the user can re-check it directly
+    // to retry, with no need to uncheck first.
+    expect(aiToggle).toHaveProperty("checked", false);
+    expect(screen.queryByRole("group", { name: /model/i })).toBeNull();
+    expect(ensureReadyMock).not.toHaveBeenCalled();
   });
 });

@@ -11,7 +11,7 @@
   "scripts": {
     "predev": "pnpm run dict:build",
     "dev": "vite",
-    "build": "pnpm run dict:build && pnpm run dict:validate && tsc --noEmit -p tsconfig.app.json && vite build",
+    "build": "pnpm run dict:build && pnpm run dict:validate && tsc --noEmit -p tsconfig.app.json && vite build && tsx scripts/check-asset-limits.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

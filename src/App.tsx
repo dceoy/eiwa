@@ -13,24 +13,38 @@ import {
   type AiStatus,
   clearAllModelCaches,
   createLocalAiEngine,
-  isWebGpuSupported,
   type ModelLoadProgress,
+  probeWebGpuAdapter,
 } from "./llm";
 import { lookup } from "./lookup";
-import { DEFAULT_MODEL_ID, MODEL_OPTIONS } from "./model-config";
+import { MODEL_OPTIONS } from "./model-config";
 import type { EiwaResult } from "./result-schema";
+import { loadSettings, saveSettings } from "./settings";
 
 export function App() {
+  const [initialSettings] = useState(() => loadSettings());
+
   const [input, setInput] = useState("");
-  const [directionChoice, setDirectionChoice] = useState<DirectionChoice>("auto");
+  const [directionChoice, setDirectionChoice] = useState<DirectionChoice>(
+    initialSettings.directionChoice,
+  );
   const [result, setResult] = useState<EiwaResult | null>(null);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [aiEnabled, setAiEnabled] = useState(false);
+  // A persisted "enabled" is only meaningful when paired with a known-cached
+  // model: without that, no engine gets (re)created on startup (see the
+  // `modelCached` gate below), so treating it as enabled here would leave
+  // the checkbox checked and the model controls visible while AI lookups
+  // silently no-op — and would force the user to uncheck before they could
+  // re-check to actually retry.
+  const [aiEnabled, setAiEnabled] = useState(
+    initialSettings.aiEnabled && initialSettings.modelCached,
+  );
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle");
   const [aiProgress, setAiProgress] = useState<ModelLoadProgress | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL_ID);
+  const [selectedModelId, setSelectedModelId] = useState(initialSettings.modelId);
+  const [modelCached, setModelCached] = useState(initialSettings.modelCached);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -41,7 +55,9 @@ export function App() {
   const abortRef = useRef<AbortController | null>(null);
   const activeLookupRef = useRef<Promise<void> | null>(null);
   const requestIdRef = useRef(0);
-  const webGpuSupported = isWebGpuSupported();
+  // null while the async adapter probe is in flight (typically milliseconds);
+  // treated as "not yet supported" everywhere until it resolves.
+  const [webGpuSupported, setWebGpuSupported] = useState<boolean | null>(null);
 
   /** Cancels any in-flight lookup and waits for it to fully unwind, so the
    * AI engine's status has settled before the caller disposes it or starts
@@ -75,6 +91,48 @@ export function App() {
     },
     [],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void probeWebGpuAdapter().then((supported) => {
+      if (cancelled) return;
+      setWebGpuSupported(supported);
+      // A persisted "enabled" from a previous device/browser is meaningless
+      // once we know this one has no usable WebGPU adapter — clear it so the
+      // Settings checkbox and the AI-only controls it gates don't get stuck
+      // showing "on" while permanently disabled.
+      if (!supported) setAiEnabled(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    saveSettings({ aiEnabled, modelId: selectedModelId, directionChoice, modelCached });
+  }, [aiEnabled, selectedModelId, directionChoice, modelCached]);
+
+  // Re-creates the engine on startup when AI was left enabled in a previous
+  // session and that model's weights are known to already be fully cached
+  // (`modelCached`), so the user doesn't have to re-open Settings and
+  // re-toggle just because the tab reloaded. Gated on `modelCached` — not
+  // just `aiEnabled` — so a previously failed/incomplete download isn't
+  // silently retried on every reload; it only resumes once the user
+  // explicitly re-enables it. Guarded by `engineRef.current` so it never
+  // fights with a manual toggle (handleToggleAi/handleSelectModel) that
+  // already created one.
+  useEffect(() => {
+    if (webGpuSupported !== true || !aiEnabled || !modelCached || engineRef.current) return;
+    const engine = createLocalAiEngine(selectedModelId);
+    engineRef.current = engine;
+    void engine
+      .ensureReady(setAiStatus, setAiProgress)
+      .then(() => setModelCached(true))
+      .catch(() => {
+        setModelCached(false);
+        setBanner({ kind: "error", message: lookupError("model-load-failed").message });
+      });
+  }, [webGpuSupported, aiEnabled, modelCached, selectedModelId]);
 
   const handleSubmit = useCallback(async () => {
     if (input.trim() === "") return;
@@ -160,7 +218,9 @@ export function App() {
       }
       try {
         await engineRef.current.ensureReady(setAiStatus, setAiProgress);
+        setModelCached(true);
       } catch {
+        setModelCached(false);
         setBanner({ kind: "error", message: lookupError("model-load-failed").message });
       }
     },
@@ -179,13 +239,17 @@ export function App() {
       setAiStatus("idle");
       setAiProgress(null);
       setSelectedModelId(modelId);
+      setModelCached(false);
 
       if (aiEnabled) {
         const engine = createLocalAiEngine(modelId);
         engineRef.current = engine;
-        await engine.ensureReady(setAiStatus, setAiProgress).catch(() => {
-          setBanner({ kind: "error", message: lookupError("model-load-failed").message });
-        });
+        await engine
+          .ensureReady(setAiStatus, setAiProgress)
+          .then(() => setModelCached(true))
+          .catch(() => {
+            setBanner({ kind: "error", message: lookupError("model-load-failed").message });
+          });
       }
     },
     [aiEnabled, cancelActiveLookup],
@@ -202,6 +266,7 @@ export function App() {
     // silently "on" with no engine behind it; require the user to
     // re-enable it (and accept the re-download) explicitly.
     setAiEnabled(false);
+    setModelCached(false);
     setAiStatus("idle");
     setAiProgress(null);
     setBanner({ kind: "info", message: "Local cache cleared." });

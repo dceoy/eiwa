@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearAllModelCaches, createLocalAiEngine, isWebGpuSupported } from "./llm";
+import {
+  clearAllModelCaches,
+  createLocalAiEngine,
+  isWebGpuSupported,
+  probeWebGpuAdapter,
+} from "./llm";
 import { MODEL_OPTIONS } from "./model-config";
 import type { WebLlmModule } from "./webllm-cdn";
 import { loadWebLlm } from "./webllm-cdn";
@@ -19,6 +24,44 @@ class FakeWorker {
 describe("isWebGpuSupported", () => {
   it("returns false in a test environment without navigator.gpu", () => {
     expect(isWebGpuSupported()).toBe(false);
+  });
+});
+
+describe("probeWebGpuAdapter", () => {
+  afterEach(() => {
+    // @ts-expect-error -- test-only cleanup of a property we may have added to navigator
+    delete navigator.gpu;
+  });
+
+  it("resolves false when navigator.gpu does not exist", async () => {
+    expect(await probeWebGpuAdapter()).toBe(false);
+  });
+
+  it("resolves false when requestAdapter() resolves null", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: { requestAdapter: vi.fn().mockResolvedValue(null) },
+    });
+    expect(await probeWebGpuAdapter()).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it("resolves true when requestAdapter() resolves an adapter", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: { requestAdapter: vi.fn().mockResolvedValue({}) },
+    });
+    expect(await probeWebGpuAdapter()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+
+  it("resolves false when requestAdapter() throws", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      gpu: { requestAdapter: vi.fn().mockRejectedValue(new Error("boom")) },
+    });
+    expect(await probeWebGpuAdapter()).toBe(false);
+    vi.unstubAllGlobals();
   });
 });
 
