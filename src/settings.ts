@@ -5,6 +5,10 @@ export interface EiwaSettings {
   aiEnabled: boolean;
   modelId: string;
   directionChoice: DirectionChoice;
+  /** Whether the selected model's weights are known to be fully downloaded
+   * from a prior successful `ensureReady()`, so a fresh page load can safely
+   * auto-start it. Prevents retrying a failed download on every reload. */
+  modelCached: boolean;
 }
 
 /** Bump if the persisted shape ever changes incompatibly. */
@@ -14,6 +18,7 @@ const DEFAULT_SETTINGS: EiwaSettings = {
   aiEnabled: false,
   modelId: DEFAULT_MODEL_ID,
   directionChoice: "auto",
+  modelCached: false,
 };
 
 function isDirectionChoice(value: unknown): value is DirectionChoice {
@@ -44,6 +49,8 @@ export function loadSettings(): EiwaSettings {
       directionChoice: isDirectionChoice(parsed.directionChoice)
         ? parsed.directionChoice
         : DEFAULT_SETTINGS.directionChoice,
+      modelCached:
+        typeof parsed.modelCached === "boolean" ? parsed.modelCached : DEFAULT_SETTINGS.modelCached,
     };
   } catch {
     return DEFAULT_SETTINGS;

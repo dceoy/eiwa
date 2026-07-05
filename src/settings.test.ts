@@ -18,32 +18,54 @@ describe("loadSettings", () => {
       aiEnabled: false,
       modelId: MODEL_OPTIONS[0]?.id,
       directionChoice: "auto",
+      modelCached: false,
     });
   });
 
   it("round-trips whatever saveSettings wrote", () => {
     const secondModel = MODEL_OPTIONS[1]?.id;
     expect(secondModel).toBeTruthy();
-    saveSettings({ aiEnabled: true, modelId: secondModel as string, directionChoice: "ja-en" });
+    saveSettings({
+      aiEnabled: true,
+      modelId: secondModel as string,
+      directionChoice: "ja-en",
+      modelCached: true,
+    });
 
     expect(loadSettings()).toEqual({
       aiEnabled: true,
       modelId: secondModel,
       directionChoice: "ja-en",
+      modelCached: true,
     });
   });
 
   it("falls back to defaults field-by-field for malformed stored values", () => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ aiEnabled: "yes", modelId: 42, directionChoice: "sideways" }),
+      JSON.stringify({
+        aiEnabled: "yes",
+        modelId: 42,
+        directionChoice: "sideways",
+        modelCached: "yes",
+      }),
     );
 
     expect(loadSettings()).toEqual({
       aiEnabled: false,
       modelId: MODEL_OPTIONS[0]?.id,
       directionChoice: "auto",
+      modelCached: false,
     });
+  });
+
+  it("defaults modelCached to false for settings stored before that field existed", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ aiEnabled: true, modelId: MODEL_OPTIONS[0]?.id, directionChoice: "auto" }),
+    );
+
+    expect(loadSettings().modelCached).toBe(false);
   });
 
   it("falls back to the default model when the stored model ID no longer exists", () => {
@@ -61,6 +83,7 @@ describe("loadSettings", () => {
       aiEnabled: false,
       modelId: MODEL_OPTIONS[0]?.id,
       directionChoice: "auto",
+      modelCached: false,
     });
   });
 });

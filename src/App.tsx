@@ -36,6 +36,7 @@ export function App() {
   const [aiStatus, setAiStatus] = useState<AiStatus>("idle");
   const [aiProgress, setAiProgress] = useState<ModelLoadProgress | null>(null);
   const [selectedModelId, setSelectedModelId] = useState(initialSettings.modelId);
+  const [modelCached, setModelCached] = useState(initialSettings.modelCached);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -86,7 +87,13 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     void probeWebGpuAdapter().then((supported) => {
-      if (!cancelled) setWebGpuSupported(supported);
+      if (cancelled) return;
+      setWebGpuSupported(supported);
+      // A persisted "enabled" from a previous device/browser is meaningless
+      // once we know this one has no usable WebGPU adapter — clear it so the
+      // Settings checkbox and the AI-only controls it gates don't get stuck
+      // showing "on" while permanently disabled.
+      if (!supported) setAiEnabled(false);
     });
     return () => {
       cancelled = true;
@@ -94,22 +101,30 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    saveSettings({ aiEnabled, modelId: selectedModelId, directionChoice });
-  }, [aiEnabled, selectedModelId, directionChoice]);
+    saveSettings({ aiEnabled, modelId: selectedModelId, directionChoice, modelCached });
+  }, [aiEnabled, selectedModelId, directionChoice, modelCached]);
 
   // Re-creates the engine on startup when AI was left enabled in a previous
-  // session, so the user doesn't have to re-open Settings and re-toggle just
-  // because the tab reloaded — the model's weights are already cached.
-  // Guarded by `engineRef.current` so it never fights with a manual toggle
-  // (handleToggleAi/handleSelectModel) that already created one.
+  // session and that model's weights are known to already be fully cached
+  // (`modelCached`), so the user doesn't have to re-open Settings and
+  // re-toggle just because the tab reloaded. Gated on `modelCached` — not
+  // just `aiEnabled` — so a previously failed/incomplete download isn't
+  // silently retried on every reload; it only resumes once the user
+  // explicitly re-enables it. Guarded by `engineRef.current` so it never
+  // fights with a manual toggle (handleToggleAi/handleSelectModel) that
+  // already created one.
   useEffect(() => {
-    if (webGpuSupported !== true || !aiEnabled || engineRef.current) return;
+    if (webGpuSupported !== true || !aiEnabled || !modelCached || engineRef.current) return;
     const engine = createLocalAiEngine(selectedModelId);
     engineRef.current = engine;
-    void engine.ensureReady(setAiStatus, setAiProgress).catch(() => {
-      setBanner({ kind: "error", message: lookupError("model-load-failed").message });
-    });
-  }, [webGpuSupported, aiEnabled, selectedModelId]);
+    void engine
+      .ensureReady(setAiStatus, setAiProgress)
+      .then(() => setModelCached(true))
+      .catch(() => {
+        setModelCached(false);
+        setBanner({ kind: "error", message: lookupError("model-load-failed").message });
+      });
+  }, [webGpuSupported, aiEnabled, modelCached, selectedModelId]);
 
   const handleSubmit = useCallback(async () => {
     if (input.trim() === "") return;
@@ -195,7 +210,9 @@ export function App() {
       }
       try {
         await engineRef.current.ensureReady(setAiStatus, setAiProgress);
+        setModelCached(true);
       } catch {
+        setModelCached(false);
         setBanner({ kind: "error", message: lookupError("model-load-failed").message });
       }
     },
@@ -214,13 +231,17 @@ export function App() {
       setAiStatus("idle");
       setAiProgress(null);
       setSelectedModelId(modelId);
+      setModelCached(false);
 
       if (aiEnabled) {
         const engine = createLocalAiEngine(modelId);
         engineRef.current = engine;
-        await engine.ensureReady(setAiStatus, setAiProgress).catch(() => {
-          setBanner({ kind: "error", message: lookupError("model-load-failed").message });
-        });
+        await engine
+          .ensureReady(setAiStatus, setAiProgress)
+          .then(() => setModelCached(true))
+          .catch(() => {
+            setBanner({ kind: "error", message: lookupError("model-load-failed").message });
+          });
       }
     },
     [aiEnabled, cancelActiveLookup],
@@ -237,6 +258,7 @@ export function App() {
     // silently "on" with no engine behind it; require the user to
     // re-enable it (and accept the re-download) explicitly.
     setAiEnabled(false);
+    setModelCached(false);
     setAiStatus("idle");
     setAiProgress(null);
     setBanner({ kind: "info", message: "Local cache cleared." });
