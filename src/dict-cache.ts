@@ -28,3 +28,17 @@ export async function clearDictionaryCache(): Promise<void> {
   if (typeof caches === "undefined") return;
   await caches.delete(CACHE_NAME);
 }
+
+/** Stores a manifest response for offline fallback. Caller must pass a clone. */
+export async function cacheManifestResponse(url: string, response: Response): Promise<void> {
+  if (typeof caches === "undefined") return;
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(url, response);
+}
+
+/** Returns the last successfully cached manifest response, if any. */
+export async function matchCachedManifest(url: string): Promise<Response | undefined> {
+  if (typeof caches === "undefined") return undefined;
+  const cache = await caches.open(CACHE_NAME);
+  return cache.match(url);
+}

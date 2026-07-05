@@ -107,6 +107,66 @@ describe("dictionaryLicenses", () => {
   });
 });
 
+function createFakeCacheStorage(): CacheStorage {
+  const store = new Map<string, Response>();
+  const cache = {
+    match: async (url: RequestInfo | URL) => {
+      const cached = store.get(String(url));
+      return cached ? cached.clone() : undefined;
+    },
+    put: async (url: RequestInfo | URL, response: Response) => {
+      store.set(String(url), response.clone());
+    },
+  };
+  return { open: async () => cache, delete: async () => true } as unknown as CacheStorage;
+}
+
+describe("loadManifest offline fallback", () => {
+  it("serves a previously cached manifest (and shard) when the network becomes unavailable", async () => {
+    vi.stubGlobal("caches", createFakeCacheStorage());
+
+    const { lookupDictionary: firstLookup } = await import("./dict");
+    const online = await firstLookup("cat", "en");
+    expect(online[0]?.translations[0]?.text).toBe("猫");
+
+    // Simulate a fresh (offline) page load: drop in-memory state and make
+    // every network request fail.
+    vi.resetModules();
+    vi.mocked(fetch).mockImplementation(() => Promise.reject(new Error("network down")));
+
+    const { lookupDictionary: offlineLookup } = await import("./dict");
+    const offline = await offlineLookup("cat", "en");
+    expect(offline[0]?.translations[0]?.text).toBe("猫");
+  });
+
+  it("still rejects when offline and nothing was ever cached", async () => {
+    vi.stubGlobal("caches", createFakeCacheStorage());
+    vi.mocked(fetch).mockImplementation(() => Promise.reject(new Error("network down")));
+
+    const { lookupDictionary: offlineLookup } = await import("./dict");
+    await expect(offlineLookup("cat", "en")).rejects.toThrow("network down");
+  });
+
+  it("still uses the freshly fetched manifest online even when persisting it for offline fallback fails", async () => {
+    const cache = {
+      match: async () => undefined,
+      put: async (url: RequestInfo | URL) => {
+        if (String(url).endsWith("manifest.json")) {
+          throw new Error("quota exceeded");
+        }
+      },
+    };
+    vi.stubGlobal("caches", {
+      open: async () => cache,
+      delete: async () => true,
+    } as unknown as CacheStorage);
+
+    const { lookupDictionary: freshLookup } = await import("./dict");
+    const entries = await freshLookup("cat", "en");
+    expect(entries[0]?.translations[0]?.text).toBe("猫");
+  });
+});
+
 describe("resetDictionaryCaches", () => {
   it("clears in-memory manifest/shard state so a subsequent lookup refetches instead of reusing stale data", async () => {
     const { lookupDictionary: freshLookup, resetDictionaryCaches: freshReset } = await import(

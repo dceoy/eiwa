@@ -1,7 +1,7 @@
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import type { DictionaryEntry } from "./dict-types";
 import type { Direction } from "./language";
-import { DEFAULT_MODEL_ID } from "./model-config";
+import { DEFAULT_MODEL_ID, MODEL_OPTIONS } from "./model-config";
 import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import { type AiExplanationOutput, validateAiExplanationOutput } from "./result-schema";
 import { loadWebLlm } from "./webllm-cdn";
@@ -34,10 +34,15 @@ export function isWebGpuSupported(): boolean {
   return typeof navigator !== "undefined" && "gpu" in navigator;
 }
 
-/** Deletes a downloaded model's cached weights/config from browser storage. */
-export async function clearModelCache(modelId: string): Promise<void> {
+/** Deletes every downloadable model's cached weights/config from browser
+ * storage, not just the currently selected one, so switching models earlier
+ * can't leave stale weights behind after "Clear local cache". Tolerates a
+ * model that was never downloaded. */
+export async function clearAllModelCaches(): Promise<void> {
   const { deleteModelAllInfoInCache } = await loadWebLlm();
-  await deleteModelAllInfoInCache(modelId);
+  await Promise.all(
+    MODEL_OPTIONS.map((option) => deleteModelAllInfoInCache(option.id).catch(() => undefined)),
+  );
 }
 
 /** Strips ```json fences a model may add despite instructions not to. */

@@ -41,6 +41,19 @@ function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
   return joined.length > MAX_CONTEXT_CHARS ? joined.slice(0, MAX_CONTEXT_CHARS) : joined;
 }
 
+/**
+ * Truncates to at most `maxChars` UTF-16 code units without splitting a
+ * surrogate pair in two (which would otherwise leave a dangling lone
+ * surrogate at the cut point, e.g. for input containing emoji or other
+ * characters outside the Basic Multilingual Plane).
+ */
+export function truncateSafely(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text;
+  const isHighSurrogate =
+    text.charCodeAt(maxChars - 1) >= 0xd800 && text.charCodeAt(maxChars - 1) <= 0xdbff;
+  return text.slice(0, isHighSurrogate ? maxChars - 1 : maxChars);
+}
+
 export interface UserPromptParams {
   direction: Direction;
   input: string;
@@ -49,7 +62,7 @@ export interface UserPromptParams {
 
 export function buildUserPrompt({ direction, input, dictionaryContext }: UserPromptParams): string {
   const directionLabel = direction === "en-ja" ? "English to Japanese" : "Japanese to English";
-  const truncatedInput = input.slice(0, MAX_INPUT_CHARS);
+  const truncatedInput = truncateSafely(input, MAX_INPUT_CHARS);
   const contextBlock =
     dictionaryContext.length > 0
       ? `Dictionary context (for grounding only; do not just repeat it verbatim):\n${summarizeDictionaryContext(dictionaryContext)}`

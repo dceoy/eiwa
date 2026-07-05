@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createLocalAiEngine, isWebGpuSupported } from "./llm";
+import { clearAllModelCaches, createLocalAiEngine, isWebGpuSupported } from "./llm";
+import { MODEL_OPTIONS } from "./model-config";
 import type { WebLlmModule } from "./webllm-cdn";
 import { loadWebLlm } from "./webllm-cdn";
 
@@ -18,6 +19,39 @@ class FakeWorker {
 describe("isWebGpuSupported", () => {
   it("returns false in a test environment without navigator.gpu", () => {
     expect(isWebGpuSupported()).toBe(false);
+  });
+});
+
+describe("clearAllModelCaches", () => {
+  afterEach(() => {
+    mockedLoadWebLlm.mockReset();
+  });
+
+  it("deletes cached weights for every model option, not just one", async () => {
+    expect(MODEL_OPTIONS.length).toBeGreaterThan(1);
+    const deleteModelAllInfoInCache = vi.fn().mockResolvedValue(undefined);
+    mockedLoadWebLlm.mockResolvedValue({
+      deleteModelAllInfoInCache,
+    } as unknown as WebLlmModule);
+
+    await clearAllModelCaches();
+
+    for (const option of MODEL_OPTIONS) {
+      expect(deleteModelAllInfoInCache).toHaveBeenCalledWith(option.id);
+    }
+    expect(deleteModelAllInfoInCache).toHaveBeenCalledTimes(MODEL_OPTIONS.length);
+  });
+
+  it("tolerates a model that was never downloaded without failing the whole operation", async () => {
+    const deleteModelAllInfoInCache = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("not found"))
+      .mockResolvedValue(undefined);
+    mockedLoadWebLlm.mockResolvedValue({
+      deleteModelAllInfoInCache,
+    } as unknown as WebLlmModule);
+
+    await expect(clearAllModelCaches()).resolves.toBeUndefined();
   });
 });
 
