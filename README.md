@@ -1,4 +1,4 @@
-# Eiwa (英和)
+# Eiwa
 
 A mobile-first, one-page English-Japanese / Japanese-English dictionary web
 app. Eiwa looks up dictionary facts locally and, if you opt in, runs an AI
