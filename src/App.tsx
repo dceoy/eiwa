@@ -275,7 +275,7 @@ export function App() {
   return (
     <div class="shell">
       <header class="app-header">
-        <h1>Eiwa 英和</h1>
+        <h1>Eiwa</h1>
         <button
           type="button"
           class="icon-btn"
