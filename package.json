@@ -28,7 +28,7 @@
     "audit": "pnpm audit --prod"
   },
   "dependencies": {
-    "preact": "10.29.4"
+    "preact": "11.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.2",
