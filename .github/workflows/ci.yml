@@ -33,3 +33,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:e2e
+  dependabot-auto-merge:
+    if: >
+      github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    needs:
+      - check
+      - e2e
+    uses: dceoy/gha-for-devops/.github/workflows/dependabot-auto-merge.yml@main  # zizmor: ignore[unpinned-uses]
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+      checks: read
+      statuses: read
+    with:
+      unconditional: true
