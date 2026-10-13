@@ -29,7 +29,7 @@ importers:
         version: 1.61.1
       '@preact/preset-vite':
         specifier: 2.10.5
-        version: 2.10.5(@babel/core@7.29.7)(preact@11.0.0)(rollup@4.64.0)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
+        version: 2.10.5(@babel/core@7.29.7)(preact@11.0.0)(rollup@4.64.0)(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
       '@testing-library/preact':
         specifier: 3.2.4
         version: 3.2.4(preact@11.0.0)
@@ -37,8 +37,8 @@ importers:
         specifier: 14.6.1
         version: 14.6.1(@testing-library/dom@8.20.1)
       '@types/node':
-        specifier: 26.1.0
-        version: 26.1.0
+        specifier: 26.6.4
+        version: 26.6.4
       happy-dom:
         specifier: 20.10.6
         version: 20.10.6
@@ -50,13 +50,13 @@ importers:
         version: 6.0.3
       vite:
         specifier: 8.1.3
-        version: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+        version: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
       vite-plugin-pwa:
         specifier: 1.3.0
-        version: 1.3.0(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))(workbox-build@7.4.1)(workbox-window@7.4.1)
+        version: 1.3.0(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))(workbox-build@7.4.1)(workbox-window@7.4.1)
       vitest:
         specifier: 4.1.9
-        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
+        version: 4.1.9(@types/node@26.6.4)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
       wrangler:
         specifier: 4.107.0
         version: 4.107.0(@cloudflare/workers-types@5.20260703.1)
@@ -1409,11 +1409,6 @@ packages:
       rollup:
         optional: true
 
-  '@rollup/rollup-android-arm-eabi@4.64.0':
-    resolution: {integrity: sha512-FLLpX941CD/7aBvX3GqLGBM9OvY5PGXTryPJkG5r5/OuBpZpV5k45Uo3RxAvqd35tsyc3hH1bhtz921IKzoIzg==}
-    cpu: [arm]
-    os: [android]
-
   '@rollup/rollup-android-arm64@4.64.0':
     resolution: {integrity: sha512-iI32XM/jnDYJsvx5ai/za/7gWO9XoSeFFtU06/ZCaRgyilfJOjaopD3nOpk2WrTCGOyeDt4hleUiGOAnd5tHNg==}
     cpu: [arm64]
@@ -1592,8 +1587,8 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  '@types/node@26.1.0':
-    resolution: {integrity: sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw==}
+  '@types/node@26.6.4':
+    resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -2735,8 +2730,8 @@ packages:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
 
-  undici-types@8.3.0:
-    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
+  undici-types@8.9.0:
+    resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
   undici@7.28.0:
     resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
@@ -4094,19 +4089,19 @@ snapshots:
 
   '@poppinss/exception@1.2.3': {}
 
-  '@preact/preset-vite@2.10.5(@babel/core@7.29.7)(preact@11.0.0)(rollup@4.64.0)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))':
+  '@preact/preset-vite@2.10.5(@babel/core@7.29.7)(preact@11.0.0)(rollup@4.64.0)(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-react-jsx': 7.29.7(@babel/core@7.29.7)
       '@babel/plugin-transform-react-jsx-development': 7.29.7(@babel/core@7.29.7)
-      '@prefresh/vite': 2.4.12(preact@11.0.0)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
+      '@prefresh/vite': 2.4.12(preact@11.0.0)(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
       '@rollup/pluginutils': 5.4.0(rollup@4.64.0)
       babel-plugin-transform-hook-names: 1.0.2(@babel/core@7.29.7)
       debug: 4.4.3
       magic-string: 0.30.21
       picocolors: 1.1.1
-      vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
-      vite-prerender-plugin: 0.5.13(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
+      vite: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+      vite-prerender-plugin: 0.5.13(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
       zimmerframe: 1.1.4
     transitivePeerDependencies:
       - preact
@@ -4121,7 +4116,7 @@ snapshots:
 
   '@prefresh/utils@1.2.1': {}
 
-  '@prefresh/vite@2.4.12(preact@11.0.0)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))':
+  '@prefresh/vite@2.4.12(preact@11.0.0)(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))':
     dependencies:
       '@babel/core': 7.29.7
       '@prefresh/babel-plugin': 0.5.3
@@ -4129,7 +4124,7 @@ snapshots:
       '@prefresh/utils': 1.2.1
       '@rollup/pluginutils': 4.2.1
       preact: 11.0.0
-      vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+      vite: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
     transitivePeerDependencies:
       - supports-color
 
@@ -4231,9 +4226,6 @@ snapshots:
       picomatch: 4.0.5
     optionalDependencies:
       rollup: 4.64.0
-
-  '@rollup/rollup-android-arm-eabi@4.64.0':
-    optional: true
 
   '@rollup/rollup-android-arm64@4.64.0':
     optional: true
@@ -4356,9 +4348,9 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@types/node@26.1.0':
+  '@types/node@26.6.4':
     dependencies:
-      undici-types: 8.3.0
+      undici-types: 8.9.0
 
   '@types/resolve@1.20.2': {}
 
@@ -4368,7 +4360,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 26.1.0
+      '@types/node': 26.6.4
 
   '@vitest/expect@4.1.9':
     dependencies:
@@ -4379,13 +4371,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.9(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))':
+  '@vitest/mocker@4.1.9(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))':
     dependencies:
       '@vitest/spy': 4.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+      vite: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
 
   '@vitest/pretty-format@4.1.9':
     dependencies:
@@ -4517,7 +4509,7 @@ snapshots:
 
   buffer-image-size@0.6.4:
     dependencies:
-      '@types/node': 26.1.0
+      '@types/node': 26.6.4
 
   call-bind-apply-helpers@1.0.2:
     dependencies:
@@ -4954,7 +4946,7 @@ snapshots:
 
   happy-dom@20.10.6:
     dependencies:
-      '@types/node': 26.1.0
+      '@types/node': 26.6.4
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       buffer-image-size: 0.6.4
@@ -5408,7 +5400,6 @@ snapshots:
       '@types/estree': 1.0.9
     optionalDependencies:
       '@napi-rs/lzma-linux-x64-gnu': 1.5.1
-      '@rollup/rollup-android-arm-eabi': 4.64.0
       '@rollup/rollup-android-arm64': 4.64.0
       '@rollup/rollup-darwin-arm64': 4.64.0
       '@rollup/rollup-darwin-x64': 4.64.0
@@ -5716,7 +5707,7 @@ snapshots:
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
 
-  undici-types@8.3.0: {}
+  undici-types@8.9.0: {}
 
   undici@7.28.0: {}
 
@@ -5749,18 +5740,18 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  vite-plugin-pwa@1.3.0(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))(workbox-build@7.4.1)(workbox-window@7.4.1):
+  vite-plugin-pwa@1.3.0(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))(workbox-build@7.4.1)(workbox-window@7.4.1):
     dependencies:
       debug: 4.4.3
       pretty-bytes: 6.1.1
       tinyglobby: 0.2.17
-      vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+      vite: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
       workbox-build: 7.4.1
       workbox-window: 7.4.1
     transitivePeerDependencies:
       - supports-color
 
-  vite-prerender-plugin@0.5.13(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)):
+  vite-prerender-plugin@0.5.13(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)):
     dependencies:
       kolorist: 1.8.0
       magic-string: 0.30.21
@@ -5768,9 +5759,9 @@ snapshots:
       simple-code-frame: 1.3.0
       source-map: 0.7.6
       stack-trace: 1.0.0
-      vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+      vite: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
 
-  vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15):
+  vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.5
@@ -5778,16 +5769,16 @@ snapshots:
       rolldown: 1.1.4
       tinyglobby: 0.2.17
     optionalDependencies:
-      '@types/node': 26.1.0
+      '@types/node': 26.6.4
       esbuild: 0.28.1
       fsevents: 2.3.3
       terser: 5.51.2
       tsx: 4.23.15
 
-  vitest@4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)):
+  vitest@4.1.9(@types/node@26.6.4)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)):
     dependencies:
       '@vitest/expect': 4.1.9
-      '@vitest/mocker': 4.1.9(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
+      '@vitest/mocker': 4.1.9(vite@8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15))
       '@vitest/pretty-format': 4.1.9
       '@vitest/runner': 4.1.9
       '@vitest/snapshot': 4.1.9
@@ -5804,10 +5795,10 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
+      vite: 8.1.3(@types/node@26.6.4)(esbuild@0.28.1)(terser@5.51.2)(tsx@4.23.15)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 26.1.0
+      '@types/node': 26.6.4
       happy-dom: 20.10.6
     transitivePeerDependencies:
       - msw
