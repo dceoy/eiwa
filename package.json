@@ -33,7 +33,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@cloudflare/workers-types": "5.20261009.1",
-    "@mlc-ai/web-llm": "0.2.84",
+    "@mlc-ai/web-llm": "0.2.85",
     "@playwright/test": "1.64.0",
     "@preact/preset-vite": "2.10.6",
     "@testing-library/preact": "3.2.4",
