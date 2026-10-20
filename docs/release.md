@@ -88,7 +88,7 @@ changes:
 - No D1, KV, R2, Durable Objects, Queues, or Workers AI. AI inference runs
   in the browser (WebLLM), never in the Worker.
 - No paid Cloudflare product is required for `pnpm install`, `pnpm run
-check`, `pnpm run build`, `wrangler deploy --temporary`, or CI.
+  check`, `pnpm run build`, `wrangler deploy --temporary`, or CI.
 - Any single static asset must stay under Cloudflare Workers Static Assets'
   5 MiB per-file limit — this is why `@mlc-ai/web-llm` is loaded from a CDN
   at runtime instead of bundled (see
