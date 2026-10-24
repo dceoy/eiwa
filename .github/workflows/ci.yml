@@ -17,7 +17,7 @@ jobs:
       - name: Resolve Node.js runtime lock metadata
         run: |
           pnpm install --lockfile-only --no-frozen-lockfile
-          awk '/^  node@runtime:26\\.12\\.1:/ { printing=1 } printing { print } printing && /^    hasBin: true$/ { exit }' pnpm-lock.yaml
+          awk '/^  node@runtime:/ { printing=1 } printing { print } printing && /^    hasBin: true$/ { exit }' pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile --no-runtime
       - run: pnpm run check
       - run: pnpm run build
