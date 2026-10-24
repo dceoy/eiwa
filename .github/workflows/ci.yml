@@ -14,11 +14,7 @@ jobs:
         with:
           install: false
           cache: true
-      - name: Resolve Node.js runtime lock metadata
-        run: |
-          pnpm install --lockfile-only --no-frozen-lockfile
-          awk '/^  node@runtime:/ { printing=1 } printing { print } printing && /^    hasBin: true$/ { exit }' pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --no-runtime
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run check
       - run: pnpm run build
       - run: pnpm exec wrangler deploy --dry-run
@@ -32,7 +28,7 @@ jobs:
         with:
           install: false
           cache: true
-      - run: pnpm install --frozen-lockfile --no-runtime
+      - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:e2e
   dependabot-auto-merge:
