@@ -14,7 +14,7 @@ jobs:
         with:
           install: false
           cache: true
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --no-runtime
       - run: pnpm run check
       - run: pnpm run build
       - run: pnpm exec wrangler deploy --dry-run
@@ -28,7 +28,7 @@ jobs:
         with:
           install: false
           cache: true
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --no-runtime
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:e2e
   dependabot-auto-merge:
