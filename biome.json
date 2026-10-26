@@ -14,7 +14,9 @@
       "*.ts",
       "*.tsx",
       "*.json",
-      "*.jsonc"
+      "*.jsonc",
+      "!**/*.md",
+      "!**/*.mdx"
     ]
   },
   "formatter": {
