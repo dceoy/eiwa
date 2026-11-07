@@ -74,6 +74,7 @@ per the free-tier guardrails in issue #6.
    grouping. Only literal internal DTD entities are resolved; no external
    entities are fetched. `sourceVersions` records date, URL and SHA-256.
    Default `DICT_SOURCE=fixtures` instead reads the hand-authored CC0 data
+   plus two tiny licensed source excerpts (see `fixtures/dict/README.md`)
    in `fixtures/dict/{en,ja}.json`, with no network access for CI/tests/dev.
 2. Both sources use `DictionaryEntry` (`src/dict-types.ts`) and the shared
    writer in `scripts/build-dict-shards.ts`. Normalization folds case and
@@ -152,8 +153,20 @@ JMdict belongs to the Electronic Dictionary Research and Development Group
 (EDRDG); the trimmed/indexed adaptation is distributed under
 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) with
 [EDRDG attribution](https://www.edrdg.org/edrdg/licence.html) in the manifest
-and in-app Sources & licenses panel. Wiktextract/etymology ingestion remains
-a follow-up.
+and in-app Sources & licenses panel.
+
+### Phase B enrichment
+
+After frequency ranking, `scripts/build-data-depth.ts` streams pinned Kaikki
+English JSONL through gunzip/readline, projects only bounded lexical fields
+for existing EN headwords and form-of targets, and merges attested forms into
+the Phase A lemma index. NGSL ranks produce coarse English single-word tags.
+Tatoeba language-specific detailed TSVs retain IDs and contributor names;
+streamed direct links select bilingual pairs. EN token/phrase and JA
+word/compound spans map pairs to existing headwords. Enrichment rides the same
+entry shards and reading aliases, so no runtime source service or monolithic
+example file is needed. The writer/splitter/cache/validator remain shared.
+See [data-depth.md](./data-depth.md) for caps, pins, attribution and measured limits.
 
 ### Updating the content pin
 

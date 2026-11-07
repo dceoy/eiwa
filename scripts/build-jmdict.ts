@@ -19,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import { createGunzip } from "node:zlib";
 import { SaxesParser } from "saxes";
 import type { DictionaryEntry, DictionarySource } from "../src/dict-types";
+import { enrichDictionary } from "./build-data-depth";
 import { buildDictionary } from "./build-dict-shards";
 import {
   FREQUENCY_PINS,
@@ -276,10 +277,12 @@ export async function buildJmdict() {
     `JMdict ${JMDICT_VERSION}: ${sourceEntries} source entries, ${ja.length} JA variants, ${en.length} EN index entries.`,
   );
   rankEntries(en, ja, await loadFrequency("en"), await loadFrequency("ja"));
+  const depth = await enrichDictionary(en, ja);
   await buildDictionary(
     en,
     ja,
     {
+      ...depth.versions,
       JMdict_e: JMDICT_VERSION,
       "JMdict_e.url": JMDICT_URL,
       "JMdict_e.sha256": JMDICT_SHA256,
@@ -287,7 +290,7 @@ export async function buildJmdict() {
       "FrequencyWords.en.sha256": FREQUENCY_PINS.en.sha256,
       "FrequencyWords.ja.sha256": FREQUENCY_PINS.ja.sha256,
     },
-    [FREQUENCY_SOURCE],
+    [FREQUENCY_SOURCE, ...depth.licenses],
   );
 }
 

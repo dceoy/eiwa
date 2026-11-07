@@ -31,13 +31,19 @@ export function SourcesModal({ open, onClose, licenses }: SourcesModalProps) {
         <ul class="sources-list">
           {licenses.map((source) => (
             <li key={`${source.name}:${source.license}`}>
-              <strong>{source.name}</strong> — {source.license}
+              <strong>{source.name}</strong> —{" "}
+              {source.licenseUrl ? (
+                <a href={source.licenseUrl}>{source.license}</a>
+              ) : (
+                source.license
+              )}
               {source.url && (
                 <>
                   {" "}
                   (<a href={source.url}>{source.url}</a>)
                 </>
               )}
+              {source.attribution && <p>{source.attribution}</p>}
             </li>
           ))}
         </ul>

@@ -1,5 +1,22 @@
 [
   {
+    "headword": "電車",
+    "reading": "でんしゃ",
+    "pos": ["noun"],
+    "translations": [{ "text": "train", "lang": "en" }],
+    "senses": [{ "gloss": "An electric train." }],
+    "examples": [{
+      "en": { "id": 1575, "text": "Don't open before the train stops.", "author": "mrtaistoi" },
+      "ja": { "id": 4979, "text": "電車が停まるまで開けないで。", "author": "bunbuku" }
+    }],
+    "source": [{
+      "name": "Tatoeba contributors", "license": "CC BY 2.0 FR",
+      "url": "https://tatoeba.org/en/terms_of_use",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0/fr/",
+      "attribution": "Sentence excerpts from the pinned 2026-11-07 exports; text unchanged, contributors credited per sentence."
+    }]
+  },
+  {
     "headword": "猫",
     "reading": "ねこ",
     "pos": ["noun"],

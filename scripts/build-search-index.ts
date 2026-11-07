@@ -28,7 +28,7 @@ export function searchRows(entries: DictionaryEntry[], lang: DictLang) {
           Math.max(words.get(word) ?? 0, entry.headwordFrequency ?? entry.frequency ?? 0),
         );
     }
-    for (const raw of inflections(entry)) {
+    for (const raw of [...inflections(entry), ...(entry.inflectionForms ?? [])]) {
       const form = normalizeHeadword(raw, lang);
       if (!form || form === lemma) continue;
       if (!forms.has(form)) forms.set(form, new Set());

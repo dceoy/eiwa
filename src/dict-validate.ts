@@ -108,6 +108,72 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
       issues.push({ path: `${path}.${field}`, message: "expected a non-negative frequency" });
     }
   }
+  if (
+    entry.level !== undefined &&
+    (entry.lang !== "en" || !["basic", "intermediate", "advanced"].includes(entry.level))
+  ) {
+    issues.push({ path: `${path}.level`, message: "expected an English coarse NGSL band" });
+  }
+  if (
+    entry.etymology !== undefined &&
+    (!isNonEmptyString(entry.etymology) || entry.etymology.length > 600)
+  )
+    issues.push({
+      path: `${path}.etymology`,
+      message: "expected a trimmed etymology (up to 600 characters)",
+    });
+  if (
+    entry.pronunciation?.ipa !== undefined &&
+    (!isNonEmptyString(entry.pronunciation.ipa) || entry.pronunciation.ipa.length > 202)
+  )
+    issues.push({ path: `${path}.pronunciation.ipa`, message: "invalid or oversized IPA" });
+  for (const [field, cap] of [
+    ["inflectionForms", 24],
+    ["derivedWords", 8],
+    ["relatedWords", 8],
+  ] as const) {
+    const values = entry[field];
+    if (
+      values !== undefined &&
+      (!Array.isArray(values) ||
+        values.length > cap ||
+        values.some((v) => !isNonEmptyString(v) || v.length > 64))
+    )
+      issues.push({ path: `${path}.${field}`, message: "invalid or oversized lexical terms" });
+  }
+  if (entry.examples !== undefined) {
+    if (!Array.isArray(entry.examples) || entry.examples.length > 3) {
+      issues.push({ path: `${path}.examples`, message: "expected up to three sourced pairs" });
+    } else
+      for (const pair of entry.examples) {
+        for (const lang of ["en", "ja"] as const) {
+          const sentence = pair?.[lang];
+          if (
+            !sentence ||
+            !Number.isSafeInteger(sentence.id) ||
+            sentence.id <= 0 ||
+            !isNonEmptyString(sentence.text) ||
+            sentence.text.length > (lang === "en" ? 240 : 120) ||
+            !isNonEmptyString(sentence.author) ||
+            sentence.author === "\\N"
+          )
+            issues.push({
+              path: `${path}.examples`,
+              message: "missing sentence ID, bounded text or contributor attribution",
+            });
+        }
+      }
+    if (
+      !Array.isArray(entry.source) ||
+      !entry.source.some(
+        (source) =>
+          source?.name === "Tatoeba contributors" &&
+          source.license === "CC BY 2.0 FR" &&
+          source.licenseUrl === "https://creativecommons.org/licenses/by/2.0/fr/",
+      )
+    )
+      issues.push({ path: `${path}.examples`, message: "missing Tatoeba license attribution" });
+  }
   if (!Array.isArray(entry.translations) || entry.translations.length === 0) {
     issues.push({ path: `${path}.translations`, message: "expected at least one translation" });
   }

@@ -24,7 +24,10 @@ const FIXTURE_SOURCE: DictionarySource = {
   url: "https://github.com/dceoy/eiwa/tree/main/fixtures/dict",
 };
 
-type FixtureEntry = Omit<DictionaryEntry, "id" | "lang" | "source">;
+type FixtureEntry = Omit<DictionaryEntry, "id" | "lang" | "source"> & {
+  /** Tiny licensed source excerpts are allowed alongside the synthetic CC0 text. */
+  source?: DictionarySource[];
+};
 
 export interface ShardFile {
   lang: DictLang;
@@ -80,7 +83,7 @@ export async function loadFixtures(
       ...fixture,
       id: makeId(lang, fixture.headword, fixture.reading, seenIds),
       lang,
-      source: [FIXTURE_SOURCE],
+      source: [FIXTURE_SOURCE, ...(fixture.source ?? [])],
     } satisfies DictionaryEntry;
   });
 }
@@ -217,7 +220,14 @@ export async function buildDictionary(
     sourceVersions,
     shards: shardRefs,
     search: await writeSearchIndexes(OUT_DIR, en, ja),
-    licenses: [...uniqueLicenses(all), ...extraLicenses],
+    licenses: [
+      ...new Map(
+        [...uniqueLicenses(all), ...extraLicenses].map((source) => [
+          `${source.name}::${source.license}`,
+          source,
+        ]),
+      ).values(),
+    ],
   };
 
   await writeFile(path.join(OUT_DIR, "manifest.json"), JSON.stringify(manifest, null, 2), "utf8");

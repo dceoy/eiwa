@@ -123,19 +123,21 @@ deployment path.
 
 [JMdict/EDICT](https://www.edrdg.org/jmdict/j_jmdict.html) is the production
 dictionary source. `scripts/build-jmdict.ts` downloads the SHA-256-pinned
-2026-11-07 English JMdict release from EDRDG, streams its XML, and uses the
-same shard/manifest pipeline as the fixtures:
+2026-11-07 English JMdict release from EDRDG, streams its XML, and enriches it
+with pinned Tatoeba EN–JA examples, Wiktextract lexical data and NGSL levels.
+All sources use the same shard/manifest pipeline as the fixtures:
 
 ```bash
 pnpm run dict:build:jmdict       # download/verify/cache and generate real data
 pnpm run dict:validate
 pnpm run dict:spotcheck          # mountain → 山; 電車 / でんしゃ → train
+pnpm exec tsx scripts/check-depth-lookups.ts # run examples/IPA, 電車 examples, level
 DICT_SOURCE=jmdict pnpm run build  # preserve source selection through the full build
 DICT_SOURCE=jmdict pnpm dev        # optional real-data development
 ```
 
 Plain `pnpm dev`, `pnpm run build`, unit tests and CI default to the small
-CC0-1.0 fixtures (`fixtures/dict/*.json`); they never download JMdict or frequency data.
+fixtures (`fixtures/dict/*.json`); they never download production sources.
 An unqualified build regenerates fixtures even after a JMdict build, so use
 `DICT_SOURCE=jmdict` for production artifacts. No permanent deployment is
 configured.
@@ -146,7 +148,7 @@ sense only**, at most four words / 64 characters using ASCII letters, spaces,
 apostrophes or hyphens; verb infinitives drop leading `to ` for lemma lookup.
 Other glosses, explanatory glosses and arbitrary sentences are not indexed.
 Entries retain up to three applicable senses and three glosses per sense;
-examples and extended metadata are omitted. Shards automatically split to
+JMdict's own examples and extended metadata are omitted. Shards automatically split to
 at most 1 MiB and are fetched only on demand, not precached wholesale.
 
 ### Search and ranking (Phase A)
@@ -195,7 +197,24 @@ repeat builds. A clean build after upstream rotation needs that cached
 snapshot or a deliberate date/hash update (see
 [`docs/architecture.md`](./docs/architecture.md#dictionary-shard-flow)).
 Neither the archive nor generated `public/dict/` data is committed.
-Wiktextract/etymology ingestion remains a follow-up.
+
+### Data depth (Phase B)
+
+- Up to three Tatoeba EN–JA pairs per headword, with both sentence IDs,
+  contributor credits and original links; **CC BY 2.0 FR**. Headword-level
+  usage examples, not sense-aligned translations or AI output. Text is unchanged.
+- Kaikki / Wiktextract English Wiktionary data (**CC BY-SA 4.0**): up to two
+  IPA variants, 600-character etymology excerpts, eight derived and eight
+  related terms, 24 attested forms feeding the lemma index. Only existing
+  EN dictionary headwords are enriched; no synthetic definitions.
+- NGSL 1.2 (**CC BY-SA 4.0**, Browne, Culligan and Phillips) supplies coarse
+  English single-word tags: ranks 1–1000 basic, remaining ranked words
+  intermediate, outside the ranked list advanced. These are **not CEFR/SVL**.
+
+See [`docs/data-depth.md`](./docs/data-depth.md) for exact pins, licenses,
+source/tool requirements, mobile caps, streaming behavior and limitations.
+Enriched fields ride the existing on-demand headword shards, never a global
+example download. All dictionary facts stay separate from AI explanation.
 
 ### Manual lookup-quality benchmark
 

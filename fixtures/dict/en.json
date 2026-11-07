@@ -111,7 +111,34 @@
   {
     "headword": "run",
     "pos": ["verb"],
-    "pronunciation": { "ipa": "/rʌn/" },
+    "level": "basic",
+    "pronunciation": { "ipa": "/ɹʌn/" },
+    "etymology": "From Middle English runnen, rennen (“to run”), alteration…",
+    "inflectionForms": ["runs", "running", "ran"],
+    "examples": [{
+      "en": { "id": 1519, "text": "Someday I'll run like the wind.", "author": "CK" },
+      "ja": { "id": 4930, "text": "またいつか風のように走るんだ。", "author": "bunbuku" }
+    }],
+    "source": [
+      {
+        "name": "Tatoeba contributors", "license": "CC BY 2.0 FR",
+        "url": "https://tatoeba.org/en/terms_of_use",
+        "licenseUrl": "https://creativecommons.org/licenses/by/2.0/fr/",
+        "attribution": "Sentence excerpts from the pinned 2026-11-07 exports; text unchanged, contributors credited per sentence."
+      },
+      {
+        "name": "English Wiktionary contributors via Kaikki / Wiktextract (Tatu Ylonen)",
+        "license": "CC BY-SA 4.0", "url": "https://en.wiktionary.org/wiki/run#English",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Lexical fixture excerpt from the pinned 2026-10-30 extraction; etymology trimmed."
+      },
+      {
+        "name": "New General Service List 1.2 — Browne, C., Culligan, B., and Phillips, J.",
+        "license": "CC BY-SA 4.0", "url": "https://www.newgeneralservicelist.com/new-general-service-list",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "attribution": "Eiwa coarse band derived from NGSL 1.2: rank 1–1000 basic (not CEFR/SVL)."
+      }
+    ],
     "translations": [{ "text": "走る", "lang": "ja", "priority": 1 }],
     "senses": [
       { "gloss": "To move at a speed faster than a walk.", "translation": "走る", "examples": ["She runs every morning."] }
