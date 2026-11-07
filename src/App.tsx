@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { type DirectionChoice, InputBar } from "./components/InputBar";
+import { LearningSheet } from "./components/LearningSheet";
 import { ResultView } from "./components/ResultView";
 import { SettingsSheet } from "./components/SettingsSheet";
 import { SourcesModal } from "./components/SourcesModal";
@@ -11,9 +12,24 @@ import {
   suggestSpellings,
 } from "./dict";
 import { clearDictionaryCache } from "./dict-cache";
-import type { DictionarySource } from "./dict-types";
+import type { DictionarySource, DictLang } from "./dict-types";
 import { lookupError } from "./errors";
-import { sourceLangFor } from "./language";
+import { type Direction, sourceLangFor } from "./language";
+import {
+  addHistory,
+  HISTORY_ENABLED_KEY,
+  HISTORY_KEY,
+  type HistoryItem,
+  historyEnabled,
+  loadHistory,
+  loadWordbook,
+  mergeWordbook,
+  reopen,
+  type SavedWord,
+  saveWordbook,
+  snapshot,
+  wordId,
+} from "./learning";
 import {
   type AiEngine,
   type AiStatus,
@@ -29,6 +45,19 @@ import { loadSettings, saveSettings } from "./settings";
 
 export function App() {
   const [initialSettings] = useState(() => loadSettings());
+  const [learningOpen, setLearningOpen] = useState(false);
+  const [wordbookLoad] = useState(() => {
+    try {
+      return { words: loadWordbook(), failed: false };
+    } catch {
+      return { words: [] as SavedWord[], failed: true };
+    }
+  });
+  const [words, setWords] = useState(wordbookLoad.words);
+  const [historyOn, setHistoryOn] = useState(historyEnabled);
+  const historyOnRef = useRef(historyOn);
+  const [history, setHistory] = useState(loadHistory);
+  const [savedView, setSavedView] = useState(false);
 
   const [input, setInput] = useState("");
   const [directionChoice, setDirectionChoice] = useState<DirectionChoice>(
@@ -155,7 +184,7 @@ export function App() {
   }, [webGpuSupported, aiEnabled, modelCached, selectedModelId]);
 
   const handleSubmit = useCallback(
-    async (candidate?: string) => {
+    async (candidate?: string, direction?: Direction) => {
       const query = candidate ?? input;
       if (query.trim() === "") return;
       if (candidate) setInput(candidate);
@@ -172,6 +201,7 @@ export function App() {
 
       const run = (async () => {
         setBusy(true);
+        setSavedView(false);
         setBanner(null);
         setResult(null);
 
@@ -179,7 +209,7 @@ export function App() {
           for await (const event of lookup(query, {
             signal: controller.signal,
             aiEngine: aiEnabled ? engineRef.current : null,
-            direction: directionChoice === "auto" ? undefined : directionChoice,
+            direction: direction ?? (directionChoice === "auto" ? undefined : directionChoice),
           })) {
             if (!isCurrent()) return;
             switch (event.type) {
@@ -191,6 +221,23 @@ export function App() {
                 break;
               case "result":
                 setResult(event.result);
+                if (historyOnRef.current) {
+                  setHistory((current) => {
+                    const next = addHistory(current, {
+                      input: event.result.input,
+                      direction: event.result.direction,
+                    });
+                    try {
+                      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+                    } catch {
+                      setBanner({
+                        kind: "error",
+                        message: "History could not be saved on this device.",
+                      });
+                    }
+                    return next;
+                  });
+                }
                 // Avoid showing the same failure text in both the banner and
                 // the result's own Warnings card.
                 setBanner((current) =>
@@ -214,6 +261,39 @@ export function App() {
     },
     [input, aiEnabled, directionChoice, cancelActiveLookup],
   );
+
+  const handleRelookup = useCallback(
+    (word: string, lang: DictLang) => {
+      void handleSubmit(word, lang === "en" ? "en-ja" : "ja-en");
+    },
+    [handleSubmit],
+  );
+
+  const updateWords = (next: SavedWord[]): boolean => {
+    try {
+      if (wordbookLoad.failed)
+        throw new Error("Existing wordbook could not be read; refusing to overwrite it.");
+      saveWordbook(next);
+      setWords(next);
+      return true;
+    } catch {
+      setBanner({
+        kind: "error",
+        message:
+          "Wordbook could not be saved. Storage may be unavailable, full or contain invalid data. Existing data was not overwritten.",
+      });
+      return false;
+    }
+  };
+  const updateHistory = (items: HistoryItem[]) => {
+    try {
+      if (items.length) localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+      else localStorage.removeItem(HISTORY_KEY);
+      setHistory(items);
+    } catch {
+      setBanner({ kind: "error", message: "History could not be changed on this device." });
+    }
+  };
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
@@ -301,6 +381,9 @@ export function App() {
     <div class="shell">
       <header class="app-header">
         <h1>Eiwa</h1>
+        <button type="button" class="btn btn-ghost" onClick={() => setLearningOpen(true)}>
+          Wordbook &amp; history
+        </button>
         <button
           type="button"
           class="icon-btn"
@@ -342,8 +425,83 @@ export function App() {
             ))}
           </section>
         )}
-        {result && <ResultView result={result} />}
+        {wordbookLoad.failed && (
+          <p role="alert">
+            Saved wordbook could not be read. It has not been overwritten. Check browser storage or
+            restore from a backup.
+          </p>
+        )}
+        {result && (
+          <>
+            <div class="wordbook-save">
+              {savedView && <p>Saved dictionary snapshot — content from save time.</p>}
+              <button
+                type="button"
+                class="btn btn-secondary"
+                disabled={!result.dictionary.length || words.some((w) => w.id === wordId(result))}
+                onClick={() => {
+                  try {
+                    if (updateWords(mergeWordbook(words, [snapshot(result)])))
+                      setBanner({
+                        kind: "info",
+                        message: "Saved dictionary snapshot to wordbook.",
+                      });
+                  } catch {
+                    setBanner({
+                      kind: "error",
+                      message:
+                        "Wordbook is full (200 entries). Export or delete some entries first.",
+                    });
+                  }
+                }}
+              >
+                {words.some((w) => w.id === wordId(result))
+                  ? "Saved in wordbook"
+                  : "Save to wordbook"}
+              </button>
+            </div>
+            <ResultView result={result} onLookup={handleRelookup} />
+          </>
+        )}
       </main>
+
+      {learningOpen && (
+        <LearningSheet
+          words={words}
+          onWords={updateWords}
+          history={history}
+          historyOn={historyOn}
+          onHistory={updateHistory}
+          onHistoryToggle={(enabled) => {
+            try {
+              // Erase before disabling; never leave hidden retained queries.
+              if (!enabled) localStorage.removeItem(HISTORY_KEY);
+              localStorage.setItem(HISTORY_ENABLED_KEY, String(enabled));
+              historyOnRef.current = enabled;
+              setHistoryOn(enabled);
+              if (!enabled) setHistory([]);
+            } catch {
+              setBanner({ kind: "error", message: "History preference could not be saved." });
+            }
+          }}
+          onReopen={(word) => {
+            // Invalidate active requests synchronously before showing a snapshot.
+            abortRef.current?.abort();
+            requestIdRef.current++;
+            setBusy(false);
+            setInput(word.input);
+            setResult(reopen(word));
+            setSavedView(true);
+            setBanner(null);
+            setLearningOpen(false);
+          }}
+          onLookup={(item) => {
+            setLearningOpen(false);
+            void handleSubmit(item.input, item.direction);
+          }}
+          onClose={() => setLearningOpen(false)}
+        />
+      )}
 
       <SettingsSheet
         open={settingsOpen}

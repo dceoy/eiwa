@@ -1,4 +1,4 @@
-import type { DictionaryEntry } from "./dict-types";
+import type { DictionaryEntry, DictionaryPronunciation } from "./dict-types";
 import type { Direction } from "./language";
 
 export type SourceKind = "dictionary" | "ai";
@@ -13,11 +13,7 @@ export interface CorrectionResult {
   explanation: string | null;
 }
 
-export interface PronunciationInfo {
-  ipa?: string;
-  kana?: string;
-  audioText?: string;
-}
+export type PronunciationInfo = DictionaryPronunciation;
 
 export interface EiwaResult {
   direction: Direction;

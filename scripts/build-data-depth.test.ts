@@ -77,6 +77,51 @@ describe("streamed Wiktextract projection", () => {
     const lemma = { ...entry("run"), inflectionForms: data.get("run")?.forms };
     expect(searchRows([lemma], "en").inflections).toContainEqual(["ran", ["run"]]);
   });
+  it("retains one Commons recording, prefers MP3 across rows, and rejects other origins", async () => {
+    const ogg = "https://upload.wikimedia.org/wikipedia/commons/a/a9/En-us-run.ogg";
+    const mp3 =
+      "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/a9/En-us-run.ogg/En-us-run.ogg.mp3";
+    const { data } = await parseWiktextract(
+      lines(
+        JSON.stringify({
+          word: "run",
+          lang_code: "en",
+          sounds: [{ audio: "en-us-run.ogg", ogg_url: ogg }],
+        }),
+        JSON.stringify({
+          word: "run",
+          lang_code: "en",
+          sounds: [{ audio: "en-us-run.ogg", mp3_url: mp3 }],
+        }),
+        JSON.stringify({
+          word: "cat",
+          lang_code: "en",
+          sounds: [{ audio: "bad.ogg", mp3_url: "https://evil.example/cat.mp3" }],
+        }),
+        JSON.stringify({
+          word: "ran",
+          lang_code: "en",
+          sounds: [{ audio: "ran.ogg", mp3_url: mp3 }],
+          senses: [{ form_of: [{ word: "run" }] }],
+        }),
+      ),
+      new Set(["run", "cat"]),
+    );
+    expect(data.get("run")?.recording).toEqual({
+      url: mp3,
+      file: "en-us-run.ogg",
+      source: "Wikimedia Commons",
+    });
+    expect(data.get("cat")?.recording).toBeUndefined();
+    const valid = { ...entry("run"), pronunciation: { recording: data.get("run")?.recording } };
+    expect(validateDictionaryEntry(valid, "test")).toEqual([]);
+    expect(
+      validateDictionaryEntry(
+        { ...valid, pronunciation: { recording: { url: "https://evil.example/a.mp3" } } },
+        "test",
+      ),
+    ).not.toEqual([]);
+  });
   it("rejects corrupt JSONL and empty input rather than silently omitting a source", async () => {
     await expect(parseWiktextract(lines("not json"), new Set())).rejects.toThrow();
     await expect(parseWiktextract(lines(), new Set())).rejects.toThrow("Empty");

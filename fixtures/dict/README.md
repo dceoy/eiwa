@@ -15,6 +15,12 @@ Phase B UI without any CI downloads:
   Wiktionary via Kaikki/Wiktextract's pinned 2026-10-30 extraction,
   **CC BY-SA 4.0**. Original article/contributors:
   <https://en.wiktionary.org/wiki/run#English>.
+- **run** recording URL/file name comes from the same pinned extraction:
+  <https://commons.wikimedia.org/wiki/File:En-us-run.ogg>. Only the link is
+  included, not audio bytes. The file page provides the recording's contributor
+  credits and file-specific license. Fixture tests intercept playback; CI does
+  not fetch Commons. Runtime playback is an explicit hotlink, documented in
+  [`docs/privacy.md`](../../docs/privacy.md).
 - **run**'s basic tag is derived from NGSL 1.2's first 1,000 ranked words,
   **CC BY-SA 4.0**, by Browne, C., Culligan, B., and Phillips, J. This is an
   Eiwa coarse band, not CEFR/SVL.

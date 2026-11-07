@@ -1,3 +1,5 @@
+import type { CommonsRecording } from "./recording";
+
 export type DictLang = "en" | "ja";
 
 export interface DictionarySource {
@@ -22,6 +24,7 @@ export interface DictionarySense {
 }
 
 export interface DictionaryPronunciation {
+  recording?: CommonsRecording;
   ipa?: string;
   kana?: string;
   audioText?: string;

@@ -407,6 +407,48 @@ a {
   overflow-wrap: anywhere;
 }
 
+.relookup {
+  display: inline;
+  min-height: 44px;
+  padding: 0 3px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.relookup:hover,
+.relookup:focus-visible {
+  background: #dbeafe;
+  color: #172554;
+}
+.import-label {
+  display: block;
+  margin-top: 1rem;
+}
+.saved-words {
+  padding-left: 1.5rem;
+}
+.saved-words li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #94a3b8;
+}
+.word-actions,
+.wordbook-save,
+.recording-player {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.recording-player audio {
+  width: 100%;
+  max-width: 300px;
+}
+
 /* Settings / sources sheet */
 
 .sheet-overlay {

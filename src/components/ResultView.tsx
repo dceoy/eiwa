@@ -1,9 +1,13 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { copyToClipboard } from "../clipboard";
+import { resolveHeadwords } from "../dict";
+import type { DictLang } from "../dict-types";
 import { sourceLangFor, targetLangFor } from "../language";
 import { PROVENANCE_LABELS, provenanceFor } from "../provenance";
+import { isLookupToken, lookupTokens, tokenKey } from "../relookup";
 import type { EiwaResult } from "../result-schema";
 import { isSpeechSynthesisSupported, speak } from "../speech";
+import { RecordingPlayer } from "./RecordingPlayer";
 
 function ProvenanceTag({ hasDictionary, hasAi }: { hasDictionary: boolean; hasAi: boolean }) {
   const label = provenanceFor(hasDictionary, hasAi);
@@ -45,7 +49,71 @@ function SpeakButton({ text, lang }: { text: string; lang: "en" | "ja" }) {
   );
 }
 
-export function ResultView({ result }: { result: EiwaResult }) {
+export function ResultView({
+  result,
+  onLookup,
+}: {
+  result: EiwaResult;
+  onLookup?: (word: string, lang: DictLang) => void;
+}) {
+  const [resolved, setResolved] = useState<{ en: Set<string>; ja: Set<string> }>({
+    en: new Set(),
+    ja: new Set(),
+  });
+  useEffect(() => {
+    let cancelled = false;
+    setResolved({ en: new Set(), ja: new Set() });
+    if (!onLookup) return;
+    const terms = { en: new Set<string>(), ja: new Set<string>() };
+    const add = (text: string, lang: DictLang) => {
+      terms[lang].add(tokenKey(text, lang));
+      for (const token of lookupTokens(text, lang))
+        if (isLookupToken(token, lang)) terms[lang].add(tokenKey(token, lang));
+    };
+    for (const entry of result.dictionary) {
+      add(entry.headword, entry.lang);
+      for (const t of entry.translations) add(t.text, t.lang);
+      for (const s of entry.senses) {
+        add(s.gloss, "en");
+        for (const example of s.examples ?? []) add(example, entry.lang);
+      }
+      for (const pair of entry.examples ?? [])
+        for (const lang of ["en", "ja"] as const) add(pair[lang].text, lang);
+    }
+    void Promise.all([
+      resolveHeadwords([...terms.en], "en").catch(() => new Set<string>()),
+      resolveHeadwords([...terms.ja], "ja").catch(() => new Set<string>()),
+    ]).then(([en, ja]) => {
+      if (!cancelled) setResolved({ en, ja });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [result, onLookup]);
+  const text = (value: string, lang: DictLang, known = false) => {
+    if (!onLookup) return value;
+    const button = (word: string, key: number) => (
+      <button
+        key={key}
+        type="button"
+        class="relookup"
+        title={`Look up ${word}`}
+        aria-label={`Look up ${word}`}
+        onClick={() => onLookup(word, lang)}
+      >
+        {word}
+      </button>
+    );
+    if (known || resolved[lang].has(tokenKey(value, lang))) return button(value, 0);
+    let count = 0;
+    return lookupTokens(value, lang).map((token, i) => {
+      if (count < 4 && isLookupToken(token, lang) && resolved[lang].has(tokenKey(token, lang))) {
+        count++;
+        return button(token, i);
+      }
+      return token;
+    });
+  };
   const hasDict = result.dictionary.length > 0;
   const hasAi = result.sourceKinds.includes("ai");
   const targetLang = targetLangFor(result.direction);
@@ -75,7 +143,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
             </p>
           )}
           <p class="translation-primary">
-            <span lang={targetLang}>{result.translation.primary}</span>
+            <span lang={targetLang}>{text(result.translation.primary, targetLang)}</span>
             <CopyButton text={result.translation.primary} />
             <SpeakButton text={result.translation.primary} lang={targetLang} />
           </p>
@@ -112,11 +180,17 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <h2 id="dictionary-heading">Dictionary</h2>
             <ProvenanceTag hasDictionary hasAi={false} />
           </header>
+          {onLookup && (
+            <p class="settings-note">
+              Underlined terms: tap to look up. Only dictionary-resolved terms are marked (up to
+              four per text).
+            </p>
+          )}
           <ul class="dictionary-entries">
             {result.dictionary.map((entry) => (
               <li key={entry.id} class="dictionary-entry">
                 <div class="dictionary-entry-head">
-                  <strong lang={entry.lang}>{entry.headword}</strong>
+                  <strong lang={entry.lang}>{text(entry.headword, entry.lang, true)}</strong>
                   {entry.level && (
                     <span class="pos-tags" title="Eiwa coarse NGSL band (not CEFR/SVL)">
                       {entry.level} · NGSL
@@ -139,14 +213,14 @@ export function ResultView({ result }: { result: EiwaResult }) {
                 <p class="translations">
                   {entry.translations.map((t) => (
                     <span key={t.text} lang={t.lang}>
-                      {t.text}
+                      {text(t.text, t.lang)}
                     </span>
                   ))}
                 </p>
                 <ol class="senses">
                   {entry.senses.map((sense) => (
                     <li key={sense.gloss} lang="en">
-                      {sense.gloss}
+                      {text(sense.gloss, "en")}
                       {sense.tags && sense.tags.length > 0 ? ` (${sense.tags.join(", ")})` : ""}
                     </li>
                   ))}
@@ -175,8 +249,8 @@ export function ResultView({ result }: { result: EiwaResult }) {
                     <ul>
                       {entry.examples.slice(0, 3).map((pair) => (
                         <li key={`${pair.en.id}:${pair.ja.id}`}>
-                          <p lang="en">{pair.en.text}</p>
-                          <p lang="ja">{pair.ja.text}</p>
+                          <p lang="en">{text(pair.en.text, "en")}</p>
+                          <p lang="ja">{text(pair.ja.text, "ja")}</p>
                           <small>
                             Tatoeba — CC BY 2.0 FR.{" "}
                             {(["en", "ja"] as const).map((lang) => (
@@ -256,7 +330,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
         </section>
       )}
 
-      {result.pronunciation !== null && (result.pronunciation.ipa || result.pronunciation.kana) && (
+      {result.pronunciation !== null && (
         <section class="card" aria-labelledby="pronunciation-heading">
           <header class="card-header">
             <h2 id="pronunciation-heading">Pronunciation</h2>
@@ -271,6 +345,12 @@ export function ResultView({ result }: { result: EiwaResult }) {
             )}
             <SpeakButton text={result.pronunciation.audioText ?? result.input} lang={sourceLang} />
           </p>
+          {result.pronunciation.recording && (
+            <RecordingPlayer
+              key={result.pronunciation.recording.url}
+              recording={result.pronunciation.recording}
+            />
+          )}
         </section>
       )}
 
@@ -292,7 +372,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
           </header>
           <ul lang={sourceLang}>
             {examples.map((example) => (
-              <li key={example}>{example}</li>
+              <li key={example}>{text(example, sourceLang)}</li>
             ))}
           </ul>
         </section>
