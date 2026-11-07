@@ -110,6 +110,13 @@ export function ResultView({ result }: { result: EiwaResult }) {
               <li key={entry.id} class="dictionary-entry">
                 <div class="dictionary-entry-head">
                   <strong lang={entry.lang}>{entry.headword}</strong>
+                  {entry.match && (
+                    <span class="pos-tags">
+                      {entry.match.kind === "inflection"
+                        ? `Inflected form: ${entry.match.query} → ${entry.headword}`
+                        : `${entry.match.kind === "prefix" ? "Prefix" : "Partial"} match`}
+                    </span>
+                  )}
                   {entry.reading && (
                     <span class="reading" lang={entry.lang}>
                       （{entry.reading}）

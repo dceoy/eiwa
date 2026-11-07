@@ -1,5 +1,29 @@
 [
   {
+    "headword": "mountain",
+    "pos": ["noun"],
+    "translations": [{ "text": "山", "lang": "ja" }],
+    "senses": [{ "gloss": "A large natural elevation of the earth's surface." }]
+  },
+  {
+    "headword": "take",
+    "pos": ["verb"],
+    "translations": [{ "text": "取る", "lang": "ja" }],
+    "senses": [{ "gloss": "To get into one's hands or possession." }]
+  },
+  {
+    "headword": "good",
+    "pos": ["adjective"],
+    "translations": [{ "text": "良い", "lang": "ja" }],
+    "senses": [{ "gloss": "Of a favorable or satisfactory quality." }]
+  },
+  {
+    "headword": "child",
+    "pos": ["noun"],
+    "translations": [{ "text": "子供", "lang": "ja" }],
+    "senses": [{ "gloss": "A young person." }]
+  },
+  {
     "headword": "cat",
     "pos": ["noun"],
     "pronunciation": { "ipa": "/kæt/" },

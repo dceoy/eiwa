@@ -25,6 +25,48 @@ const irregular: Record<string, string[]> = {
   find: ["finds", "found", "finding"],
   leave: ["leaves", "left", "leaving"],
   know: ["knows", "knew", "known", "knowing"],
+  read: ["reads", "reading"],
+  understand: ["understands", "understood", "understanding"],
+  sit: ["sits", "sat", "sitting"],
+  stand: ["stands", "stood", "standing"],
+  sleep: ["sleeps", "slept", "sleeping"],
+  feel: ["feels", "felt", "feeling"],
+  keep: ["keeps", "kept", "keeping"],
+  hold: ["holds", "held", "holding"],
+  meet: ["meets", "met", "meeting"],
+  pay: ["pays", "paid", "paying"],
+  put: ["puts", "putting"],
+  cut: ["cuts", "cutting"],
+  let: ["lets", "letting"],
+  win: ["wins", "won", "winning"],
+  lose: ["loses", "lost", "losing"],
+  begin: ["begins", "began", "begun", "beginning"],
+  break: ["breaks", "broke", "broken", "breaking"],
+  choose: ["chooses", "chose", "chosen", "choosing"],
+  drive: ["drives", "drove", "driven", "driving"],
+  fall: ["falls", "fell", "fallen", "falling"],
+  fly: ["flies", "flew", "flown", "flying"],
+  forget: ["forgets", "forgot", "forgotten", "forgetting"],
+  grow: ["grows", "grew", "grown", "growing"],
+  hear: ["hears", "heard", "hearing"],
+  lead: ["leads", "led", "leading"],
+  sell: ["sells", "sold", "selling"],
+  send: ["sends", "sent", "sending"],
+  teach: ["teaches", "taught", "teaching"],
+  tell: ["tells", "told", "telling"],
+  wear: ["wears", "wore", "worn", "wearing"],
+  swim: ["swims", "swam", "swum", "swimming"],
+  show: ["shows", "showed", "shown", "showing"],
+  sing: ["sings", "sang", "sung", "singing"],
+  fish: ["fish"],
+  sheep: ["sheep"],
+  deer: ["deer"],
+  species: ["species"],
+  life: ["lives"],
+  wife: ["wives"],
+  knife: ["knives"],
+  leaf: ["leaves"],
+  wolf: ["wolves"],
   child: ["children"],
   person: ["people"],
   man: ["men"],
@@ -45,19 +87,20 @@ function plural(word: string): string {
       : `${word}s`;
 }
 export function englishForms(word: string, pos: string[]): string[] {
+  word = word.toLowerCase();
   const [first = "", ...rest] = word.split(" ");
   const tags = pos.join(" ").toLowerCase();
   const verb = /verb/.test(tags) && !/adverb/.test(tags);
   const noun = /noun/.test(tags);
   const adjective = /adjective|adj-i|adj-na/.test(tags);
   if (!/^[a-z]+$/.test(first) || !(verb || noun || adjective)) return [];
-  let forms = irregular[first];
+  let forms = Object.hasOwn(irregular, first) ? irregular[first] : undefined;
   if (!forms) {
     forms = [];
     if (noun && !rest.length) forms.push(plural(first));
     // Double only unambiguous one-syllable CVC stems; do not invent e.g.
     // "visitted". Wider irregular/lexical coverage belongs in sourced data.
-    const cvc = /^[^aeiou]?[aeiou][bdgmnprt]$/.test(first);
+    const cvc = /^[^aeiou]+[aeiou][bdgmnprt]$/.test(first);
     const doubled = cvc ? first + first.slice(-1) : first;
     if (verb)
       forms.push(
@@ -89,15 +132,15 @@ export function japaneseForms(word: string, pos: string[]): string[] {
   const forms: string[] = [];
   const addVerb = (stem: string, i: string, a: string, te: string, ta: string) => {
     forms.push(
-      stem + i + "ます",
-      stem + i + "ました",
-      stem + i + "ません",
-      stem + a + "ない",
-      stem + a + "なかった",
+      `${stem + i}ます`,
+      `${stem + i}ました`,
+      `${stem + i}ません`,
+      `${stem + a}ない`,
+      `${stem + a}なかった`,
       stem + te,
       stem + ta,
-      stem + te + "いる",
-      stem + te + "いた",
+      `${stem + te}いる`,
+      `${stem + te}いた`,
     );
   };
   if (/Ichidan verb/.test(tags) && word.endsWith("る")) {
@@ -137,16 +180,22 @@ export function japaneseForms(word: string, pos: string[]): string[] {
       );
   }
   if (/adjective \(keiyoushi\)/.test(tags) && word.endsWith("い")) {
-    const stem = word.slice(0, -1);
-    forms.push(stem + "かった", stem + "くない", stem + "くなかった", stem + "くて");
+    const stem =
+      /yoi\/ii class/.test(tags) && word.endsWith("いい")
+        ? `${word.slice(0, -2)}よ`
+        : word.slice(0, -1);
+    forms.push(`${stem}かった`, `${stem}くない`, `${stem}くなかった`, `${stem}くて`);
   }
   if (/adjectival nouns|na-adjective/.test(tags))
-    forms.push(word + "だった", word + "ではない", word + "じゃない", word + "でした");
+    forms.push(`${word}だった`, `${word}ではない`, `${word}じゃない`, `${word}でした`);
   return forms;
 }
 
 export function inflections(entry: DictionaryEntry): string[] {
   return entry.lang === "en"
     ? englishForms(entry.headword, entry.pos)
-    : japaneseForms(entry.headword, entry.pos);
+    : [
+        ...japaneseForms(entry.headword, entry.pos),
+        ...(entry.reading ? japaneseForms(entry.reading, entry.pos) : []),
+      ];
 }

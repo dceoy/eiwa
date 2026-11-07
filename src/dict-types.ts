@@ -30,6 +30,11 @@ export interface DictionaryEntry {
   headword: string;
   lang: DictLang;
   reading?: string;
+  /** Build-time published frequency score (higher is more common). */
+  frequency?: number;
+  headwordFrequency?: number;
+  /** Runtime search metadata; never dictionary or AI-generated facts. */
+  match?: { kind: "inflection" | "prefix" | "partial"; query: string };
   pronunciation?: DictionaryPronunciation;
   pos: string[];
   translations: DictionaryTranslation[];
@@ -47,10 +52,24 @@ export interface DictShardRef {
   checksum: string;
 }
 
+export type HeadwordRow = [word: string, frequency: number];
+export type InflectionRow = [form: string, lemmas: string[]];
+export interface SearchIndexRef {
+  lang: DictLang;
+  kind: "headwords" | "inflections";
+  path: string;
+  start: string;
+  end: string;
+  entryCount: number;
+  bytes: number;
+  checksum: string;
+}
+
 export interface DictManifest {
   schemaVersion: 1;
   builtAt: string;
   sourceVersions: Record<string, string>;
   shards: DictShardRef[];
+  search?: SearchIndexRef[];
   licenses: DictionarySource[];
 }

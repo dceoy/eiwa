@@ -4,10 +4,16 @@ import { ResultView } from "./components/ResultView";
 import { SettingsSheet } from "./components/SettingsSheet";
 import { SourcesModal } from "./components/SourcesModal";
 import { type BannerState, StatusBanner } from "./components/StatusBanner";
-import { dictionaryLicenses, dictionaryManifestInfo, resetDictionaryCaches } from "./dict";
+import {
+  dictionaryLicenses,
+  dictionaryManifestInfo,
+  resetDictionaryCaches,
+  suggestSpellings,
+} from "./dict";
 import { clearDictionaryCache } from "./dict-cache";
 import type { DictionarySource } from "./dict-types";
 import { lookupError } from "./errors";
+import { sourceLangFor } from "./language";
 import {
   type AiEngine,
   type AiStatus,
@@ -31,6 +37,20 @@ export function App() {
   const [result, setResult] = useState<EiwaResult | null>(null);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [spelling, setSpelling] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    setSpelling([]);
+    if (!result || result.dictionary.length) return;
+    void suggestSpellings(result.input, sourceLangFor(result.direction))
+      .then((words) => {
+        if (!cancelled) setSpelling(words);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [result]);
 
   // A persisted "enabled" is only meaningful when paired with a known-cached
   // model: without that, no engine gets (re)created on startup (see the
@@ -134,61 +154,66 @@ export function App() {
       });
   }, [webGpuSupported, aiEnabled, modelCached, selectedModelId]);
 
-  const handleSubmit = useCallback(async () => {
-    if (input.trim() === "") return;
+  const handleSubmit = useCallback(
+    async (candidate?: string) => {
+      const query = candidate ?? input;
+      if (query.trim() === "") return;
+      if (candidate) setInput(candidate);
 
-    // Cancel and fully await any previous lookup first, so a stale AI
-    // generation can't leave the engine's status as "generating" (or the
-    // shared `busy` flag reset to false) by the time this lookup checks it.
-    await cancelActiveLookup();
+      // Cancel and fully await any previous lookup first, so a stale AI
+      // generation can't leave the engine's status as "generating" (or the
+      // shared `busy` flag reset to false) by the time this lookup checks it.
+      await cancelActiveLookup();
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const requestId = ++requestIdRef.current;
-    const isCurrent = () => requestIdRef.current === requestId;
+      const controller = new AbortController();
+      abortRef.current = controller;
+      const requestId = ++requestIdRef.current;
+      const isCurrent = () => requestIdRef.current === requestId;
 
-    const run = (async () => {
-      setBusy(true);
-      setBanner(null);
-      setResult(null);
+      const run = (async () => {
+        setBusy(true);
+        setBanner(null);
+        setResult(null);
 
-      try {
-        for await (const event of lookup(input, {
-          signal: controller.signal,
-          aiEngine: aiEnabled ? engineRef.current : null,
-          direction: directionChoice === "auto" ? undefined : directionChoice,
-        })) {
-          if (!isCurrent()) return;
-          switch (event.type) {
-            case "ai-status":
-              setAiStatus(event.status);
-              break;
-            case "error":
-              setBanner({ kind: "error", message: event.error.message });
-              break;
-            case "result":
-              setResult(event.result);
-              // Avoid showing the same failure text in both the banner and
-              // the result's own Warnings card.
-              setBanner((current) =>
-                current && event.result.warnings.includes(current.message) ? null : current,
-              );
-              break;
-            case "cancelled":
-              setBanner({ kind: "info", message: "Cancelled." });
-              break;
-            default:
-              break;
+        try {
+          for await (const event of lookup(query, {
+            signal: controller.signal,
+            aiEngine: aiEnabled ? engineRef.current : null,
+            direction: directionChoice === "auto" ? undefined : directionChoice,
+          })) {
+            if (!isCurrent()) return;
+            switch (event.type) {
+              case "ai-status":
+                setAiStatus(event.status);
+                break;
+              case "error":
+                setBanner({ kind: "error", message: event.error.message });
+                break;
+              case "result":
+                setResult(event.result);
+                // Avoid showing the same failure text in both the banner and
+                // the result's own Warnings card.
+                setBanner((current) =>
+                  current && event.result.warnings.includes(current.message) ? null : current,
+                );
+                break;
+              case "cancelled":
+                setBanner({ kind: "info", message: "Cancelled." });
+                break;
+              default:
+                break;
+            }
           }
+        } finally {
+          if (isCurrent()) setBusy(false);
         }
-      } finally {
-        if (isCurrent()) setBusy(false);
-      }
-    })();
+      })();
 
-    activeLookupRef.current = run;
-    await run;
-  }, [input, aiEnabled, directionChoice, cancelActiveLookup]);
+      activeLookupRef.current = run;
+      await run;
+    },
+    [input, aiEnabled, directionChoice, cancelActiveLookup],
+  );
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
@@ -292,7 +317,7 @@ export function App() {
           onChange={setInput}
           direction={directionChoice}
           onDirectionChange={setDirectionChoice}
-          onSubmit={() => void handleSubmit()}
+          onSubmit={(candidate) => void handleSubmit(candidate)}
           onClear={handleClear}
           onCancel={handleCancel}
           busy={busy}
@@ -302,6 +327,21 @@ export function App() {
 
         {busy && !result && <p class="loading-hint">Looking up…</p>}
 
+        {spelling.length > 0 && (
+          <section class="card" aria-label="Spelling suggestions">
+            <h2>Did you mean…</h2>
+            {spelling.map((word) => (
+              <button
+                type="button"
+                key={word}
+                class="btn btn-ghost"
+                onClick={() => void handleSubmit(word)}
+              >
+                {word}
+              </button>
+            ))}
+          </section>
+        )}
         {result && <ResultView result={result} />}
       </main>
 

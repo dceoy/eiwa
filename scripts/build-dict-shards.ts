@@ -11,6 +11,8 @@ import type {
   DictShardRef,
 } from "../src/dict-types";
 
+import { writeSearchIndexes } from "./build-search-index";
+
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const FIXTURES_DIR = path.join(ROOT, "fixtures", "dict");
 const OUT_DIR = path.join(ROOT, "public", "dict");
@@ -195,7 +197,13 @@ export async function buildDictionary(
   en: DictionaryEntry[],
   ja: DictionaryEntry[],
   sourceVersions: DictManifest["sourceVersions"],
+  extraLicenses: DictionarySource[] = [],
 ) {
+  for (const entry of [...en, ...ja]) {
+    entry.translations.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+  }
+  en.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
+  ja.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
   // Complete splitting before removing the last successful output.
   const enShards = splitShards(groupByShard(en, "en"));
   const jaShards = splitShards(groupByShard(ja, "ja"));
@@ -208,7 +216,8 @@ export async function buildDictionary(
     builtAt: new Date().toISOString(),
     sourceVersions,
     shards: shardRefs,
-    licenses: uniqueLicenses(all),
+    search: await writeSearchIndexes(OUT_DIR, en, ja),
+    licenses: [...uniqueLicenses(all), ...extraLicenses],
   };
 
   await writeFile(path.join(OUT_DIR, "manifest.json"), JSON.stringify(manifest, null, 2), "utf8");
