@@ -12,6 +12,7 @@ import {
 import { ModalOverlay } from "./ModalOverlay";
 
 export interface LearningSheetProps {
+  error?: string;
   words: SavedWord[];
   onWords: (words: SavedWord[]) => boolean;
   onReopen: (word: SavedWord) => void;
@@ -32,6 +33,7 @@ export function LearningSheet(props: LearningSheetProps) {
           ✕
         </button>
       </header>
+      {props.error && <p role="alert">{props.error}</p>}
       <section class="settings-section" aria-label="Saved words">
         <h3>Wordbook</h3>
         <p class="settings-note">
@@ -70,6 +72,7 @@ export function LearningSheet(props: LearningSheetProps) {
               void file
                 .text()
                 .then((text) => {
+                  setMessage("");
                   const words = mergeWordbook(props.words, parseWordbook(text));
                   if (props.onWords(words))
                     setMessage("Imported. Existing snapshots kept; new entries appended.");

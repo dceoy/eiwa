@@ -188,6 +188,7 @@ export function App() {
       const query = candidate ?? input;
       if (query.trim() === "") return;
       if (candidate) setInput(candidate);
+      if (direction && directionChoice !== "auto") setDirectionChoice(direction);
 
       // Cancel and fully await any previous lookup first, so a stale AI
       // generation can't leave the engine's status as "generating" (or the
@@ -467,6 +468,7 @@ export function App() {
 
       {learningOpen && (
         <LearningSheet
+          error={banner?.kind === "error" ? banner.message : undefined}
           words={words}
           onWords={updateWords}
           history={history}
@@ -490,6 +492,7 @@ export function App() {
             requestIdRef.current++;
             setBusy(false);
             setInput(word.input);
+            if (directionChoice !== "auto") setDirectionChoice(word.direction);
             setResult(reopen(word));
             setSavedView(true);
             setBanner(null);

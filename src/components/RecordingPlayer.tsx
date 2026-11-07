@@ -1,9 +1,15 @@
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { type CommonsRecording, isCommonsRecording, recordingSourceUrl } from "../recording";
 
 export function RecordingPlayer({ recording }: { recording: CommonsRecording }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => {
+      audio?.pause();
+    };
+  }, []);
   if (!isCommonsRecording(recording)) return null;
   return (
     <div class="recording-player">
@@ -23,7 +29,13 @@ export function RecordingPlayer({ recording }: { recording: CommonsRecording }) 
         Play recording (Commons)
       </button>
       {/* biome-ignore lint/a11y/useMediaCaption: pronunciation-only recording, the headword is the transcript. */}
-      <audio ref={audioRef} preload="none" controls onError={() => setFailed(true)} />
+      <audio
+        ref={audioRef}
+        preload="none"
+        crossOrigin="anonymous"
+        controls
+        onError={() => setFailed(true)}
+      />
       <small>
         Source:{" "}
         <a href={recordingSourceUrl(recording)} target="_blank" rel="noreferrer">

@@ -3,6 +3,11 @@ import { expect, type Page, test } from "@playwright/test";
 async function lookup(page: Page, word: string) {
   await page.getByLabel(/english or japanese/i).fill(word);
   await page.getByRole("button", { name: "Translate", exact: true }).click();
+  await expect(
+    page
+      .locator(".dictionary-entry-head")
+      .getByRole("button", { name: `Look up ${word}`, exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Save to wordbook", exact: true })).toBeEnabled();
 }
 async function openWordbook(page: Page) {
@@ -79,10 +84,15 @@ test("gloss, example and headword relookup use dictionary-resolved terms and cor
   ).toBeVisible();
   // A Japanese gloss must not inherit the English-only direction override.
   await page
+    .locator("label")
+    .filter({ has: page.getByRole("radio", { name: "EN → JA", exact: true }) })
+    .click();
+  await page
     .getByRole("region", { name: "Translation", exact: true })
     .getByRole("button", { name: "Look up 走る", exact: true })
     .click();
   await expect(page.getByLabel(/english or japanese/i)).toHaveValue("走る");
+  await expect(page.getByLabel("JA → EN", { exact: true })).toBeChecked();
   await expect(
     page
       .locator(".dictionary-entry-head")
@@ -110,6 +120,12 @@ test("history is off by default, opt-in, deletable and erased when disabled", as
   await expect(dialog.getByRole("button", { name: "Delete history dog", exact: true })).toHaveCount(
     0,
   );
+  await dialog.getByRole("button", { name: "Close wordbook" }).click();
+  await lookup(page, "dog");
+  dialog = await openWordbook(page);
+  await expect(
+    dialog.getByRole("button", { name: "Delete history dog", exact: true }),
+  ).toBeVisible();
   await toggle.uncheck();
   expect(await page.evaluate(() => localStorage.getItem("eiwa:history:v1"))).toBeNull();
   await dialog.getByRole("button", { name: "Close wordbook" }).click();
@@ -118,6 +134,44 @@ test("history is off by default, opt-in, deletable and erased when disabled", as
   await expect(
     dialog.getByRole("checkbox", { name: "Remember lookup history on this device" }),
   ).not.toBeChecked();
+});
+
+test("recording Play decodes media and advances playback using intercepted fixture bytes", async ({
+  page,
+}) => {
+  // One second of silent PCM WAV; no production audio is hosted or downloaded by CI.
+  const wav = Buffer.alloc(44 + 16000);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(wav.length - 8, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24);
+  wav.writeUInt32LE(16000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(16000, 40);
+  let requests = 0;
+  await page.route("https://upload.wikimedia.org/**", async (route) => {
+    requests++;
+    expect(route.request().headers().referer).toBeUndefined();
+    await route.fulfill({
+      status: 200,
+      contentType: "audio/wav",
+      headers: { "access-control-allow-origin": "*" },
+      body: wav,
+    });
+  });
+  await page.goto("/");
+  await lookup(page, "run");
+  expect(requests).toBe(0);
+  await page.getByRole("button", { name: "Play recording (Commons)" }).click();
+  await expect
+    .poll(() => page.locator("audio").evaluate((audio: HTMLAudioElement) => audio.currentTime))
+    .toBeGreaterThan(0);
+  expect(requests).toBeGreaterThan(0);
 });
 
 test("recording requests only follow Play; Commons is attributed and missing audio keeps TTS", async ({
@@ -136,7 +190,7 @@ test("recording requests only follow Play; Commons is attributed and missing aud
   ).toBeVisible();
   await expect(pronunciation.getByRole("link", { name: /Wikimedia Commons/ })).toHaveAttribute(
     "href",
-    /commons.wikimedia.org\/wiki\/File:/,
+    "https://commons.wikimedia.org/wiki/File:en-us-run.ogg",
   );
   expect(media).toEqual([]);
   await pronunciation.getByRole("button", { name: "Play recording (Commons)" }).click();
