@@ -109,6 +109,7 @@ export async function* lookup(
   const updates: AiExplanationOutput[] = [];
   let wake: (() => void) | undefined;
   let settled = false;
+  let acceptingUpdates = true;
   let final: AiExplanationOutput | undefined;
   let failure: unknown;
   const generation = aiEngine
@@ -118,7 +119,7 @@ export async function* lookup(
       dictionaryContext: entries,
       signal,
       onProgress: (output) => {
-        if (signal?.aborted) return;
+        if (!acceptingUpdates || signal?.aborted) return;
         updates.push(output);
         wake?.();
       },
@@ -177,7 +178,11 @@ export async function* lookup(
       };
     }
   } finally {
-    // If a consumer stops early, don't retain its queued result snapshots.
+    // A consumer may stop early (Clear/new lookup). Still await the engine so
+    // the next request cannot race a generation that is unwinding on the Worker.
+    acceptingUpdates = false;
+    updates.length = 0;
+    await generation;
     wake = undefined;
   }
 }

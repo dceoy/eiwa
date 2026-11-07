@@ -269,6 +269,44 @@ describe("lookup", () => {
     },
   );
 
+  it("awaits a cancelled Worker when the result consumer stops early", async () => {
+    let finish: (() => void) | undefined;
+    let params: Parameters<AiEngine["explain"]>[0] | undefined;
+    const aiEngine = makeAiEngine({
+      explain: vi.fn<AiEngine["explain"]>((input) => {
+        params = input;
+        return new Promise((_resolve, reject) => {
+          finish = () => reject(new DOMException("Cancelled", "AbortError"));
+        });
+      }),
+    });
+    const controller = new AbortController();
+    const events = lookup("cat", { aiEngine, signal: controller.signal });
+    while ((await events.next()).value?.type !== "result") {
+      /* initial dictionary */
+    }
+    await events.next(); // generating
+    const reading = events.next(); // starts engine, waits for progress
+    await vi.waitFor(() => expect(params).toBeDefined());
+    params?.onProgress?.({
+      translation: { primary: "猫", alternatives: [] },
+      correction: { corrected: null, explanation: null },
+      nuance: [],
+      warnings: [],
+    });
+    await reading;
+    controller.abort();
+    let returned = false;
+    const returning = events.return(undefined).then(() => {
+      returned = true;
+    });
+    await Promise.resolve();
+    expect(returned).toBe(false);
+    finish?.();
+    await returning;
+    expect(returned).toBe(true);
+  });
+
   it("honors an explicit direction override instead of auto-detecting", async () => {
     mockedLookupDictionary.mockResolvedValue([]);
     const events = await collect("cat", { direction: "ja-en" });

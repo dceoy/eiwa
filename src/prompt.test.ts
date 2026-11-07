@@ -79,6 +79,19 @@ describe("buildUserPrompt", () => {
     expect(system).toContain("translation FIRST");
   });
 
+  it("does not turn navigational results into senses of the looked-up headword", () => {
+    const prompt = buildUserPrompt({
+      direction: "en-ja",
+      input: "run",
+      dictionaryContext: [
+        runEntry,
+        { ...runEntry, headword: "run away", senses: [{ gloss: "to flee" }] },
+      ],
+    });
+    expect(prompt).toContain("to operate a business");
+    expect(prompt).not.toContain("to flee");
+  });
+
   it("includes supplied Japanese readings and sense examples, not invented facts", () => {
     const entry = {
       ...runEntry,

@@ -2,9 +2,10 @@ import type { DictionaryEntry } from "./dict-types";
 import type { Direction } from "./language";
 
 const MAX_CONTEXT_ENTRIES = 3;
-/** UTF-8 byte ceiling: at most 2400 byte-level tokens (usually far fewer).
- * Independent of dictionary size; leaves room for instructions/input/output. */
-export const MAX_CONTEXT_BYTES = 2400;
+/** UTF-8 byte ceiling: at most 1800 byte-level tokens (usually far fewer).
+ * Independent of dictionary size, reserving space for instructions/input/output.
+ * This is a conservative grounding budget, not a tokenizer-specific estimate. */
+export const MAX_CONTEXT_BYTES = 1800;
 /** Guards against excessive browser memory/compute use from runaway input. */
 export const MAX_INPUT_CHARS = 500;
 
@@ -35,7 +36,9 @@ export function buildSystemPrompt(): string {
 function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
   const lines: string[] = [];
   const quote = (text: string, cap = 240) => JSON.stringify(truncateSafely(text, cap));
-  for (const [i, entry] of entries.slice(0, MAX_CONTEXT_ENTRIES).entries()) {
+  // Prefix/substring suggestions aren't senses of the leading headword.
+  const headwordEntries = entries.filter((entry) => entry.headword === entries[0]?.headword);
+  for (const [i, entry] of headwordEntries.slice(0, MAX_CONTEXT_ENTRIES).entries()) {
     const label = `[D${i + 1}]`;
     lines.push(
       `${label} ${quote(entry.headword, 64)}; sources: ${entry.source

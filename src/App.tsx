@@ -259,6 +259,10 @@ export function App() {
             }
           }
         } finally {
+          // Clear/snapshot invalidates UI events but still lets the cancelled
+          // engine settle. Don't leave Settings stuck at "generating".
+          const status = engineRef.current?.getStatus();
+          if (status && status !== "generating") setAiStatus(status);
           if (isCurrent()) setBusy(false);
         }
       })();
