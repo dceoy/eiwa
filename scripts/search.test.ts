@@ -129,6 +129,56 @@ describe("on-device indexed search", () => {
     expect(results.length).toBeLessThanOrEqual(RESULT_LIMIT);
     expect(new Set(results.map((e) => e.id)).size).toBe(results.length);
   });
+  it.each(["missing", "offline", "malformed"])(
+    "preserves cat from an accessible shard when the headword index is %s",
+    async (failure) => {
+      expect(validateManifest(manifest)).toEqual([]);
+      for (const ref of manifest.search ?? []) {
+        if (ref.kind !== "headwords") continue;
+        if (failure === "malformed") assets.set(`/${ref.path}`, [["broken", "not a score"]]);
+        else assets.delete(`/${ref.path}`);
+      }
+      if (failure === "offline") {
+        const onlineFetch = vi.mocked(fetch).getMockImplementation();
+        vi.mocked(fetch).mockImplementation((input, init) => {
+          if (String(input).includes("headwords")) return Promise.reject(new Error("offline"));
+          if (!onlineFetch) throw new Error("Missing test fetch");
+          return onlineFetch(input, init);
+        });
+      }
+      const results = await lookupDictionary("cat", "en");
+      expect(results.map((e) => e.headword)).toEqual(["cat"]);
+      expect(results[0]?.match).toBeUndefined();
+    },
+  );
+  it("preserves exact and related hits when an inflection index or related shard is unavailable", async () => {
+    for (const ref of manifest.search ?? []) {
+      if (ref.kind === "inflections") assets.delete(`/${ref.path}`);
+    }
+    const related = manifest.shards.find((ref) => ref.key === "b");
+    if (!related) throw new Error("Missing bobcat shard");
+    assets.delete(`/${related.path}`);
+    const results = await lookupDictionary("cat", "en");
+    expect(results.map((e) => e.headword)).toEqual(["cat", "catsup"]);
+    expect(results[1]?.match?.kind).toBe("prefix");
+  });
+  it("preserves available lemmas when another lemma shard and headword indexes are unavailable", async () => {
+    const ref = manifest.search?.find((r) => r.kind === "inflections");
+    if (!ref) throw new Error("Missing inflection ref");
+    assets.set(`/${ref.path}`, [["took", ["go", "take"]]]);
+    Object.assign(ref, { start: "took", end: "took", entryCount: 1 });
+    manifest.search = manifest.search?.filter((r) => r.kind === "headwords" || r === ref);
+    for (const other of manifest.search ?? []) {
+      if (other !== ref) assets.delete(`/${other.path}`);
+    }
+    const missing = manifest.shards.find((r) => r.key === "g");
+    if (!missing) throw new Error("Missing go shard");
+    assets.delete(`/${missing.path}`);
+    expect(validateManifest(manifest)).toEqual([]);
+    const results = await lookupDictionary("took", "en");
+    expect(results.map((e) => e.headword)).toEqual(["take"]);
+    expect(results[0]?.match).toEqual({ kind: "inflection", query: "took" });
+  });
   it("offers edit-distance candidates only, without converting typos into facts", async () => {
     expect(await lookupDictionary("mountan", "en")).toEqual([]);
     expect((await suggestSpellings("mountan", "en"))[0]).toBe("mountain");

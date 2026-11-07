@@ -195,14 +195,16 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
       }
     }
   };
+  // Optional indexes/related shards may be absent offline. Keep every hit
+  // already loaded, and let independent enrichment candidates still succeed.
   const lemmas = new Set<string>();
   for (const ref of manifest.search) {
     if (ref.kind !== "inflections" || ref.lang !== lang || q < ref.start || q > ref.end) continue;
-    for (const [form, targets] of (await loadSearch(ref)) as InflectionRow[])
+    for (const [form, targets] of (await loadSearch(ref).catch(() => [])) as InflectionRow[])
       if (form === q) for (const target of targets) lemmas.add(target);
   }
   const resolved = (
-    await Promise.all([...lemmas].map((lemma) => exactEntries(lemma, lang)))
+    await Promise.all([...lemmas].map((lemma) => exactEntries(lemma, lang).catch(() => [])))
   ).flat();
   add(
     resolved.sort(
@@ -211,7 +213,7 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
     "inflection",
   );
   if (result.length >= RESULT_LIMIT || q.length < 2) return result;
-  const rows = await headwords(lang);
+  const rows = await headwords(lang).catch(() => []);
   const prefix = rows
     .filter(([word]) => word !== q && word.startsWith(q))
     .sort(rankHeadwords)
@@ -224,7 +226,7 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
     ["prefix", prefix],
     ["partial", partial],
   ] as const) {
-    for (const [word] of candidates) add(await exactEntries(word, lang), kind);
+    for (const [word] of candidates) add(await exactEntries(word, lang).catch(() => []), kind);
   }
   return result;
 }
