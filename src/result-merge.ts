@@ -31,6 +31,11 @@ export function mergeResult({
   extraWarnings = [],
 }: MergeInput): EiwaResult {
   const bestEntry = dictionaryEntries[0];
+  // Lexical summaries belong to the leading headword, not to navigational
+  // prefix/substring results (whose facts may describe entirely other words).
+  const lexicalEntries = dictionaryEntries.filter(
+    (entry) => entry.headword === bestEntry?.headword && entry.lang === bestEntry.lang,
+  );
   // Related headwords are navigational results, not alternative meanings of
   // an exact hit (e.g. catsup must not become a translation of cat).
   const translationEntries = dictionaryEntries.filter(
@@ -63,9 +68,9 @@ export function mergeResult({
     correction: ai?.correction ?? { corrected: null, explanation: null },
     nuance: ai?.nuance ?? [],
     dictionary: dictionaryEntries,
-    etymology: dictionaryEntries.find((e) => e.etymology)?.etymology ?? null,
-    pronunciation: bestEntry?.pronunciation ?? null,
-    derivedWords: uniqueStrings(dictionaryEntries.flatMap((e) => e.derivedWords ?? [])),
+    etymology: lexicalEntries.find((e) => e.etymology)?.etymology ?? null,
+    pronunciation: lexicalEntries.find((e) => e.pronunciation)?.pronunciation ?? null,
+    derivedWords: uniqueStrings(lexicalEntries.flatMap((e) => e.derivedWords ?? [])),
     warnings: uniqueStrings([...(ai?.warnings ?? []), ...extraWarnings, ...missWarning]),
     sourceKinds: [
       ...(dictionaryEntries.length > 0 ? (["dictionary"] as const) : []),

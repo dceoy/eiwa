@@ -24,6 +24,28 @@ const aiOutput: AiExplanationOutput = {
 };
 
 describe("mergeResult", () => {
+  it("never borrows lexical summaries from a different related headword", () => {
+    const exact = { ...catEntry, etymology: undefined, pronunciation: undefined, derivedWords: [] };
+    const related: DictionaryEntry = {
+      ...catEntry,
+      id: "catsup",
+      headword: "catsup",
+      match: { kind: "prefix", query: "cat" },
+      etymology: "Not the origin of cat",
+      derivedWords: ["unrelated"],
+      pronunciation: { ipa: "/unrelated/" },
+    };
+    const result = mergeResult({
+      direction: "en-ja",
+      input: "cat",
+      dictionaryEntries: [exact, related],
+      ai: null,
+    });
+    expect(result.etymology).toBeNull();
+    expect(result.pronunciation).toBeNull();
+    expect(result.derivedWords).toEqual([]);
+    expect(result.dictionary).toHaveLength(2);
+  });
   it("keeps related headwords out of exact-hit translation alternatives", () => {
     const partial: DictionaryEntry = {
       ...catEntry,
