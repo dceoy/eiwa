@@ -1,4 +1,5 @@
 import type { DictionaryEntry, DictManifest } from "./dict-types";
+import { isCommonsRecording } from "./recording";
 
 export interface ValidationIssue {
   path: string;
@@ -127,6 +128,11 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
     (!isNonEmptyString(entry.pronunciation.ipa) || entry.pronunciation.ipa.length > 202)
   )
     issues.push({ path: `${path}.pronunciation.ipa`, message: "invalid or oversized IPA" });
+  if (
+    entry.pronunciation?.recording !== undefined &&
+    (entry.lang !== "en" || !isCommonsRecording(entry.pronunciation.recording))
+  )
+    issues.push({ path: `${path}.pronunciation.recording`, message: "invalid Commons recording" });
   for (const [field, cap] of [
     ["inflectionForms", 24],
     ["derivedWords", 8],

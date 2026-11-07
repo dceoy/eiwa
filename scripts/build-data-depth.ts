@@ -12,6 +12,7 @@ import type {
   DictLang,
   ExampleSentence,
 } from "../src/dict-types";
+import { type CommonsRecording, isCommonsRecording } from "../src/recording";
 import { depthArchive, depthVersions } from "./depth-sources";
 
 export const TATOEBA_SOURCE: DictionarySource = {
@@ -28,7 +29,7 @@ export const WIKTEXTRACT_SOURCE: DictionarySource = {
   url: "https://kaikki.org/dictionary/English/",
   licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
   attribution:
-    "Extracted English headword data; etymologies trimmed, terms/forms capped by Eiwa. Original article links provide contributor history. No Wiktionary quotations or audio redistributed.",
+    "Extracted English headword data; etymologies trimmed, terms/forms capped by Eiwa. Original article links provide contributor history. No Wiktionary quotations or audio files redistributed; recordings stream from Wikimedia Commons on request, with file-description credits/license links.",
 };
 export const NGSL_SOURCE: DictionarySource = {
   name: "New General Service List 1.2 — Browne, C., Culligan, B., and Phillips, J.",
@@ -75,7 +76,7 @@ export async function* archiveLines(file: string, tar = false): AsyncGenerator<s
 interface WiktextractRow {
   word?: string;
   lang_code?: string;
-  sounds?: { ipa?: string }[];
+  sounds?: { ipa?: string; audio?: string; mp3_url?: string; ogg_url?: string }[];
   etymology_text?: string;
   derived?: { word?: string }[];
   related?: { word?: string }[];
@@ -83,6 +84,7 @@ interface WiktextractRow {
   senses?: { form_of?: { word?: string }[]; tags?: string[] }[];
 }
 interface LexicalData {
+  recording?: CommonsRecording;
   ipa: string[];
   etymology?: string;
   derived: string[];
@@ -142,6 +144,16 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
     }
     if (!words.has(word)) continue;
     const out = get(word);
+    for (const sound of row.sounds ?? []) {
+      for (const url of [sound.mp3_url, sound.ogg_url]) {
+        const audio = { url, file: sound.audio, source: "Wikimedia Commons" };
+        if (
+          isCommonsRecording(audio) &&
+          (!out.recording || (!out.recording.url.endsWith(".mp3") && audio.url.endsWith(".mp3")))
+        )
+          out.recording = audio;
+      }
+    }
     appendUnique(
       out.ipa,
       (row.sounds ?? []).flatMap((sound) =>
@@ -304,13 +316,18 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
     const word = normalizeHeadword(entry.headword, "en");
     const lexical = data.get(word);
     if (lexical) {
-      if (lexical.ipa.length) entry.pronunciation = { ipa: lexical.ipa.join("; ") };
+      if (lexical.ipa.length || lexical.recording)
+        entry.pronunciation = {
+          ...(lexical.ipa.length ? { ipa: lexical.ipa.join("; ") } : {}),
+          ...(lexical.recording ? { recording: lexical.recording } : {}),
+        };
       if (lexical.etymology) entry.etymology = lexical.etymology;
       if (lexical.derived.length) entry.derivedWords = lexical.derived;
       if (lexical.related.length) entry.relatedWords = lexical.related;
       if (lexical.forms.length) entry.inflectionForms = lexical.forms;
       if (
         lexical.ipa.length ||
+        lexical.recording ||
         lexical.etymology ||
         lexical.derived.length ||
         lexical.related.length ||
@@ -327,7 +344,7 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
     }
   }
   console.log(
-    `Wiktextract: ${scanned} streamed rows; ${[...data.values()].filter((r) => r.ipa.length).length} words with IPA; ${[...data.values()].filter((r) => r.etymology).length} with etymology; NGSL ${ranks.size} ranked lemmas.`,
+    `Wiktextract: ${scanned} streamed rows; ${[...data.values()].filter((r) => r.ipa.length).length} words with IPA; ${[...data.values()].filter((r) => r.recording).length} with Commons recordings; ${[...data.values()].filter((r) => r.etymology).length} with etymology; NGSL ${ranks.size} ranked lemmas.`,
   );
   data.clear();
   const english = await sentenceMap(archiveLines(await depthArchive("tatoeba-eng")), "eng");

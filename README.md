@@ -4,7 +4,7 @@ A mobile-first, one-page English-Japanese / Japanese-English dictionary web
 app. Eiwa looks up dictionary facts locally and, if you opt in, runs an AI
 model entirely in your browser via [WebLLM](https://webllm.mlc.ai/) for
 translation, nuance, and writing correction — no server-side inference, no
-accounts, no saved history.
+accounts, no saved history by default.
 
 Type an English or Japanese word, phrase, or sentence and get:
 
@@ -13,8 +13,10 @@ Type an English or Japanese word, phrase, or sentence and get:
 - Dictionary facts — headword, reading, part of speech, senses — with source
   attribution.
 - Nuance notes and writing correction for phrases/sentences (AI-only).
-- Etymology, pronunciation (with browser text-to-speech), derived words, and
-  examples, when the dictionary has them.
+- Etymology, pronunciation (Commons recordings on explicit Play, device TTS
+  fallback), derived words, and examples, when the dictionary has them.
+- Local wordbook snapshots with reorder/delete and JSON backup/restore, plus
+  opt-in history (off by default). Tap underlined dictionary terms to relookup.
 - Warnings when input is ambiguous, slangy, or context-dependent.
 
 Sections are labeled **Dictionary** or **AI explanation** so it's always
@@ -36,7 +38,7 @@ or blends into the dictionary's primary translation.
   (dictionary entries, etymology, pronunciation, derived words) always come
   from `src/dict.ts`, never from the model — see
   [`docs/architecture.md`](./docs/architecture.md#dictionary-vs-ai-separation).
-- **Privacy first.** No login, no saved query history, no analytics. See
+- **Privacy first.** No login, no default query history, no analytics. See
   [`docs/privacy.md`](./docs/privacy.md).
 
 ## Local development
@@ -228,7 +230,9 @@ The benchmark is local/manual only; existing CI jobs are unchanged.
 ## Privacy
 
 Eiwa does not send lookup text to any server-side endpoint, does not run
-analytics, and does not save query history. See
+analytics, and saves query history only after explicit opt-in. Wordbook snapshots
+stay on-device. Optional Commons playback sends the recording URL to Wikimedia;
+OS/browser TTS may use a network voice. See
 [`docs/privacy.md`](./docs/privacy.md) for details.
 
 ## Documentation
@@ -238,6 +242,8 @@ analytics, and does not save query history. See
   fallback behavior.
 - [`docs/release.md`](./docs/release.md) — temporary preview workflow, claim
   flow, and the permanent-deployment plan.
+- [`docs/learning-features.md`](./docs/learning-features.md) — local wordbook,
+  relookup, Commons audio coverage and verification.
 - [`docs/privacy.md`](./docs/privacy.md) — no login, no default history,
   local-only inference, no server-side LLM endpoint.
 

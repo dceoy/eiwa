@@ -112,7 +112,7 @@
     "headword": "run",
     "pos": ["verb"],
     "level": "basic",
-    "pronunciation": { "ipa": "/ɹʌn/" },
+    "pronunciation": { "ipa": "/ɹʌn/", "recording": { "url": "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/a9/En-us-run.ogg/En-us-run.ogg.mp3", "file": "en-us-run.ogg", "source": "Wikimedia Commons" } },
     "etymology": "From Middle English runnen, rennen (“to run”), alteration…",
     "inflectionForms": ["runs", "running", "ran"],
     "examples": [{

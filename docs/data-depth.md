@@ -1,5 +1,12 @@
 # Phase B data depth (#104)
 
+Historical Phase B report. Phase D (#106) extends this same pinned ingestion
+with one Commons recording URL/file name per English headword (MP3 preferred).
+Audio bytes are not redistributed or self-hosted; see
+[`learning-features.md`](./learning-features.md) and the explicit-playback
+exception in [`privacy.md`](./privacy.md). Statements below about excluding
+recordings describe Phase B, before this extension.
+
 Work branch: `feat/data-depth`, stacked on PR #109 (`feat/search-and-ranking`)
 at `83271a1c0bc3c30eb3fab424a056becacc67ca77`; #109 is stacked on #108.
 One branch-based PR; do not merge or mark ready during this task.

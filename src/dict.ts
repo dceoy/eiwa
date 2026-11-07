@@ -148,6 +148,24 @@ async function headwords(lang: DictLang, prefix?: string): Promise<HeadwordRow[]
   return rows;
 }
 
+/** Resolve only exact indexed terms; no fuzzy/prefix matches or external APIs. */
+export async function resolveHeadwords(terms: string[], lang: DictLang): Promise<Set<string>> {
+  const queries = new Set(terms.map((term) => normalizeHeadword(term, lang)));
+  const found = new Set<string>();
+  const manifest = await loadManifest();
+  for (const ref of manifest.search ?? []) {
+    if (
+      ref.lang !== lang ||
+      ref.kind !== "headwords" ||
+      ![...queries].some((q) => q >= ref.start && q <= ref.end)
+    )
+      continue;
+    for (const [word] of (await loadSearch(ref).catch(() => [])) as HeadwordRow[])
+      if (queries.has(word)) found.add(word);
+  }
+  return found;
+}
+
 /** Prefix-only typing assistance: fetch only intersecting sorted ranges. */
 export async function suggestHeadwords(query: string, lang: DictLang): Promise<string[]> {
   const q = normalizeHeadword(query, lang);
