@@ -6,13 +6,13 @@ there's something worth keeping a permanent URL for.
 
 ## Roadmap status
 
-| Phase                            | Scope                                                                                  | Status                  |
-| -------------------------------- | -------------------------------------------------------------------------------------- | ----------------------- |
-| 0 — Deployable shell             | Workers Static Assets app shell, `/api/health`, temporary deploy (#1)                  | Done                    |
-| 1 — Dictionary-first MVP         | Fixture-backed dictionary, mobile-first UI, PWA shell, sources/licenses modal (#3, #5) | Done                    |
-| 2 — Browser-side AI              | WebLLM in a Web Worker, structured JSON, dictionary+AI merge, WebGPU fallback (#2, #4) | Done                    |
-| 3 — Quality & privacy hardening  | CI, unit + e2e tests, privacy guard, free-tier guardrails (#6)                         | Done                    |
-| 4 — Permanent Cloudflare account | Claim or otherwise provision a permanent account; production deployment instructions   | Not started — see below |
+| Phase                            | Scope                                                                                                             | Status                  |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| 0 — Deployable shell             | Workers Static Assets app shell, `/api/health`, temporary deploy (#1)                                             | Done                    |
+| 1 — Dictionary-first MVP         | JMdict production ingestion, mobile-sized shards, reading/reverse indexes, UI/PWA, sources/licenses (#3, #5, #11) | Done                    |
+| 2 — Browser-side AI              | WebLLM in a Web Worker, structured JSON, dictionary+AI merge, WebGPU fallback (#2, #4)                            | Done                    |
+| 3 — Quality & privacy hardening  | CI, unit + e2e tests, privacy guard, free-tier guardrails (#6)                                                    | Done                    |
+| 4 — Permanent Cloudflare account | Claim or otherwise provision a permanent account; production deployment instructions                              | Not started — see below |
 
 ## Temporary Accounts workflow
 
@@ -22,7 +22,7 @@ Cloudflare login, API token, or stored credentials:
 
 ```bash
 pnpm install
-pnpm run build
+DICT_SOURCE=jmdict pnpm run build  # production dictionary (plain build uses fixtures)
 pnpm run deploy:temporary          # wrangler deploy --temporary
 pnpm run smoke:url <printed-url>   # optional scripted smoke check
 ```
@@ -47,6 +47,33 @@ pnpm run smoke:url <printed-url>   # optional scripted smoke check
   freely here.
 - Don't block iteration on Cloudflare login/OAuth/custom domains. If a
   temporary deployment expires before you claim it, just redeploy.
+
+## Production dictionary verification
+
+JMdict is now the production source; fixtures remain the default for fast
+local development, unit/e2e tests and CI. No CI job downloads JMdict. For a
+real-data artifact, explicitly select the source on the full build:
+
+```bash
+pnpm run dict:build:jmdict
+pnpm run dict:validate
+pnpm run dict:spotcheck
+DICT_SOURCE=jmdict pnpm run build
+```
+
+The adapter pins the official EDRDG 2026-11-07 `JMdict_e.gz` by SHA-256,
+records source provenance and CC BY-SA 4.0 attribution in the manifest, and
+automatically splits every shard to at most 1 MiB. Generated dictionaries
+and source archives are gitignored. The English reverse index is limited
+to exact primary glosses, not full-definition search; sense/gloss trimming
+and source-pin updates are documented in
+[`architecture.md`](./architecture.md#dictionary-shard-flow). The official
+URL rotates daily: preserve the verified `.cache/jmdict/` archive for
+repeat builds; a changed upstream archive fails verification rather than
+silently upgrading. Wiktextract/etymology ingestion is still deferred.
+
+This data work does **not** complete Phase 4: no permanent Cloudflare
+account is designated and no permanent deployment is claimed.
 
 ## Claim flow
 

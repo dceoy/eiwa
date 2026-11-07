@@ -8,8 +8,8 @@ accounts, no saved history.
 
 Type an English or Japanese word, phrase, or sentence and get:
 
-- A translation, with dictionary results rendered immediately and an
-  AI-refined translation layered in once (and if) you enable local AI.
+- A dictionary translation rendered immediately as the primary baseline,
+  with an optional AI translation in its own separate, labeled frame.
 - Dictionary facts — headword, reading, part of speech, senses — with source
   attribution.
 - Nuance notes and writing correction for phrases/sentences (AI-only).
@@ -17,9 +17,9 @@ Type an English or Japanese word, phrase, or sentence and get:
   examples, when the dictionary has them.
 - Warnings when input is ambiguous, slangy, or context-dependent.
 
-Every section is labeled **Dictionary**, **AI explanation**, or
-**Dictionary + AI** so it's always clear what's a verified fact versus a
-model-generated explanation.
+Sections are labeled **Dictionary** or **AI explanation** so it's always
+clear what's dictionary-backed versus model-generated. AI never overrides
+or blends into the dictionary's primary translation.
 
 ## Why it's built this way
 
@@ -121,19 +121,49 @@ deployment path.
 
 ## Dictionary data and licenses
 
-The bundled dictionary is currently fixture data written for this project
-(`fixtures/dict/*.json`, source-labeled `Eiwa Fixture Data`, CC0-1.0) — enough
-to exercise the full lookup/UI pipeline for common words in both directions.
-`scripts/build-dict-shards.ts` compiles fixtures into small, checksummed,
-per-shard JSON files under `public/dict/`, plus a `manifest.json` with source
-and license metadata. The in-app **Sources & licenses** panel (Settings →
-Sources & licenses) always reflects exactly what's bundled.
+[JMdict/EDICT](https://www.edrdg.org/jmdict/j_jmdict.html) is the production
+dictionary source. `scripts/build-jmdict.ts` downloads the SHA-256-pinned
+2026-11-07 English JMdict release from EDRDG, streams its XML, and uses the
+same shard/manifest pipeline as the fixtures:
 
-Real dictionary sources ([JMdict/EDICT](https://www.edrdg.org/jmdict/j_jmdict.html),
-optionally [Wiktextract](https://github.com/tatuylonen/wiktextract)) can be
-ingested later behind `scripts/build-jmdict.ts` /
-`scripts/build-wiktionary.ts` without changing the app or shard format — see
-the roadmap in [`docs/release.md`](./docs/release.md).
+```bash
+pnpm run dict:build:jmdict       # download/verify/cache and generate real data
+pnpm run dict:validate
+pnpm run dict:spotcheck          # mountain → 山; 電車 / でんしゃ → train
+DICT_SOURCE=jmdict pnpm run build  # preserve source selection through the full build
+DICT_SOURCE=jmdict pnpm dev        # optional real-data development
+```
+
+Plain `pnpm dev`, `pnpm run build`, unit tests and CI default to the small
+CC0-1.0 fixtures (`fixtures/dict/*.json`); they never download JMdict.
+An unqualified build regenerates fixtures even after a JMdict build, so use
+`DICT_SOURCE=jmdict` for production artifacts. No permanent deployment is
+configured.
+
+Japanese lookup indexes written forms and kana readings. English lookup is
+an intentionally limited reverse index: **exact normalized first gloss of
+the first sense only**, at most four words / 64 characters using ASCII
+letters, spaces, apostrophes or hyphens. Other glosses, explanatory glosses,
+substring searches, inflections and arbitrary sentences are not indexed.
+Entries retain up to three applicable senses and three glosses per sense;
+examples and extended metadata are omitted. Shards automatically split to
+at most 1 MiB and are fetched only on demand, not precached wholesale.
+
+This publication includes material from the JMdict/EDICT project, property
+of the **Electronic Dictionary Research and Development Group (EDRDG)**,
+used under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+([EDRDG license and attribution](https://www.edrdg.org/edrdg/licence.html)).
+Eiwa's trimmed/indexed dictionary adaptation remains CC BY-SA 4.0; the code
+license is separate. The manifest records the source date, URL, SHA-256 and
+attribution, reflected in **Settings → Sources & licenses**.
+
+The official download URL rotates daily. The pin fails closed on changed
+bytes; retain the verified archive in gitignored `.cache/jmdict/` for
+repeat builds. A clean build after upstream rotation needs that cached
+snapshot or a deliberate date/hash update (see
+[`docs/architecture.md`](./docs/architecture.md#dictionary-shard-flow)).
+Neither the archive nor generated `public/dict/` data is committed.
+Wiktextract/etymology ingestion remains a follow-up.
 
 ## Privacy
 
