@@ -1,0 +1,100 @@
+{"id":"v1-word-en-01","input":"cat","direction":"en-ja","category":"single-word","expected":[{"headword":"cat","senses":["猫","ねこ","ネコ"]}]}
+{"id":"v1-word-en-02","input":"dog","direction":"en-ja","category":"single-word","expected":[{"headword":"dog","senses":["犬","いぬ","イヌ"]}]}
+{"id":"v1-word-en-03","input":"mountain","direction":"en-ja","category":"single-word","expected":[{"headword":"mountain","senses":["山"]}]}
+{"id":"v1-word-en-04","input":"water","direction":"en-ja","category":"single-word","expected":[{"headword":"water","senses":["水"]}]}
+{"id":"v1-word-en-05","input":"book","direction":"en-ja","category":"single-word","expected":[{"headword":"book","senses":["本","書籍","図書"]}]}
+{"id":"v1-word-en-06","input":"apple","direction":"en-ja","category":"single-word","expected":[{"headword":"apple","senses":["林檎","りんご","リンゴ"]}]}
+{"id":"v1-word-en-07","input":"computer","direction":"en-ja","category":"single-word","expected":[{"headword":"computer","senses":["コンピューター","コンピュータ","計算機"]}]}
+{"id":"v1-word-en-08","input":"train","direction":"en-ja","category":"single-word","expected":[{"headword":"train","senses":["電車","列車"]}]}
+{"id":"v1-word-en-09","input":"school","direction":"en-ja","category":"single-word","expected":[{"headword":"school","senses":["学校"]}]}
+{"id":"v1-word-en-10","input":"friendship","direction":"en-ja","category":"single-word","expected":[{"headword":"friendship","senses":["友情","友好","交友"]}]}
+{"id":"v1-word-ja-01","input":"猫","direction":"ja-en","category":"single-word","expected":[{"headword":"猫","senses":["cat","domestic cat"]}]}
+{"id":"v1-word-ja-02","input":"犬","direction":"ja-en","category":"single-word","expected":[{"headword":"犬","senses":["dog"]}]}
+{"id":"v1-word-ja-03","input":"山","direction":"ja-en","category":"single-word","expected":[{"headword":"山","senses":["mountain","hill"]}]}
+{"id":"v1-word-ja-04","input":"水","direction":"ja-en","category":"single-word","expected":[{"headword":"水","senses":["water"]}]}
+{"id":"v1-word-ja-05","input":"本","direction":"ja-en","category":"single-word","expected":[{"headword":"本","senses":["book","volume"]}]}
+{"id":"v1-word-ja-06","input":"林檎","direction":"ja-en","category":"single-word","expected":[{"headword":"林檎","senses":["apple"]}]}
+{"id":"v1-word-ja-07","input":"電車","direction":"ja-en","category":"single-word","expected":[{"headword":"電車","senses":["train","electric train"]}]}
+{"id":"v1-word-ja-08","input":"学校","direction":"ja-en","category":"single-word","expected":[{"headword":"学校","senses":["school"]}]}
+{"id":"v1-word-ja-09","input":"ねこ","direction":"ja-en","category":"single-word","expected":[{"headword":"猫","senses":["cat","domestic cat"]},{"headword":"ねこ","senses":["cat","domestic cat"]}]}
+{"id":"v1-word-ja-10","input":"辞書","direction":"ja-en","category":"single-word","expected":[{"headword":"辞書","senses":["dictionary","lexicon"]}]}
+{"id":"v1-inflect-en-01","input":"cats","direction":"en-ja","category":"inflected-form","expected":[{"headword":"cat","senses":["猫","ねこ","ネコ"]}]}
+{"id":"v1-inflect-en-02","input":"dogs","direction":"en-ja","category":"inflected-form","expected":[{"headword":"dog","senses":["犬","いぬ","イヌ"]}]}
+{"id":"v1-inflect-en-03","input":"books","direction":"en-ja","category":"inflected-form","expected":[{"headword":"book","senses":["本","書籍","図書"]}]}
+{"id":"v1-inflect-en-04","input":"running","direction":"en-ja","category":"inflected-form","expected":[{"headword":"run","senses":["走る","駆ける"]},{"headword":"running","senses":["ランニング","走ること","走行"]}]}
+{"id":"v1-inflect-en-05","input":"ran","direction":"en-ja","category":"inflected-form","expected":[{"headword":"run","senses":["走る","駆ける"]}]}
+{"id":"v1-inflect-en-06","input":"went","direction":"en-ja","category":"inflected-form","expected":[{"headword":"go","senses":["行く","ゆく"]}]}
+{"id":"v1-inflect-en-07","input":"better","direction":"en-ja","category":"inflected-form","expected":[{"headword":"good","senses":["良い","いい","よい"]},{"headword":"better","senses":["より良い","まし","優る","勝る"]}]}
+{"id":"v1-inflect-en-08","input":"children","direction":"en-ja","category":"inflected-form","expected":[{"headword":"child","senses":["子供","子ども","子"]},{"headword":"children","senses":["子供","子ども","子供たち","子どもたち"]}]}
+{"id":"v1-inflect-en-09","input":"studies","direction":"en-ja","category":"inflected-form","expected":[{"headword":"study","senses":["勉強","研究","学習","勉強する"]}]}
+{"id":"v1-inflect-en-10","input":"eaten","direction":"en-ja","category":"inflected-form","expected":[{"headword":"eat","senses":["食べる","食う"]}]}
+{"id":"v1-inflect-ja-01","input":"食べた","direction":"ja-en","category":"inflected-form","expected":[{"headword":"食べる","senses":["to eat"]}]}
+{"id":"v1-inflect-ja-02","input":"食べます","direction":"ja-en","category":"inflected-form","expected":[{"headword":"食べる","senses":["to eat"]}]}
+{"id":"v1-inflect-ja-03","input":"食べない","direction":"ja-en","category":"inflected-form","expected":[{"headword":"食べる","senses":["to eat"]}]}
+{"id":"v1-inflect-ja-04","input":"走った","direction":"ja-en","category":"inflected-form","expected":[{"headword":"走る","senses":["to run"]}]}
+{"id":"v1-inflect-ja-05","input":"行きました","direction":"ja-en","category":"inflected-form","expected":[{"headword":"行く","senses":["to go","to move"]}]}
+{"id":"v1-inflect-ja-06","input":"書いて","direction":"ja-en","category":"inflected-form","expected":[{"headword":"書く","senses":["to write"]}]}
+{"id":"v1-inflect-ja-07","input":"飲んでいる","direction":"ja-en","category":"inflected-form","expected":[{"headword":"飲む","senses":["to drink"]}]}
+{"id":"v1-inflect-ja-08","input":"見なかった","direction":"ja-en","category":"inflected-form","expected":[{"headword":"見る","senses":["to see","to look","to watch"]}]}
+{"id":"v1-inflect-ja-09","input":"高かった","direction":"ja-en","category":"inflected-form","expected":[{"headword":"高い","senses":["high","tall","expensive"]}]}
+{"id":"v1-inflect-ja-10","input":"静かだった","direction":"ja-en","category":"inflected-form","expected":[{"headword":"静か","senses":["quiet","silent","peaceful"]}]}
+{"id":"v1-phrase-en-01","input":"take off","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"take off","senses":["離陸","離陸する","脱ぐ","外す"]}]}
+{"id":"v1-phrase-en-02","input":"give up","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"give up","senses":["諦める","あきらめる","断念する","断念","降参する","降参"]}]}
+{"id":"v1-phrase-en-03","input":"look after","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"look after","senses":["世話をする","面倒を見る","世話する"]}]}
+{"id":"v1-phrase-en-04","input":"break the ice","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"break the ice","senses":["口火を切る","打ち解ける","座を和ませる","緊張をほぐす"]}]}
+{"id":"v1-phrase-en-05","input":"piece of cake","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"piece of cake","senses":["朝飯前","お茶の子さいさい","楽勝","簡単なこと"]}]}
+{"id":"v1-phrase-en-06","input":"by the way","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"by the way","senses":["ところで","ちなみに","因みに","時に"]}]}
+{"id":"v1-phrase-en-07","input":"in spite of","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"in spite of","senses":["にもかかわらず","にも拘らず","にも関わらず"]}]}
+{"id":"v1-phrase-en-08","input":"once in a blue moon","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"once in a blue moon","senses":["ごく稀に","ごくまれに","滅多にない","たまに"]}]}
+{"id":"v1-phrase-en-09","input":"as soon as possible","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"as soon as possible","senses":["できるだけ早く","出来るだけ早く","なるべく早く","可及的速やかに"]}]}
+{"id":"v1-phrase-en-10","input":"thank you","direction":"en-ja","category":"phrase-idiom","expected":[{"headword":"thank you","senses":["ありがとう","有難う","ありがとうございます","有り難う"]}]}
+{"id":"v1-phrase-ja-01","input":"猫の手も借りたい","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"猫の手も借りたい","senses":["extremely busy","very busy","to be extremely busy","to want all the help one can get"]}]}
+{"id":"v1-phrase-ja-02","input":"一石二鳥","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"一石二鳥","senses":["killing two birds with one stone","two birds with one stone"]}]}
+{"id":"v1-phrase-ja-03","input":"気を付ける","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"気を付ける","senses":["to be careful","to take care","to pay attention"]}]}
+{"id":"v1-phrase-ja-04","input":"お世話になる","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"お世話になる","senses":["to be indebted","to be indebted to","to be taken care of","to receive help"]}]}
+{"id":"v1-phrase-ja-05","input":"よろしくお願いします","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"よろしくお願いします","senses":["please treat me well","nice to meet you","please help me","I look forward to working with you"]},{"headword":"宜しくお願いします","senses":["please treat me well","nice to meet you","please help me","I look forward to working with you"]}]}
+{"id":"v1-phrase-ja-06","input":"仕方がない","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"仕方がない","senses":["it can't be helped","it cannot be helped","unavoidable","there is no alternative"]}]}
+{"id":"v1-phrase-ja-07","input":"お疲れ様","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"お疲れ様","senses":["thank you for your hard work","good work","well done","you must be tired"]}]}
+{"id":"v1-phrase-ja-08","input":"目から鱗","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"目から鱗","senses":["scales falling from one's eyes","seeing the light","sudden realization","sudden realisation"]},{"headword":"目から鱗が落ちる","senses":["to see the light","to have the scales fall from one's eyes"]}]}
+{"id":"v1-phrase-ja-09","input":"腹が立つ","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"腹が立つ","senses":["to get angry","to become angry","to be angry","to be annoyed"]}]}
+{"id":"v1-phrase-ja-10","input":"久しぶり","direction":"ja-en","category":"phrase-idiom","expected":[{"headword":"久しぶり","senses":["a long time","after a long time","long time no see","it's been a while"]}]}
+{"id":"v1-ambig-en-01","input":"bank","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"bank","senses":["銀行","土手","堤防","岸"]}]}
+{"id":"v1-ambig-en-02","input":"light","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"light","senses":["光","光線","明かり","灯り","軽い","薄い"]}]}
+{"id":"v1-ambig-en-03","input":"right","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"right","senses":["右","正しい","権利","正当"]}]}
+{"id":"v1-ambig-en-04","input":"run","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"run","senses":["走る","駆ける","走行","運営する","経営する"]}]}
+{"id":"v1-ambig-en-05","input":"set","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"set","senses":["組","一組","セット","置く","設定する","定める"]}]}
+{"id":"v1-ambig-en-06","input":"match","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"match","senses":["試合","マッチ","一致","一致する","匹敵する"]}]}
+{"id":"v1-ambig-en-07","input":"charge","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"charge","senses":["料金","請求","請求する","充電","充電する","突撃","責任"]}]}
+{"id":"v1-ambig-en-08","input":"spring","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"spring","senses":["春","泉","ばね","バネ","スプリング","跳ぶ"]}]}
+{"id":"v1-ambig-en-09","input":"fine","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"fine","senses":["良い","元気","晴れ","細かい","罰金","立派"]}]}
+{"id":"v1-ambig-en-10","input":"present","direction":"en-ja","category":"ambiguous-common","expected":[{"headword":"present","senses":["現在","今","贈り物","プレゼント","出席","出席している","提示する"]}]}
+{"id":"v1-ambig-ja-01","input":"はし","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"橋","senses":["bridge"]},{"headword":"箸","senses":["chopsticks"]},{"headword":"端","senses":["end","edge","tip"]}]}
+{"id":"v1-ambig-ja-02","input":"かみ","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"紙","senses":["paper"]},{"headword":"神","senses":["god","God","deity","spirit"]},{"headword":"髪","senses":["hair"]}]}
+{"id":"v1-ambig-ja-03","input":"あめ","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"雨","senses":["rain"]},{"headword":"飴","senses":["candy","sweets","toffee"]}]}
+{"id":"v1-ambig-ja-04","input":"生","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"生","senses":["life","birth","raw","fresh","unprocessed","living"]}]}
+{"id":"v1-ambig-ja-05","input":"上手","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"上手","senses":["skillful","skilful","good","good at","skilled","skill"]}]}
+{"id":"v1-ambig-ja-06","input":"人気","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"人気","senses":["popularity","popular","popular feeling","public favor","public favour"]}]}
+{"id":"v1-ambig-ja-07","input":"大丈夫","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"大丈夫","senses":["safe","all right","alright","OK","okay","fine","reliable"]}]}
+{"id":"v1-ambig-ja-08","input":"すみません","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"すみません","senses":["excuse me","sorry","I'm sorry","thank you"]},{"headword":"済みません","senses":["excuse me","sorry","I'm sorry","thank you"]}]}
+{"id":"v1-ambig-ja-09","input":"結構","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"結構","senses":["fine","good","splendid","excellent","enough","sufficient","quite","rather"]}]}
+{"id":"v1-ambig-ja-10","input":"適当","direction":"ja-en","category":"ambiguous-common","expected":[{"headword":"適当","senses":["suitable","appropriate","proper","adequate","careless","half-hearted"]}]}
+{"id":"v1-sentence-en-01","input":"I am hungry.","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"I am hungry","senses":["お腹が空いた","おなかがすいた","空腹です"]},{"headword":"hungry","senses":["空腹","腹が減る","お腹が空く"]}]}
+{"id":"v1-sentence-en-02","input":"Where is the station?","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"where is the station","senses":["駅はどこですか","駅はどこですか？"]},{"headword":"station","senses":["駅"]}]}
+{"id":"v1-sentence-en-03","input":"How much is this?","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"how much is this","senses":["これはいくらですか","これはいくらですか？"]},{"headword":"how much","senses":["いくら","幾ら"]}]}
+{"id":"v1-sentence-en-04","input":"Please speak slowly.","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"please speak slowly","senses":["ゆっくり話してください"]},{"headword":"slowly","senses":["ゆっくり","徐々に"]}]}
+{"id":"v1-sentence-en-05","input":"I don't understand.","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"I don't understand","senses":["分かりません","わかりません","理解できません"]},{"headword":"understand","senses":["分かる","理解する"]}]}
+{"id":"v1-sentence-en-06","input":"Can you help me?","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"can you help me","senses":["手伝ってくれますか","助けてくれますか"]},{"headword":"help","senses":["助ける","手伝う","助け"]}]}
+{"id":"v1-sentence-en-07","input":"See you tomorrow.","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"see you tomorrow","senses":["また明日","またあした"]}]}
+{"id":"v1-sentence-en-08","input":"Have a nice day!","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"have a nice day","senses":["良い一日を","よい一日を","良い一日をお過ごしください"]}]}
+{"id":"v1-sentence-en-09","input":"a cup of coffee","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"a cup of coffee","senses":["一杯のコーヒー","コーヒー一杯"]},{"headword":"coffee","senses":["コーヒー","珈琲"]}]}
+{"id":"v1-sentence-en-10","input":"I'm looking forward to it.","direction":"en-ja","category":"sentence-short-phrase","expected":[{"headword":"I'm looking forward to it","senses":["楽しみにしています","楽しみです"]},{"headword":"look forward to","senses":["楽しみにする","楽しみに待つ"]}]}
+{"id":"v1-sentence-ja-01","input":"お腹が空きました。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"お腹が空く","senses":["to become hungry","to get hungry","to be hungry"]},{"headword":"お腹が空きました","senses":["I am hungry","I'm hungry"]}]}
+{"id":"v1-sentence-ja-02","input":"駅はどこですか？","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"駅はどこですか","senses":["where is the station","where is the station?"]},{"headword":"駅","senses":["station","railway station","train station"]}]}
+{"id":"v1-sentence-ja-03","input":"これはいくらですか。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"これはいくらですか","senses":["how much is this","how much is this?"]},{"headword":"幾ら","senses":["how much"]},{"headword":"いくら","senses":["how much"]}]}
+{"id":"v1-sentence-ja-04","input":"ゆっくり話してください。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"ゆっくり","senses":["slowly","unhurriedly"]},{"headword":"ゆっくり話してください","senses":["please speak slowly"]}]}
+{"id":"v1-sentence-ja-05","input":"日本語が分かりません。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"分かる","senses":["to understand","to comprehend"]},{"headword":"日本語が分かりません","senses":["I don't understand Japanese","I do not understand Japanese"]}]}
+{"id":"v1-sentence-ja-06","input":"手伝ってもらえますか？","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"手伝う","senses":["to help","to assist"]},{"headword":"手伝ってもらえますか","senses":["can you help me","can you help me?"]}]}
+{"id":"v1-sentence-ja-07","input":"また明日。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"また明日","senses":["see you tomorrow"]},{"headword":"又明日","senses":["see you tomorrow"]}]}
+{"id":"v1-sentence-ja-08","input":"良い一日を！","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"良い一日を","senses":["have a nice day","have a good day"]}]}
+{"id":"v1-sentence-ja-09","input":"コーヒーを一杯ください。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"コーヒー","senses":["coffee"]},{"headword":"コーヒーを一杯ください","senses":["a cup of coffee, please","I'd like a cup of coffee"]}]}
+{"id":"v1-sentence-ja-10","input":"楽しみにしています。","direction":"ja-en","category":"sentence-short-phrase","expected":[{"headword":"楽しみにする","senses":["to look forward to"]},{"headword":"楽しみにしています","senses":["I'm looking forward to it","I am looking forward to it"]}]}

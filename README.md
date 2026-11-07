@@ -165,6 +165,15 @@ snapshot or a deliberate date/hash update (see
 Neither the archive nor generated `public/dict/` data is committed.
 Wiktextract/etymology ingestion remains a follow-up.
 
+### Manual lookup-quality benchmark
+
+After building JMdict, run `pnpm run eval:lookup` to score 100 curated EN→JA /
+JA→EN queries offline through the app's dictionary lookup path. It reports exact
+hits, first-result usefulness and misses by category; it refuses fixture builds
+and never downloads data. See [`eval/README.md`](./eval/README.md) for the scoring
+rules and [`eval/BASELINE.md`](./eval/BASELINE.md) for the initial results.
+The benchmark is local/manual only; existing CI jobs are unchanged.
+
 ## Privacy
 
 Eiwa does not send lookup text to any server-side endpoint, does not run
