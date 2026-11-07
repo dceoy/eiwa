@@ -24,6 +24,24 @@ const aiOutput: AiExplanationOutput = {
 };
 
 describe("mergeResult", () => {
+  it("keeps related headwords out of exact-hit translation alternatives", () => {
+    const partial: DictionaryEntry = {
+      ...catEntry,
+      id: "bobcat",
+      headword: "bobcat",
+      match: { kind: "partial", query: "cat" },
+      translations: [{ text: "オオヤマネコ", lang: "ja" }],
+    };
+    const result = mergeResult({
+      direction: "en-ja",
+      input: "cat",
+      dictionaryEntries: [catEntry, partial],
+      ai: aiOutput,
+    });
+    expect(result.translation).toEqual({ primary: "猫", alternatives: [] });
+    expect(result.dictionary).toEqual([catEntry, partial]);
+    expect(result.aiTranslation).toEqual(aiOutput.translation);
+  });
   it("uses dictionary translation as the primary when AI is unavailable", () => {
     const result = mergeResult({
       direction: "en-ja",

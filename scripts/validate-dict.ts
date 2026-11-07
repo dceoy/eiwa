@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { normalizeHeadword, resolveShardKey } from "../src/dict-normalize";
 import type { DictionaryEntry, DictManifest } from "../src/dict-types";
 import { validateManifest, validateShardPayload } from "../src/dict-validate";
+import { validateSearchRows } from "../src/search-index";
 import { SHARD_TARGET_BYTES } from "./build-dict-shards";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -28,6 +29,9 @@ async function main() {
     en: new Set(manifest.shards.filter((ref) => ref.lang === "en").map((ref) => ref.key)),
     ja: new Set(manifest.shards.filter((ref) => ref.lang === "ja").map((ref) => ref.key)),
   };
+  const headwords = { en: new Set<string>(), ja: new Set<string>() };
+  const indexWords = { en: new Set<string>(), ja: new Set<string>() };
+  const lemmaTargets: { lang: "en" | "ja"; lemma: string }[] = [];
   let totalBytes = Buffer.byteLength(manifestRaw);
   let largestBytes = 0;
   let indexedEntries = 0;
@@ -61,6 +65,7 @@ async function main() {
     }
 
     for (const [normalized, list] of Object.entries(payload.entries ?? {})) {
+      headwords[shard.lang].add(normalized);
       if (resolveShardKey(normalized, shard.lang, keys[shard.lang]) !== shard.key) {
         errors.push(`${shard.path}: unroutable lookup bucket ${normalized}`);
       }
@@ -88,6 +93,44 @@ async function main() {
     }
   }
 
+  for (const ref of manifest.search ?? []) {
+    const content = await readFile(path.join(ROOT, "public", ref.path), "utf8");
+    const bytes = Buffer.byteLength(content);
+    totalBytes += bytes;
+    largestBytes = Math.max(largestBytes, bytes);
+    if (bytes !== ref.bytes || bytes >= SHARD_TARGET_BYTES || sha256(content) !== ref.checksum)
+      errors.push(`${ref.path}: checksum/size mismatch or oversized index`);
+    const rows: unknown = JSON.parse(content);
+    if (!validateSearchRows(rows, ref.kind)) {
+      errors.push(`${ref.path}: invalid sorted search rows`);
+      continue;
+    }
+    if (
+      rows.length !== ref.entryCount ||
+      rows[0]?.[0] !== ref.start ||
+      rows.at(-1)?.[0] !== ref.end
+    )
+      errors.push(`${ref.path}: count/range mismatch`);
+    for (const [word, value] of rows) {
+      if (normalizeHeadword(word, ref.lang) !== word)
+        errors.push(`${ref.path}: unnormalized key ${word}`);
+      if (ref.kind === "headwords") {
+        indexWords[ref.lang].add(word);
+        if (!headwords[ref.lang].has(word)) errors.push(`${ref.path}: missing headword ${word}`);
+      } else if (Array.isArray(value)) {
+        for (const lemma of value) lemmaTargets.push({ lang: ref.lang, lemma });
+      }
+    }
+  }
+  if (manifest.search) {
+    for (const lang of ["en", "ja"] as const)
+      for (const word of headwords[lang]) {
+        if (!indexWords[lang].has(word)) errors.push(`Search index omits ${lang}:${word}`);
+      }
+    for (const { lang, lemma } of lemmaTargets)
+      if (!headwords[lang].has(lemma)) errors.push(`Inflection target missing: ${lang}:${lemma}`);
+  }
+
   if (errors.length > 0) {
     console.error(`Dictionary validation failed with ${errors.length} issue(s):`);
     for (const error of errors) console.error(`  - ${error}`);
@@ -96,7 +139,7 @@ async function main() {
   }
 
   console.log(
-    `Dictionary validation passed: ${manifest.shards.length} shards, ${indexedEntries} indexed entries (including reading aliases), largest shard ${largestBytes} bytes, total dictionary ${totalBytes} bytes (including manifest).`,
+    `Dictionary validation passed: ${manifest.shards.length} shards, ${manifest.search?.length ?? 0} search indexes, ${indexedEntries} indexed entries (including reading aliases), largest shard ${largestBytes} bytes, total dictionary ${totalBytes} bytes (including manifest).`,
   );
 }
 

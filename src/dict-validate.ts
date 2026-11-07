@@ -43,6 +43,44 @@ export function validateManifest(value: unknown): ValidationIssue[] {
       }
     });
   }
+  if (manifest.search !== undefined) {
+    if (!Array.isArray(manifest.search))
+      issues.push({ path: "manifest.search", message: "expected an array" });
+    else {
+      const paths = new Set<string>();
+      const ends = new Map<string, string>();
+      for (const ref of manifest.search) {
+        if (!ref || typeof ref !== "object") {
+          issues.push({ path: "manifest.search", message: "expected a search reference object" });
+          continue;
+        }
+        const group = `${ref.lang}:${ref.kind}`;
+        if (
+          !["en", "ja"].includes(ref.lang) ||
+          !["headwords", "inflections"].includes(ref.kind) ||
+          !/^dict\/search\/[a-z0-9-]+\.json$/.test(ref.path) ||
+          paths.has(ref.path) ||
+          !isNonEmptyString(ref.start) ||
+          !isNonEmptyString(ref.end) ||
+          ref.start > ref.end ||
+          (ends.has(group) && ref.start <= (ends.get(group) ?? "")) ||
+          !Number.isInteger(ref.entryCount) ||
+          ref.entryCount <= 0 ||
+          !Number.isInteger(ref.bytes) ||
+          ref.bytes <= 0 ||
+          ref.bytes >= 1024 * 1024 ||
+          !/^sha256:[a-f0-9]{64}$/.test(ref.checksum)
+        ) {
+          issues.push({
+            path: "manifest.search",
+            message: "invalid, overlapping or duplicate search reference",
+          });
+        }
+        paths.add(ref.path);
+        ends.set(group, ref.end);
+      }
+    }
+  }
   if (!Array.isArray(manifest.licenses) || manifest.licenses.length === 0) {
     issues.push({ path: "manifest.licenses", message: "expected at least one license entry" });
   }
@@ -63,6 +101,12 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
   }
   if (entry.lang !== "en" && entry.lang !== "ja") {
     issues.push({ path: `${path}.lang`, message: 'lang must be "en" or "ja"' });
+  }
+  for (const field of ["frequency", "headwordFrequency"] as const) {
+    const score = entry[field];
+    if (score !== undefined && (!Number.isFinite(score) || score < 0)) {
+      issues.push({ path: `${path}.${field}`, message: "expected a non-negative frequency" });
+    }
   }
   if (!Array.isArray(entry.translations) || entry.translations.length === 0) {
     issues.push({ path: `${path}.translations`, message: "expected at least one translation" });

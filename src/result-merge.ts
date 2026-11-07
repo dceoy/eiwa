@@ -31,7 +31,12 @@ export function mergeResult({
   extraWarnings = [],
 }: MergeInput): EiwaResult {
   const bestEntry = dictionaryEntries[0];
-  const dictTranslations = dictionaryEntries.flatMap((entry) =>
+  // Related headwords are navigational results, not alternative meanings of
+  // an exact hit (e.g. catsup must not become a translation of cat).
+  const translationEntries = dictionaryEntries.filter(
+    (entry) => entry.match?.kind === bestEntry?.match?.kind,
+  );
+  const dictTranslations = translationEntries.flatMap((entry) =>
     [...entry.translations]
       .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
       .map((t) => t.text),
