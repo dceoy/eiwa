@@ -31,6 +31,15 @@ Eiwa does not persist your lookup text anywhere by default:
   analytics/remote-logging identifiers (`gtag`, Google Analytics,
   Mixpanel, Segment, Sentry, `sendBeacon`, etc.) and fails if any appear.
 
+## Dictionary source links
+
+Examples, IPA, etymology and level tags are built into local static shards;
+lookups do not contact Tatoeba, Wiktionary, Kaikki or NGSL. Citation/license
+links are ordinary optional external links, not background requests. If you
+explicitly open an original Wiktionary article or a Tatoeba sentence/profile,
+your browser navigates to that site (the destination URL identifies the word,
+sentence or contributor). The app sends no referrer with these links.
+
 ## Local-only AI inference
 
 Translation, nuance, and writing-correction generation run **entirely in

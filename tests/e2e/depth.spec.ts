@@ -18,6 +18,7 @@ test("run shows sourced examples, IPA, etymology and a coarse NGSL tag without A
     .locator(".dictionary-entry")
     .filter({ has: page.getByText("run", { exact: true }) })
     .first();
+  await expect(entry).toBeVisible({ timeout: 20_000 });
   await expect(entry.getByText("basic · NGSL")).toBeVisible();
   await expect(entry.getByText("Someday I'll run like the wind.")).toBeVisible();
   await expect(entry.getByText("またいつか風のように走るんだ。")).toBeVisible();
@@ -48,9 +49,15 @@ for (const query of ["電車", "でんしゃ"])
     await page.goto("/");
     await page.getByLabel(/english or japanese/i).fill(query);
     await page.getByRole("button", { name: "Translate", exact: true }).click();
-    await expect(page.getByText("電車が停まるまで開けないで。")).toBeVisible();
-    await expect(page.getByText("Don't open before the train stops.")).toBeVisible();
-    await expect(page.getByRole("link", { name: "mrtaistoi", exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "bunbuku", exact: true })).toBeVisible();
-    await expect(page.getByText(/Examples — dictionary data/)).toBeVisible();
+    const entry = page
+      .locator(".dictionary-entry")
+      .filter({ has: page.getByText("電車", { exact: true }) })
+      .first();
+    // A cold production lookup also reads the Phase A related-search tables.
+    await expect(entry).toBeVisible({ timeout: 20_000 });
+    await expect(entry.getByText("電車が停まるまで開けないで。")).toBeVisible();
+    await expect(entry.getByText("Don't open before the train stops.")).toBeVisible();
+    await expect(entry.getByRole("link", { name: "mrtaistoi", exact: true })).toBeVisible();
+    await expect(entry.getByRole("link", { name: "bunbuku", exact: true })).toBeVisible();
+    await expect(entry.getByText(/Examples — dictionary data/)).toBeVisible();
   });
