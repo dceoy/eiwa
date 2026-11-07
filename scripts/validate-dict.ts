@@ -2,19 +2,13 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DictManifest } from "../src/dict-types";
+import { normalizeHeadword, resolveShardKey } from "../src/dict-normalize";
+import type { DictionaryEntry, DictManifest } from "../src/dict-types";
 import { validateManifest, validateShardPayload } from "../src/dict-validate";
+import { SHARD_TARGET_BYTES } from "./build-dict-shards";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DICT_DIR = path.join(ROOT, "public", "dict");
-
-/**
- * Stricter, earlier signal than `scripts/check-asset-limits.ts`'s dist-wide
- * 5 MiB Cloudflare hard limit: first-character sharding of a large source
- * (e.g. JMdict) can produce hot shards that approach that ceiling, so fail
- * validation well before a shard actually reaches it.
- */
-const SHARD_SIZE_BUDGET_BYTES = 4 * 1024 * 1024;
 
 function sha256(content: string): string {
   return `sha256:${createHash("sha256").update(content).digest("hex")}`;
@@ -30,6 +24,13 @@ async function main() {
     errors.push(`${issue.path}: ${issue.message}`);
   }
 
+  const keys = {
+    en: new Set(manifest.shards.filter((ref) => ref.lang === "en").map((ref) => ref.key)),
+    ja: new Set(manifest.shards.filter((ref) => ref.lang === "ja").map((ref) => ref.key)),
+  };
+  let totalBytes = Buffer.byteLength(manifestRaw);
+  let largestBytes = 0;
+  let indexedEntries = 0;
   for (const shard of manifest.shards ?? []) {
     const filePath = path.join(ROOT, "public", shard.path);
     let content: string;
@@ -46,9 +47,11 @@ async function main() {
     }
 
     const byteSize = Buffer.byteLength(content, "utf8");
-    if (byteSize > SHARD_SIZE_BUDGET_BYTES) {
+    totalBytes += byteSize;
+    largestBytes = Math.max(largestBytes, byteSize);
+    if (byteSize > SHARD_TARGET_BYTES) {
       errors.push(
-        `${shard.path}: ${byteSize} bytes exceeds the ${SHARD_SIZE_BUDGET_BYTES}-byte per-shard size budget`,
+        `${shard.path}: ${byteSize} bytes exceeds the ${SHARD_TARGET_BYTES}-byte per-shard size budget`,
       );
     }
 
@@ -57,10 +60,27 @@ async function main() {
       errors.push(`${shard.path} ${issue.path}: ${issue.message}`);
     }
 
+    for (const [normalized, list] of Object.entries(payload.entries ?? {})) {
+      if (resolveShardKey(normalized, shard.lang, keys[shard.lang]) !== shard.key) {
+        errors.push(`${shard.path}: unroutable lookup bucket ${normalized}`);
+      }
+      for (const entry of list as DictionaryEntry[]) {
+        if (
+          ![entry.headword, entry.reading ?? ""].some(
+            (word) => normalizeHeadword(word, shard.lang) === normalized,
+          )
+        ) {
+          errors.push(
+            `${shard.path}: ${entry.id} is not a headword/reading alias of ${normalized}`,
+          );
+        }
+      }
+    }
     const actualCount = Object.values(payload.entries ?? {}).reduce(
       (sum, list) => sum + list.length,
       0,
     );
+    indexedEntries += actualCount;
     if (actualCount !== shard.entryCount) {
       errors.push(
         `${shard.path}: entryCount mismatch (manifest says ${shard.entryCount}, found ${actualCount})`,
@@ -75,7 +95,9 @@ async function main() {
     return;
   }
 
-  console.log(`Dictionary validation passed: ${manifest.shards.length} shard(s) OK.`);
+  console.log(
+    `Dictionary validation passed: ${manifest.shards.length} shards, ${indexedEntries} indexed entries (including reading aliases), largest shard ${largestBytes} bytes, total dictionary ${totalBytes} bytes (including manifest).`,
+  );
 }
 
 main().catch((error: unknown) => {

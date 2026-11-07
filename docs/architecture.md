@@ -65,26 +65,84 @@ per the free-tier guardrails in issue #6.
 
 ## Dictionary shard flow
 
-1. `fixtures/dict/{en,ja}.json` hold hand-authored fixture entries (see
-   `src/dict-types.ts` for the `DictionaryEntry` shape).
-2. `scripts/build-dict-shards.ts` (run by `pnpm run build` via `dict:build`)
-   normalizes each headword (`src/dict-normalize.ts`), shards English by
-   first ASCII letter and Japanese by first character, and writes:
-   - `public/dict/<lang>/<key>.json` — `{ entries: Record<string, DictionaryEntry[]> }`
-   - `public/dict/manifest.json` — schema version, build timestamp, shard
-     list with `sha256:` checksums and entry counts, and deduplicated
-     license/source metadata.
-3. `scripts/validate-dict.ts` (`dict:validate`, also run by `pnpm run build`)
-   re-reads the generated output, recomputes each shard's checksum, and
-   validates every entry's shape (`src/dict-validate.ts`).
-4. In the browser, `src/dict.ts` fetches the manifest once, then fetches and
-   validates only the specific shard a lookup needs, caching both in
-   CacheStorage (`src/dict-cache.ts`). A dictionary miss returns `[]`, not an
-   error.
+1. Production uses `scripts/build-jmdict.ts` (`dict:build:jmdict` or
+   `DICT_SOURCE=jmdict pnpm run build`). It downloads official EDRDG
+   `JMdict_e.gz`, verifies a pinned SHA-256 before parsing, and caches the
+   verified 2026-11-07 archive under gitignored `.cache/jmdict/`. `saxes`
+   parses decompressed UTF-8 chunks, retaining only one entry XML tree at
+   a time (not the full XML DOM). Converted entries are held in memory for
+   grouping. Only literal internal DTD entities are resolved; no external
+   entities are fetched. `sourceVersions` records date, URL and SHA-256.
+   Default `DICT_SOURCE=fixtures` instead reads the hand-authored CC0 data
+   in `fixtures/dict/{en,ja}.json`, with no network access for CI/tests/dev.
+2. Both sources use `DictionaryEntry` (`src/dict-types.ts`) and the shared
+   writer in `scripts/build-dict-shards.ts`. Normalization folds case and
+   full-width ASCII for EN and katakana to hiragana for JA. Each written
+   form is indexed by headword and reading alias. First-character buckets
+   automatically split when serialized UTF-8 JSON exceeds 1 MiB:
+   - Shared `shardKeyFor` computes `<first-character>~<hash-prefix>` for
+     split leaves, using deterministic FNV-1a over the normalized lookup
+     key (not the entry ID). Each split adds one hex digit, up to eight.
+   - `resolveShardKey` selects the deepest existing manifest leaf. Parents
+     are replaced, not fetched alongside their children; every alias is
+     independently routed by its own normalized key. A single unsplittable
+     oversized lookup bucket fails the build instead of emitting a large
+     shard or dropping entries.
+   - `public/dict/<lang>/<hex-encoded-key>.json` contains the unchanged
+     `{ entries: Record<string, DictionaryEntry[]> }` payload. ASCII
+     filenames avoid path-separator and URL-decoding ambiguities.
+   - `manifest.json` retains schema version 1, source/license metadata,
+     shard keys/paths, SHA-256 checksums and entry counts.
+3. `dict:validate` re-reads every shard, checks checksums, shapes, counts,
+   headword/reading aliases, build/runtime routing consistency and the
+   1 MiB size budget. The full build also enforces dist-wide file-count
+   and 5 MiB asset limits. Tests force recursive splits for hot `し`, `か`
+   and English prefixes, including supplementary Unicode headwords.
+4. The browser fetches the manifest once and only the matching shard per
+   lookup, validating and caching them in CacheStorage (`src/dict-cache.ts`).
+   No full-dictionary download/precache is performed. A miss returns `[]`.
+   `pnpm run dict:spotcheck` exercises this same app path against local
+   production files for `mountain` → 山, 電車 → train and でんしゃ → 電車.
 
-Production ingestion of real sources (JMdict/EDICT, optionally
-Wiktextract) can later populate additional shards through the same
-manifest/shard format — see `docs/release.md`.
+### JMdict adaptation and limits
+
+The adapter respects `re_restr`, `re_nokanji`, `stagk` and `stagr`, and
+inherits part-of-speech labels between senses. It retains all compatible
+written-form/reading pairs, but at most three applicable senses and three
+English glosses per sense. Examples, cross-references, dialect/field tags,
+loanword history and other extended metadata are omitted; this is not a
+complete scholarly presentation of JMdict. General/news common vocabulary
+is ordered before specialist/loanword entries, then remaining entries,
+with source order preserved within each tier.
+
+The reverse EN index emits **one entry per JMdict entry**, only for the
+first gloss of its first sense: exact normalized ASCII headword-style
+strings of at most four words / 64 characters (letters, spaces, hyphens,
+apostrophes). Typed explanatory/figurative/literal glosses are excluded.
+No substring/token/fuzzy search, secondary-gloss indexing or inflection
+handling is implemented. A common word may therefore be a miss even when
+it appears somewhere in a Japanese entry's definition. JA lookup includes
+the retained English senses and reading aliases independently of this EN
+index limitation.
+
+JMdict belongs to the Electronic Dictionary Research and Development Group
+(EDRDG); the trimmed/indexed adaptation is distributed under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) with
+[EDRDG attribution](https://www.edrdg.org/edrdg/licence.html) in the manifest
+and in-app Sources & licenses panel. Wiktextract/etymology ingestion remains
+a follow-up.
+
+### Updating the content pin
+
+EDRDG's official URL is a rolling daily endpoint, not an immutable archive.
+A fresh download after rotation intentionally fails its SHA-256 check;
+repeat builds use the verified cache. Preserve that cache externally if
+long-term reproducibility is needed (never commit it). To update, download
+`https://www.edrdg.org/pub/Nihongo/JMdict_e.gz`, compute its SHA-256, inspect
+the `JMdict created:` date in the decompressed XML, and deliberately update
+`JMDICT_VERSION` and `JMDICT_SHA256` together in `scripts/build-jmdict.ts`.
+Re-run checks, the real build, validation and spot checks. Do not simply
+accept a new hash after an unexplained verification failure.
 
 ## Lookup orchestration
 
@@ -115,10 +173,13 @@ particular lookup.
 **only** from dictionary entries — the AI's response schema
 (`AiExplanationOutput` in `src/result-schema.ts`) doesn't even have fields for
 those, so a malformed or hallucinated model response cannot overwrite or
-invent a dictionary fact. The AI can only ever contribute `translation`,
-`correction`, `nuance`, and `warnings`. `src/provenance.ts` labels each
-rendered section `Dictionary`, `AI explanation`, or `Dictionary + AI`
-accordingly.
+invent a dictionary fact. When dictionary results exist, their translation
+is also the primary baseline, with dictionary-only alternatives. The AI
+translation is retained in `aiTranslation` and rendered in its own labeled
+card, never blended into that baseline. On a dictionary miss, AI may supply
+the primary translation, labeled `AI explanation`. Correction, nuance and
+AI warnings stay auxiliary. `src/provenance.ts` supplies the `Dictionary`
+and `AI explanation` section labels.
 
 ## WebLLM engine
 

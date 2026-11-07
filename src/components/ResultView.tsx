@@ -65,7 +65,7 @@ export function ResultView({ result }: { result: EiwaResult }) {
         <section class="card" aria-labelledby="translation-heading">
           <header class="card-header">
             <h2 id="translation-heading">Translation</h2>
-            <ProvenanceTag hasDictionary={hasDict} hasAi={hasAi} />
+            <ProvenanceTag hasDictionary={hasDict} hasAi={!hasDict && hasAi} />
           </header>
           <p class="translation-primary">
             <span lang={targetLang}>{result.translation.primary}</span>
@@ -75,6 +75,25 @@ export function ResultView({ result }: { result: EiwaResult }) {
           {result.translation.alternatives.length > 0 && (
             <p class="translation-alternatives">
               Also: <span lang={targetLang}>{result.translation.alternatives.join(", ")}</span>
+            </p>
+          )}
+        </section>
+      )}
+
+      {hasDict && result.aiTranslation && (
+        <section class="card" aria-labelledby="ai-translation-heading">
+          <header class="card-header">
+            <h2 id="ai-translation-heading">AI translation</h2>
+            <ProvenanceTag hasDictionary={false} hasAi />
+          </header>
+          <p class="translation-primary">
+            <span lang={targetLang}>{result.aiTranslation.primary}</span>
+            <CopyButton text={result.aiTranslation.primary} />
+            <SpeakButton text={result.aiTranslation.primary} lang={targetLang} />
+          </p>
+          {result.aiTranslation.alternatives.length > 0 && (
+            <p class="translation-alternatives">
+              Also: <span lang={targetLang}>{result.aiTranslation.alternatives.join(", ")}</span>
             </p>
           )}
         </section>

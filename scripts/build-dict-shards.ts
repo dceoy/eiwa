@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeHeadword, shardKeyFor } from "../src/dict-normalize";
+import { MAX_SHARD_HASH_DEPTH, normalizeHeadword, shardKeyFor } from "../src/dict-normalize";
 import type {
   DictionaryEntry,
   DictionarySource,
@@ -14,6 +14,7 @@ import type {
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const FIXTURES_DIR = path.join(ROOT, "fixtures", "dict");
 const OUT_DIR = path.join(ROOT, "public", "dict");
+export const SHARD_TARGET_BYTES = 1024 * 1024;
 
 const FIXTURE_SOURCE: DictionarySource = {
   name: "Eiwa Fixture Data",
@@ -91,7 +92,7 @@ function addToShard(
 ) {
   let shard = shards.get(key);
   if (!shard) {
-    shard = { lang, key, entries: {} };
+    shard = { lang, key, entries: Object.create(null) };
     shards.set(key, shard);
   }
   shard.entries[normalized] ??= [];
@@ -105,7 +106,7 @@ export function groupByShard(entries: DictionaryEntry[], lang: DictLang): Map<st
     const normalizedHeadword = normalizeHeadword(entry.headword, lang);
     addToShard(shards, lang, shardKeyFor(normalizedHeadword, lang), normalizedHeadword, entry);
 
-    // Japanese fixtures commonly store kanji headwords with a kana reading
+    // Japanese entries commonly store kanji headwords with a kana reading
     // (e.g. 猫 / ねこ). Index the reading as an alias so a user typing the
     // kana form (as most users do, since IMEs convert kana to kanji rather
     // than the other way around) can still find the entry.
@@ -129,13 +130,38 @@ async function clearGeneratedShards() {
   await mkdir(OUT_DIR, { recursive: true });
 }
 
+export function splitShards(
+  shards: Map<string, ShardFile>,
+  budget = SHARD_TARGET_BYTES,
+): Map<string, ShardFile> {
+  const leaves = new Map<string, ShardFile>();
+  function split(shard: ShardFile, depth: number) {
+    if (Buffer.byteLength(JSON.stringify({ entries: shard.entries })) <= budget) {
+      leaves.set(shard.key, shard);
+      return;
+    }
+    if (depth === MAX_SHARD_HASH_DEPTH) {
+      throw new Error(`Cannot split oversized lookup bucket ${shard.lang}:${shard.key}`);
+    }
+    const children = new Map<string, ShardFile>();
+    for (const [normalized, entries] of Object.entries(shard.entries)) {
+      const key = shardKeyFor(normalized, shard.lang, depth + 1);
+      for (const entry of entries) addToShard(children, shard.lang, key, normalized, entry);
+    }
+    for (const child of children.values()) split(child, depth + 1);
+  }
+  for (const shard of shards.values()) split(shard, 0);
+  return leaves;
+}
+
 async function writeShards(shards: Map<string, ShardFile>): Promise<DictShardRef[]> {
   const refs: DictShardRef[] = [];
 
   for (const shard of shards.values()) {
     const langDir = path.join(OUT_DIR, shard.lang);
     await mkdir(langDir, { recursive: true });
-    const fileName = `${shard.key}.json`;
+    // ASCII hex avoids path separators, URL decoding and Unicode filesystem differences.
+    const fileName = `${Buffer.from(shard.key).toString("hex")}.json`;
     const content = JSON.stringify({ entries: shard.entries });
     await writeFile(path.join(langDir, fileName), content, "utf8");
 
@@ -165,22 +191,22 @@ function uniqueLicenses(entries: DictionaryEntry[]): DictionarySource[] {
   return [...seen.values()];
 }
 
-async function main() {
+export async function buildDictionary(
+  en: DictionaryEntry[],
+  ja: DictionaryEntry[],
+  sourceVersions: DictManifest["sourceVersions"],
+) {
+  // Complete splitting before removing the last successful output.
+  const enShards = splitShards(groupByShard(en, "en"));
+  const jaShards = splitShards(groupByShard(ja, "ja"));
   await clearGeneratedShards();
-
-  const seenIds = new Set<string>();
-  const en = await loadFixtures("en", seenIds);
-  const ja = await loadFixtures("ja", seenIds);
-  const all = [...en, ...ja];
-
-  const enShards = groupByShard(en, "en");
-  const jaShards = groupByShard(ja, "ja");
   const shardRefs = [...(await writeShards(enShards)), ...(await writeShards(jaShards))];
+  const all = [...en, ...ja];
 
   const manifest: DictManifest = {
     schemaVersion: 1,
     builtAt: new Date().toISOString(),
-    sourceVersions: { "eiwa-fixtures": "0.1.0" },
+    sourceVersions,
     shards: shardRefs,
     licenses: uniqueLicenses(all),
   };
@@ -192,6 +218,20 @@ async function main() {
     `Built ${all.length} dictionary entries into ${shardRefs.length} shards ` +
       `(${shardFiles.length} files) at ${path.relative(ROOT, OUT_DIR)}/`,
   );
+}
+
+async function main() {
+  const source = process.env.DICT_SOURCE ?? "fixtures";
+  if (source === "jmdict") {
+    const { buildJmdict } = await import("./build-jmdict");
+    await buildJmdict();
+    return;
+  }
+  if (source !== "fixtures") throw new Error(`Unknown DICT_SOURCE: ${source}`);
+  const seenIds = new Set<string>();
+  await buildDictionary(await loadFixtures("en", seenIds), await loadFixtures("ja", seenIds), {
+    "eiwa-fixtures": "0.1.0",
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

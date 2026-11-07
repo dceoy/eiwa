@@ -40,7 +40,7 @@ describe("mergeResult", () => {
     expect(result.sourceKinds).toEqual(["dictionary"]);
   });
 
-  it("prefers the AI translation but keeps dictionary facts untouched", () => {
+  it("keeps dictionary translation primary and AI translation separate", () => {
     const result = mergeResult({
       direction: "en-ja",
       input: "cat",
@@ -48,9 +48,9 @@ describe("mergeResult", () => {
       ai: aiOutput,
     });
 
-    expect(result.translation.primary).toBe("ねこ");
-    expect(result.translation.alternatives).toContain("ニャンコ");
-    expect(result.translation.alternatives).toContain("猫");
+    expect(result.translation.primary).toBe("猫");
+    expect(result.translation.alternatives).toEqual([]);
+    expect(result.aiTranslation).toEqual(aiOutput.translation);
     expect(result.dictionary).toEqual([catEntry]);
     expect(result.etymology).toBe("From Old English catt.");
     expect(result.sourceKinds).toEqual(["dictionary", "ai"]);
@@ -64,6 +64,7 @@ describe("mergeResult", () => {
       ai: aiOutput,
     });
 
+    expect(result.translation).toEqual(aiOutput.translation);
     expect(result.etymology).toBeNull();
     expect(result.pronunciation).toBeNull();
     expect(result.dictionary).toEqual([]);
