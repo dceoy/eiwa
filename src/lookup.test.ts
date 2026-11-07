@@ -106,7 +106,8 @@ describe("lookup", () => {
     const resultEvent = events.at(-1);
     expect(resultEvent?.type).toBe("result");
     if (resultEvent?.type === "result") {
-      expect(resultEvent.result.translation.primary).toBe("ねこ");
+      expect(resultEvent.result.translation.primary).toBe("猫");
+      expect(resultEvent.result.aiTranslation?.primary).toBe("ねこ");
       expect(resultEvent.result.sourceKinds).toEqual(["dictionary", "ai"]);
     }
     expect(aiEngine.explain).toHaveBeenCalledOnce();

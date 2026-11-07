@@ -23,6 +23,7 @@ export interface EiwaResult {
   direction: Direction;
   input: string;
   translation: TranslationResult;
+  aiTranslation?: TranslationResult | null;
   correction: CorrectionResult;
   nuance: string[];
   dictionary: DictionaryEntry[];

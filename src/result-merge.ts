@@ -37,11 +37,12 @@ export function mergeResult({
       .map((t) => t.text),
   );
 
-  const primary = ai?.translation.primary || dictTranslations[0] || "";
-  const alternatives = uniqueStrings([
-    ...(ai?.translation.alternatives ?? []),
-    ...dictTranslations.filter((t) => t !== primary),
-  ]);
+  const primary = dictTranslations[0] || ai?.translation.primary || "";
+  const alternatives = uniqueStrings(
+    dictionaryEntries.length > 0
+      ? dictTranslations.filter((t) => t !== primary)
+      : (ai?.translation.alternatives ?? []),
+  );
 
   // A miss with no AI output is a normal (not error) outcome, but the user
   // still needs to know the lookup ran and found nothing rather than seeing
@@ -53,6 +54,7 @@ export function mergeResult({
     direction,
     input,
     translation: { primary, alternatives },
+    aiTranslation: ai?.translation ?? null,
     correction: ai?.correction ?? { corrected: null, explanation: null },
     nuance: ai?.nuance ?? [],
     dictionary: dictionaryEntries,
