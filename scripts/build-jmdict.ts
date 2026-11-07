@@ -11,10 +11,9 @@
  * silently upgrades. Keep the verified cache or deliberately update date + hash.
  */
 import { createHash } from "node:crypto";
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdir, rename, rm } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import { createGunzip } from "node:zlib";
 import { SaxesParser } from "saxes";
@@ -38,11 +37,15 @@ export const JMDICT_SOURCE: DictionarySource = {
 };
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const CACHE_DIR = path.join(ROOT, ".cache", "jmdict");
+const CACHE_FILE = path.join(CACHE_DIR, `JMdict_e-${JMDICT_VERSION}-${JMDICT_SHA256}.gz`);
 
 export async function verifyArchive(file: string, expected = JMDICT_SHA256): Promise<void> {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(file)) hash.update(chunk);
-  const actual = hash.digest("hex");
+  verifyHash(hash.digest("hex"), expected);
+}
+
+function verifyHash(actual: string, expected = JMDICT_SHA256): void {
   if (actual !== expected) {
     throw new Error(
       `JMdict SHA-256 mismatch: expected ${expected}, got ${actual}. Keep the pinned archive or deliberately update the source pin.`,
@@ -51,20 +54,22 @@ export async function verifyArchive(file: string, expected = JMDICT_SHA256): Pro
 }
 
 async function downloadArchive(): Promise<string> {
-  await mkdir(CACHE_DIR, { recursive: true });
-  const file = path.join(CACHE_DIR, `JMdict_e-${JMDICT_VERSION}-${JMDICT_SHA256}.gz`);
+  const file = CACHE_FILE;
   try {
     await verifyArchive(file);
     return file;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
+  const response = await fetch(JMDICT_URL, { signal: AbortSignal.timeout(120_000) });
+  if (!response.ok) throw new Error(`JMdict download: HTTP ${response.status}`);
+  // Verify the compressed bytes in memory before writing or decompressing XML.
+  const bytes = Buffer.from(await response.arrayBuffer());
+  verifyHash(createHash("sha256").update(bytes).digest("hex"));
+  await mkdir(CACHE_DIR, { recursive: true });
   const partial = `${file}.part`;
   try {
-    const response = await fetch(JMDICT_URL, { signal: AbortSignal.timeout(120_000) });
-    if (!response.ok || !response.body) throw new Error(`JMdict download: HTTP ${response.status}`);
-    await pipeline(response.body, createWriteStream(partial));
-    await verifyArchive(partial);
+    await writeFile(partial, bytes);
     await rename(partial, file);
   } finally {
     await rm(partial, { force: true });

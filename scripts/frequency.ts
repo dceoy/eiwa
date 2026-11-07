@@ -21,6 +21,10 @@ const CACHE = path.join(
   ".cache",
   "frequency",
 );
+const CACHE_FILES = {
+  en: path.join(CACHE, "en.txt"),
+  ja: path.join(CACHE, "ja.txt"),
+} as const;
 export function parseFrequency(text: string, lang: DictLang): Map<string, number> {
   const scores = new Map<string, number>();
   for (const line of text.trim().split(/\r?\n/)) {
@@ -34,26 +38,29 @@ export function parseFrequency(text: string, lang: DictLang): Map<string, number
 }
 export async function loadFrequency(lang: DictLang): Promise<Map<string, number>> {
   const pin = FREQUENCY_PINS[lang];
-  const file = path.join(CACHE, `${lang}.txt`);
-  const verify = (text: string) => {
-    if (createHash("sha256").update(text).digest("hex") !== pin.sha256)
+  const file = CACHE_FILES[lang];
+  const verify = (bytes: Uint8Array) => {
+    if (createHash("sha256").update(bytes).digest("hex") !== pin.sha256)
       throw new Error(`Frequency ${lang} checksum mismatch`);
-    return parseFrequency(text, lang);
   };
   try {
-    return verify(await readFile(file, "utf8"));
+    const bytes = await readFile(file);
+    verify(bytes);
+    return parseFrequency(bytes.toString("utf8"), lang);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
   const url = `https://raw.githubusercontent.com/hermitdave/FrequencyWords/${FREQUENCY_REVISION}/content/${pin.year}/${lang}/${lang}_50k.txt`;
   const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
   if (!response.ok) throw new Error(`Frequency download: HTTP ${response.status}`);
-  const text = await response.text();
-  const scores = verify(text);
+  // Authenticate raw network bytes in memory before parsing or any disk write.
+  const bytes = Buffer.from(await response.arrayBuffer());
+  verify(bytes);
+  const scores = parseFrequency(bytes.toString("utf8"), lang);
   await mkdir(CACHE, { recursive: true });
   const partial = `${file}.part`;
   try {
-    await writeFile(partial, text);
+    await writeFile(partial, bytes);
     await rename(partial, file);
   } finally {
     await rm(partial, { force: true });
