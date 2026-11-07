@@ -1,7 +1,24 @@
 import { cachedFetch, cacheManifestResponse, matchCachedManifest } from "./dict-cache";
 import { normalizeHeadword, resolveShardKey } from "./dict-normalize";
-import type { DictionaryEntry, DictionarySource, DictLang, DictManifest } from "./dict-types";
+import type {
+  DictionaryEntry,
+  DictionarySource,
+  DictLang,
+  DictManifest,
+  HeadwordRow,
+  InflectionRow,
+  SearchIndexRef,
+} from "./dict-types";
 import { validateManifest, validateShardPayload } from "./dict-validate";
+import {
+  editDistance,
+  lexical,
+  MAX_SEARCH_LENGTH,
+  RESULT_LIMIT,
+  rankHeadwords,
+  SUGGESTION_LIMIT,
+  validateSearchRows,
+} from "./search-index";
 
 const MANIFEST_URL = "/dict/manifest.json";
 
@@ -92,17 +109,124 @@ async function loadShard(lang: DictLang, key: string): Promise<Record<string, Di
   return pending;
 }
 
-/** Looks up dictionary entries for a normalized headword. Never touches WebLLM. */
-export async function lookupDictionary(query: string, lang: DictLang): Promise<DictionaryEntry[]> {
-  const normalized = normalizeHeadword(query, lang);
-  if (!normalized) {
-    return [];
+const searchCache = new Map<string, Promise<HeadwordRow[] | InflectionRow[]>>();
+async function loadSearch(ref: SearchIndexRef): Promise<HeadwordRow[] | InflectionRow[]> {
+  let pending = searchCache.get(ref.path);
+  if (!pending) {
+    pending = (async () => {
+      const response = await cachedFetch(`/${ref.path}?v=${encodeURIComponent(ref.checksum)}`);
+      if (!response.ok) throw new Error(`Failed to load search index ${ref.path}`);
+      const data: unknown = await response.json();
+      if (
+        !validateSearchRows(data, ref.kind) ||
+        data.length !== ref.entryCount ||
+        data[0]?.[0] !== ref.start ||
+        data.at(-1)?.[0] !== ref.end
+      )
+        throw new Error(`Invalid search index ${ref.path}`);
+      return data;
+    })().catch((error: unknown) => {
+      searchCache.delete(ref.path);
+      throw error;
+    });
+    searchCache.set(ref.path, pending);
   }
-  await loadManifest();
+  return pending;
+}
+async function headwords(lang: DictLang, prefix?: string): Promise<HeadwordRow[]> {
+  const manifest = await loadManifest();
+  const rows: HeadwordRow[] = [];
+  for (const ref of manifest.search ?? []) {
+    if (
+      ref.lang !== lang ||
+      ref.kind !== "headwords" ||
+      (prefix && (ref.end < prefix || ref.start > `${prefix}\uffff`))
+    )
+      continue;
+    rows.push(...((await loadSearch(ref)) as HeadwordRow[]));
+  }
+  return rows;
+}
+
+/** Prefix-only typing assistance: fetch only intersecting sorted ranges. */
+export async function suggestHeadwords(query: string, lang: DictLang): Promise<string[]> {
+  const q = normalizeHeadword(query, lang);
+  if (!q || q.length > MAX_SEARCH_LENGTH) return [];
+  return (await headwords(lang, q))
+    .filter(([word]) => word.startsWith(q))
+    .sort(rankHeadwords)
+    .slice(0, SUGGESTION_LIMIT)
+    .map(([word]) => word);
+}
+
+/** Suggestions are never silently treated as dictionary hits. */
+export async function suggestSpellings(query: string, lang: DictLang): Promise<string[]> {
+  const q = normalizeHeadword(query, lang);
+  if (q.length < 3 || q.length > MAX_SEARCH_LENGTH || /[.!?。！？]/.test(q)) return [];
+  const limit = q.length < 5 ? 1 : 2;
+  return (await headwords(lang))
+    .map((row) => ({ row, distance: editDistance(q, row[0], limit) }))
+    .filter(({ distance }) => distance > 0 && distance <= limit)
+    .sort((a, b) => a.distance - b.distance || rankHeadwords(a.row, b.row))
+    .slice(0, SUGGESTION_LIMIT)
+    .map(({ row }) => row[0]);
+}
+async function exactEntries(normalized: string, lang: DictLang): Promise<DictionaryEntry[]> {
   const key = resolveShardKey(normalized, lang, shardKeys[lang]);
   if (!key) return [];
   const entries = await loadShard(lang, key);
   return Object.hasOwn(entries, normalized) ? (entries[normalized] ?? []) : [];
+}
+
+/** Exact > lemma > prefix > substring; frequency orders each tier. No AI. */
+export async function lookupDictionary(query: string, lang: DictLang): Promise<DictionaryEntry[]> {
+  const q = normalizeHeadword(query, lang);
+  if (!q) return [];
+  const manifest = await loadManifest();
+  const result = [...(await exactEntries(q, lang))].slice(0, RESULT_LIMIT);
+  if (q.length > MAX_SEARCH_LENGTH || !manifest.search) return result;
+  const seen = new Set(result.map((entry) => entry.id));
+  const add = (entries: DictionaryEntry[], kind: "inflection" | "prefix" | "partial") => {
+    for (const entry of entries) {
+      if (result.length >= RESULT_LIMIT) break;
+      if (!seen.has(entry.id)) {
+        result.push({ ...entry, match: { kind, query: q } });
+        seen.add(entry.id);
+      }
+    }
+  };
+  const lemmas = new Set<string>();
+  for (const ref of manifest.search) {
+    if (ref.kind !== "inflections" || ref.lang !== lang || q < ref.start || q > ref.end) continue;
+    for (const [form, targets] of (await loadSearch(ref)) as InflectionRow[])
+      if (form === q) for (const target of targets) lemmas.add(target);
+  }
+  const resolved = (
+    await Promise.all([...lemmas].map((lemma) => exactEntries(lemma, lang)))
+  ).flat();
+  add(
+    resolved.sort(
+      (a, b) => (b.frequency ?? 0) - (a.frequency ?? 0) || lexical(a.headword, b.headword),
+    ),
+    "inflection",
+  );
+  if (result.length >= RESULT_LIMIT || q.length < 2) return result;
+  const rows = await headwords(lang);
+  const prefix = rows
+    .filter(([word]) => word !== q && word.startsWith(q))
+    .sort(rankHeadwords)
+    .slice(0, SUGGESTION_LIMIT);
+  const partial = rows
+    .filter(([word]) => !word.startsWith(q) && word.includes(q))
+    .sort(rankHeadwords)
+    .slice(0, SUGGESTION_LIMIT);
+  for (const [kind, candidates] of [
+    ["prefix", prefix],
+    ["partial", partial],
+  ] as const) {
+    for (const [word] of candidates) add(await exactEntries(word, lang), kind);
+  }
+  return result;
 }
 
 export async function dictionaryLicenses(): Promise<DictionarySource[]> {
@@ -131,6 +255,7 @@ export async function dictionaryManifestInfo(): Promise<DictionaryManifestInfo> 
 export function resetDictionaryCaches(): void {
   manifestPromise = null;
   shardCache.clear();
+  searchCache.clear();
   shardKeys.en.clear();
   shardKeys.ja.clear();
 }

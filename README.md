@@ -135,19 +135,51 @@ DICT_SOURCE=jmdict pnpm dev        # optional real-data development
 ```
 
 Plain `pnpm dev`, `pnpm run build`, unit tests and CI default to the small
-CC0-1.0 fixtures (`fixtures/dict/*.json`); they never download JMdict.
+CC0-1.0 fixtures (`fixtures/dict/*.json`); they never download JMdict or frequency data.
 An unqualified build regenerates fixtures even after a JMdict build, so use
 `DICT_SOURCE=jmdict` for production artifacts. No permanent deployment is
 configured.
 
 Japanese lookup indexes written forms and kana readings. English lookup is
-an intentionally limited reverse index: **exact normalized first gloss of
-the first sense only**, at most four words / 64 characters using ASCII
-letters, spaces, apostrophes or hyphens. Other glosses, explanatory glosses,
-substring searches, inflections and arbitrary sentences are not indexed.
+an intentionally limited reverse index: **normalized first gloss of the first
+sense only**, at most four words / 64 characters using ASCII letters, spaces,
+apostrophes or hyphens; verb infinitives drop leading `to ` for lemma lookup.
+Other glosses, explanatory glosses and arbitrary sentences are not indexed.
 Entries retain up to three applicable senses and three glosses per sense;
 examples and extended metadata are omitted. Shards automatically split to
 at most 1 MiB and are fetched only on demand, not precached wholesale.
+
+### Search and ranking (Phase A)
+
+- As you type, ranked EN/JA headword/reading candidates appear; click or tab to
+  a candidate and press Enter to look it up. Japanese IME composition is respected.
+- Lookup order is exact/reading alias → inflection → prefix → substring, with
+  at most 30 entries and eight candidate headwords per related-match tier.
+  Related entries are labeled and do not pollute exact-hit translation alternatives.
+- `took → take`, `went → go`, `better → good`, `children → child`, regular
+  English verb/plural/comparative forms and first-word phrase verbs are indexed
+  at build time. JMdict POS supports common ichidan/godan/suru/kuru forms,
+  polite/negative/past/te/progressive forms and i/na-adjective forms, including
+  kana readings. This is bounded rule-based morphology, **not** a full analyzer:
+  irregulars/English spelling exceptions and Japanese compound/auxiliary chains
+  are incomplete. Existing literal entries remain ahead of lemma matches.
+- On a miss, **Did you mean…** offers up to eight on-device Levenshtein candidates
+  (distance one for short words, two otherwise); selecting one runs a new lookup.
+- Production ranking uses pinned [FrequencyWords / OPUS OpenSubtitles](https://github.com/hermitdave/FrequencyWords)
+  counts (Hermit Dave; EN 2018, JA 2016, **CC BY-SA 4.0**) and JMdict commonness
+  markers (`ichi/news/gai/spec`, `nf`). EN suggestions use English counts; EN→JA
+  candidates use Japanese counts with JMdict tie-breaking. JA entries use JMdict
+  markers with corpus tie-breaking. Authored JMdict sense order is preserved:
+  token frequency is not sense frequency. Subtitle counts can favor ambiguous
+  spellings or loanwords; this is ranking evidence, not a relevance guarantee.
+
+The manifest records frequency source revision, hashes and attribution. Production
+builds verify/cache those two lists under `.cache/frequency/`; fixtures use no
+external ranking data. Sorted range-sharded headword and inflection tables target
+256 KiB per file. Validation checks hashes, sizes, ranges, counts, complete headword
+coverage and lemma targets. Typing fetches only intersecting prefix ranges; the
+first explicit lookup's related search (or miss suggestions) loads the language's
+compact headword tables, **not** all entry shards. All search stays on-device.
 
 This publication includes material from the JMdict/EDICT project, property
 of the **Electronic Dictionary Research and Development Group (EDRDG)**,

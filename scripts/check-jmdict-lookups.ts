@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dictionaryLicenses, lookupDictionary } from "../src/dict";
+import {
+  dictionaryLicenses,
+  lookupDictionary,
+  suggestHeadwords,
+  suggestSpellings,
+} from "../src/dict";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const originalFetch = globalThis.fetch;
@@ -22,7 +27,31 @@ try {
   assert(
     reading.some((entry) => entry.headword === "電車" && train.some((t) => t.id === entry.id)),
   );
+  const prefixes = await suggestHeadwords("moun", "en");
+  assert(prefixes.includes("mountain"));
+  assert.equal((await suggestSpellings("mountan", "en"))[0], "mountain");
+  for (const [form, lemma] of [
+    ["took", "take"],
+    ["went", "go"],
+    ["better", "good"],
+    ["children", "child"],
+    ["食べた", "食べる"],
+    ["たべた", "食べる"],
+  ] as const) {
+    assert(
+      (await lookupDictionary(form, form === "食べた" || form === "たべた" ? "ja" : "en")).some(
+        (entry) => entry.headword === lemma && entry.match?.kind === "inflection",
+      ),
+    );
+    console.log(`${form} → ${lemma} (annotated inflection)`);
+  }
+  console.log(`moun → ${prefixes.join(", ")}; mountan → mountain (spelling suggestion)`);
   const licenses = await dictionaryLicenses();
+  assert(
+    licenses.some(
+      (source) => source.name.includes("FrequencyWords") && source.license === "CC BY-SA 4.0",
+    ),
+  );
   assert(
     licenses.some((source) => source.name.includes("EDRDG") && source.license === "CC BY-SA 4.0"),
   );

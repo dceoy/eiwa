@@ -5,6 +5,8 @@
  * All written forms/readings are indexed, respecting re_restr/re_nokanji and
  * sense stagk/stagr. EN indexes only the first gloss of the first sense, when
  * it is a short literal headword (<=4 words/64 chars), not a definition search.
+ * Verb infinitives strip "to "; compatible JA candidates rank by published
+ * corpus counts, and JA entries by JMdict priorities. Sense order is retained.
  * The official daily endpoint is content-pinned: rotation fails closed, never
  * silently upgrades. Keep the verified cache or deliberately update date + hash.
  */
@@ -18,6 +20,13 @@ import { createGunzip } from "node:zlib";
 import { SaxesParser } from "saxes";
 import type { DictionaryEntry, DictionarySource } from "../src/dict-types";
 import { buildDictionary } from "./build-dict-shards";
+import {
+  FREQUENCY_PINS,
+  FREQUENCY_REVISION,
+  FREQUENCY_SOURCE,
+  loadFrequency,
+  rankEntries,
+} from "./frequency";
 
 export const JMDICT_VERSION = "2026-11-07";
 export const JMDICT_URL = "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz";
@@ -145,6 +154,12 @@ function convertEntry(node: XmlNode): {
         lang: "ja",
         headword,
         reading,
+        frequency: priorityScore([
+          ...texts(readingNode, "re_pri"),
+          ...nodes(node, "k_ele")
+            .filter((k) => text(k, "keb") === headword)
+            .flatMap((k) => texts(k, "ke_pri")),
+        ]),
         pos: unique(applicable.flatMap((sense) => sense.pos)),
         translations: glosses.map((gloss) => ({ text: gloss, lang: "en" })),
         senses: applicable.map((sense) => ({
@@ -169,15 +184,35 @@ function convertEntry(node: XmlNode): {
           {
             id: `jmdict-en:${seq}`,
             lang: "en",
-            headword: gloss,
+            headword:
+              /^to /.test(gloss) && first.pos.some((pos) => /verb/.test(pos) && !/adverb/.test(pos))
+                ? gloss.slice(3)
+                : gloss,
             pos: first.pos,
-            translations: [{ text: first.headword, lang: "ja" }],
+            translations: unique(
+              ja
+                .filter((entry) => entry.translations.some((t) => t.text === gloss))
+                .map((entry) => entry.headword),
+            ).map((headword) => ({ text: headword, lang: "ja" })),
             senses: [{ gloss, translation: first.headword }],
             source: [JMDICT_SOURCE],
           },
         ]
       : [];
   return { ja, en, rank };
+}
+
+/** Published JMdict priority markers, including newspaper frequency bands. */
+export function priorityScore(priorities: string[]): number {
+  let common = 0;
+  let newspaper = 0;
+  for (const pri of new Set(priorities)) {
+    if (/^(ichi|news|gai|spec)1$/.test(pri)) common = Math.max(common, 100_000);
+    else if (/^(ichi|news|gai|spec)2$/.test(pri)) common = Math.max(common, 10_000);
+    else if (/^nf\d\d$/.test(pri))
+      newspaper = Math.max(newspaper, Math.max(0, 49 - Number(pri.slice(2))) * 1000);
+  }
+  return common + newspaper;
 }
 
 export async function parseJmdict(chunks: AsyncIterable<string>): Promise<{
@@ -240,11 +275,20 @@ export async function buildJmdict() {
   console.log(
     `JMdict ${JMDICT_VERSION}: ${sourceEntries} source entries, ${ja.length} JA variants, ${en.length} EN index entries.`,
   );
-  await buildDictionary(en, ja, {
-    JMdict_e: JMDICT_VERSION,
-    "JMdict_e.url": JMDICT_URL,
-    "JMdict_e.sha256": JMDICT_SHA256,
-  });
+  rankEntries(en, ja, await loadFrequency("en"), await loadFrequency("ja"));
+  await buildDictionary(
+    en,
+    ja,
+    {
+      JMdict_e: JMDICT_VERSION,
+      "JMdict_e.url": JMDICT_URL,
+      "JMdict_e.sha256": JMDICT_SHA256,
+      FrequencyWords: FREQUENCY_REVISION,
+      "FrequencyWords.en.sha256": FREQUENCY_PINS.en.sha256,
+      "FrequencyWords.ja.sha256": FREQUENCY_PINS.ja.sha256,
+    },
+    [FREQUENCY_SOURCE],
+  );
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

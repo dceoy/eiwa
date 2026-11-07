@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "preact/hooks";
-import type { Direction } from "../language";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { suggestHeadwords } from "../dict";
+import { type Direction, detectDirection, sourceLangFor } from "../language";
 
 export type DirectionChoice = "auto" | Direction;
 
@@ -14,7 +15,7 @@ export interface InputBarProps {
   onChange: (value: string) => void;
   direction: DirectionChoice;
   onDirectionChange: (direction: DirectionChoice) => void;
-  onSubmit: () => void;
+  onSubmit: (candidate?: string) => void;
   onClear: () => void;
   onCancel: () => void;
   busy: boolean;
@@ -31,6 +32,26 @@ export function InputBar({
   busy,
 }: InputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [candidates, setCandidates] = useState<string[]>([]);
+  const [focused, setFocused] = useState(false);
+  const [composing, setComposing] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setCandidates([]);
+    const selected = direction === "auto" ? detectDirection(value) : direction;
+    if (!focused || composing || !selected || busy) return;
+    const timer = setTimeout(() => {
+      void suggestHeadwords(value, sourceLangFor(selected))
+        .then((words) => {
+          if (!cancelled) setCandidates(words);
+        })
+        .catch(() => undefined);
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [value, direction, focused, composing, busy]);
 
   // Re-run whenever `value` changes (not just on mount) so programmatic
   // updates — e.g. Clear resetting the value via props rather than a DOM
@@ -45,6 +66,9 @@ export function InputBar({
   return (
     <form
       class="input-bar"
+      onFocusOut={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
+      }}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
@@ -83,6 +107,10 @@ export function InputBar({
         autocomplete="off"
         autocorrect="off"
         spellcheck={false}
+        onFocus={() => setFocused(true)}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
+        aria-describedby={candidates.length ? "headword-suggestions" : undefined}
         onInput={(event) => {
           const target = event.currentTarget;
           onChange(target.value);
@@ -90,12 +118,42 @@ export function InputBar({
           target.style.height = `${Math.min(target.scrollHeight, 240)}px`;
         }}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey && !busy) {
+          if (
+            event.key === "Enter" &&
+            !event.shiftKey &&
+            !busy &&
+            !event.isComposing &&
+            !composing
+          ) {
             event.preventDefault();
             onSubmit();
           }
         }}
       />
+
+      {candidates.length > 0 && (
+        <section
+          id="headword-suggestions"
+          class="search-suggestions"
+          aria-label="Headword suggestions"
+        >
+          <span>Headwords: </span>
+          {candidates.map((word) => (
+            <button
+              type="button"
+              key={word}
+              class="btn btn-ghost"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                setCandidates([]);
+                onSubmit(word);
+              }}
+            >
+              {word}
+            </button>
+          ))}
+        </section>
+      )}
 
       <div class="input-actions">
         {busy ? (

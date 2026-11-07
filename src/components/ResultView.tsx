@@ -67,6 +67,13 @@ export function ResultView({ result }: { result: EiwaResult }) {
             <h2 id="translation-heading">Translation</h2>
             <ProvenanceTag hasDictionary={hasDict} hasAi={!hasDict && hasAi} />
           </header>
+          {(result.dictionary[0]?.match?.kind === "prefix" ||
+            result.dictionary[0]?.match?.kind === "partial") && (
+            <p>
+              {result.dictionary[0].match.kind === "prefix" ? "Prefix" : "Partial"} match:{" "}
+              {result.input} → {result.dictionary[0].headword}
+            </p>
+          )}
           <p class="translation-primary">
             <span lang={targetLang}>{result.translation.primary}</span>
             <CopyButton text={result.translation.primary} />
@@ -110,6 +117,13 @@ export function ResultView({ result }: { result: EiwaResult }) {
               <li key={entry.id} class="dictionary-entry">
                 <div class="dictionary-entry-head">
                   <strong lang={entry.lang}>{entry.headword}</strong>
+                  {entry.match && (
+                    <span class="pos-tags">
+                      {entry.match.kind === "inflection"
+                        ? `Inflected form: ${entry.match.query} → ${entry.headword}`
+                        : `${entry.match.kind === "prefix" ? "Prefix" : "Partial"} match`}
+                    </span>
+                  )}
                   {entry.reading && (
                     <span class="reading" lang={entry.lang}>
                       （{entry.reading}）
