@@ -6,7 +6,7 @@ import type { AiEngine, AiStatus } from "./llm";
 import { normalizeInput } from "./normalize";
 import { MAX_INPUT_CHARS } from "./prompt";
 import { mergeResult } from "./result-merge";
-import type { EiwaResult } from "./result-schema";
+import type { AiExplanationOutput, EiwaResult } from "./result-schema";
 
 export type LookupEvent =
   | { type: "direction"; direction: Direction }
@@ -95,54 +95,89 @@ export async function* lookup(
       ? [`Input was truncated to the first ${MAX_INPUT_CHARS} characters for AI processing.`]
       : [];
 
+  // Dictionary facts paint before the engine boundary. A pending AI lookup
+  // must not briefly render the dictionary-miss warning, even on a sentence.
+  const initial = mergeResult({
+    direction,
+    input: normalized.text,
+    dictionaryEntries: entries,
+    ai: null,
+  });
+  yield { type: "result", result: { ...initial, warnings: [] } };
   yield { type: "ai-status", status: "generating" };
-  try {
-    const ai = await aiEngine.explain({
+
+  const updates: AiExplanationOutput[] = [];
+  let wake: (() => void) | undefined;
+  let settled = false;
+  let final: AiExplanationOutput | undefined;
+  let failure: unknown;
+  const generation = aiEngine
+    .explain({
       direction,
       input: normalized.text,
       dictionaryContext: entries,
       signal,
+      onProgress: (output) => {
+        if (signal?.aborted) return;
+        updates.push(output);
+        wake?.();
+      },
+    })
+    .then(
+      (output) => {
+        final = output;
+      },
+      (error: unknown) => {
+        failure = error;
+      },
+    )
+    .finally(() => {
+      settled = true;
+      wake?.();
     });
-    yield { type: "ai-status", status: aiEngine.getStatus() };
 
-    if (signal?.aborted) {
+  try {
+    while (!settled || updates.length) {
+      const ai = updates.shift();
+      if (ai && !signal?.aborted) {
+        yield {
+          type: "result",
+          result: mergeResult({
+            direction,
+            input: normalized.text,
+            dictionaryEntries: entries,
+            ai,
+            extraWarnings: truncationWarnings,
+          }),
+        };
+      } else if (!settled) {
+        await new Promise<void>((resolve) => {
+          wake = resolve;
+        });
+      }
+    }
+    await generation;
+    yield { type: "ai-status", status: aiEngine.getStatus() };
+    if (signal?.aborted || isAbortError(failure)) {
       yield { type: "cancelled" };
       return;
     }
-
-    yield {
-      type: "result",
-      result: mergeResult({
-        direction,
-        input: normalized.text,
-        dictionaryEntries: entries,
-        ai,
-        extraWarnings: truncationWarnings,
-      }),
-    };
-  } catch (error) {
-    yield { type: "ai-status", status: aiEngine.getStatus() };
-
-    if (isAbortError(error) || signal?.aborted) {
-      yield { type: "cancelled" };
-      return;
+    // Never replace shown sections with a dictionary-only fallback or insert
+    // failure/miss banners when a later section is malformed or interrupted.
+    if (final) {
+      yield {
+        type: "result",
+        result: mergeResult({
+          direction,
+          input: normalized.text,
+          dictionaryEntries: entries,
+          ai: final,
+          extraWarnings: truncationWarnings,
+        }),
+      };
     }
-
-    const code =
-      error instanceof Error && error.message === "generation-invalid-json"
-        ? "generation-invalid-json"
-        : "model-load-failed";
-    const failure = lookupError(code);
-    yield { type: "error", error: failure };
-    yield {
-      type: "result",
-      result: mergeResult({
-        direction,
-        input: normalized.text,
-        dictionaryEntries: entries,
-        ai: null,
-        extraWarnings: [failure.message, ...truncationWarnings],
-      }),
-    };
+  } finally {
+    // If a consumer stops early, don't retain its queued result snapshots.
+    wake = undefined;
   }
 }

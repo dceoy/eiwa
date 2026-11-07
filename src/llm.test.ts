@@ -125,6 +125,85 @@ describe("createLocalAiEngine", () => {
 });
 
 describe("createLocalAiEngine with WebGPU available (mocked worker/CDN)", () => {
+  it("streams translation before completion and sends grounded prompts to the engine", async () => {
+    let resume = () => {};
+    const gate = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
+    const translation = { primary: "走る", alternatives: [] };
+    const create = vi.fn(async function* () {
+      yield { choices: [{ delta: { content: `{"translation":${JSON.stringify(translation)},` } }] };
+      await gate;
+      yield {
+        choices: [
+          {
+            delta: {
+              content:
+                '"nuance":["[D1] 足で移動する"],"correction":{"corrected":null,"explanation":null},"warnings":[]}',
+            },
+          },
+        ],
+      };
+    });
+    mockedLoadWebLlm.mockResolvedValueOnce({
+      CreateWebWorkerMLCEngine: vi
+        .fn()
+        .mockResolvedValue({ chat: { completions: { create } }, interruptGenerate: vi.fn() }),
+    } as unknown as WebLlmModule);
+    const engine = createLocalAiEngine();
+    await engine.ensureReady();
+    const onProgress = vi.fn();
+    const result = engine.explain({
+      direction: "en-ja",
+      input: "run",
+      dictionaryContext: [
+        {
+          id: "run",
+          headword: "run",
+          lang: "en",
+          pos: [],
+          translations: [],
+          senses: [{ gloss: "to move quickly on foot" }, { gloss: "to operate" }],
+          source: [{ name: "JMdict", license: "CC BY-SA" }],
+        },
+      ],
+      onProgress,
+    });
+    await vi.waitFor(() =>
+      expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ translation, nuance: [] })),
+    );
+    expect(engine.getStatus()).toBe("generating");
+    expect(create.mock.calls[0]).toBeDefined();
+    const request = (create.mock.calls[0] as unknown as [{ messages: { content: string }[] }])[0];
+    expect(request.messages[1]?.content).toContain("to move quickly on foot");
+    expect(request.messages[1]?.content).toContain("to operate");
+    resume();
+    expect((await result).nuance).toEqual(["[D1] 足で移動する"]);
+    expect(engine.getStatus()).toBe("ready");
+  });
+
+  it("keeps the final JSON validator strict after publishing an earlier section", async () => {
+    const create = vi.fn(async function* () {
+      yield {
+        choices: [{ delta: { content: '{"translation":{"primary":"猫","alternatives":[]},' } }],
+      };
+      yield { choices: [{ delta: { content: '"nuance": [broken' } }] };
+    });
+    mockedLoadWebLlm.mockResolvedValueOnce({
+      CreateWebWorkerMLCEngine: vi
+        .fn()
+        .mockResolvedValue({ chat: { completions: { create } }, interruptGenerate: vi.fn() }),
+    } as unknown as WebLlmModule);
+    const engine = createLocalAiEngine();
+    await engine.ensureReady();
+    const onProgress = vi.fn();
+    await expect(
+      engine.explain({ direction: "en-ja", input: "cat", dictionaryContext: [], onProgress }),
+    ).rejects.toThrow("generation-invalid-json");
+    expect(onProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ translation: { primary: "猫", alternatives: [] } }),
+    );
+  });
   beforeEach(() => {
     vi.stubGlobal("navigator", { gpu: {} });
     vi.stubGlobal("Worker", FakeWorker);
