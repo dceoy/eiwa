@@ -3,7 +3,7 @@ import type { DictionaryEntry } from "../src/dict-types";
 // Deliberately bounded morphology, not a general-purpose analyzer. POS gates
 // avoid treating arbitrary glosses/names as verbs. Phrase verbs inflect the
 // first word only. Irregulars suppress the corresponding regular forms.
-const irregular: Record<string, string[]> = {
+const irregularVerbs: Record<string, string[]> = {
   be: ["am", "is", "are", "was", "were", "been", "being"],
   have: ["has", "had", "having"],
   do: ["does", "did", "done", "doing"],
@@ -58,6 +58,8 @@ const irregular: Record<string, string[]> = {
   swim: ["swims", "swam", "swum", "swimming"],
   show: ["shows", "showed", "shown", "showing"],
   sing: ["sings", "sang", "sung", "singing"],
+};
+const irregularNouns: Record<string, string[]> = {
   fish: ["fish"],
   sheep: ["sheep"],
   deer: ["deer"],
@@ -75,6 +77,8 @@ const irregular: Record<string, string[]> = {
   foot: ["feet"],
   tooth: ["teeth"],
   goose: ["geese"],
+};
+const irregularAdjectives: Record<string, string[]> = {
   good: ["better", "best"],
   well: ["better", "best"],
   bad: ["worse", "worst"],
@@ -94,16 +98,17 @@ export function englishForms(word: string, pos: string[]): string[] {
   const noun = /noun/.test(tags);
   const adjective = /adjective|adj-i|adj-na/.test(tags);
   if (!/^[a-z]+$/.test(first) || !(verb || noun || adjective)) return [];
-  let forms = Object.hasOwn(irregular, first) ? irregular[first] : undefined;
-  if (!forms) {
-    forms = [];
-    if (noun && !rest.length) forms.push(plural(first));
-    // Double only unambiguous one-syllable CVC stems; do not invent e.g.
-    // "visitted". Wider irregular/lexical coverage belongs in sourced data.
-    const cvc = /^[^aeiou]+[aeiou][bdgmnprt]$/.test(first);
-    const doubled = cvc ? first + first.slice(-1) : first;
-    if (verb)
-      forms.push(
+  const forms: string[] = [];
+  const exceptions = (table: Record<string, string[]>) =>
+    Object.hasOwn(table, first) ? table[first] : undefined;
+  if (noun && !rest.length) forms.push(...(exceptions(irregularNouns) ?? [plural(first)]));
+  // Double only unambiguous one-syllable CVC stems; do not invent e.g.
+  // "visitted". Wider irregular/lexical coverage belongs in sourced data.
+  const cvc = /^[^aeiou]+[aeiou][bdgmnprt]$/.test(first);
+  const doubled = cvc ? first + first.slice(-1) : first;
+  if (verb)
+    forms.push(
+      ...(exceptions(irregularVerbs) ?? [
         plural(first),
         /e$/.test(first)
           ? `${first}d`
@@ -115,16 +120,21 @@ export function englishForms(word: string, pos: string[]): string[] {
           : /[^e]e$/.test(first)
             ? `${first.slice(0, -1)}ing`
             : `${doubled}ing`,
-      );
-    if (adjective && !rest.length && first.length <= 6) {
-      const stem = /[^aeiou]y$/.test(first) ? `${first.slice(0, -1)}i` : doubled;
-      forms.push(
-        `${stem}${first.endsWith("e") ? "r" : "er"}`,
-        `${stem}${first.endsWith("e") ? "st" : "est"}`,
-      );
-    }
+      ]),
+    );
+  if (adjective && !rest.length) {
+    const stem = /[^aeiou]y$/.test(first) ? `${first.slice(0, -1)}i` : doubled;
+    forms.push(
+      ...(exceptions(irregularAdjectives) ??
+        (first.length <= 6
+          ? [
+              `${stem}${first.endsWith("e") ? "r" : "er"}`,
+              `${stem}${first.endsWith("e") ? "st" : "est"}`,
+            ]
+          : [])),
+    );
   }
-  return forms.map((form) => [form, ...rest].join(" "));
+  return [...new Set(forms)].map((form) => [form, ...rest].join(" "));
 }
 
 export function japaneseForms(word: string, pos: string[]): string[] {
