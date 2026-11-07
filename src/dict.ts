@@ -1,11 +1,12 @@
 import { cachedFetch, cacheManifestResponse, matchCachedManifest } from "./dict-cache";
-import { normalizeHeadword, shardKeyFor } from "./dict-normalize";
+import { normalizeHeadword, resolveShardKey } from "./dict-normalize";
 import type { DictionaryEntry, DictionarySource, DictLang, DictManifest } from "./dict-types";
 import { validateManifest, validateShardPayload } from "./dict-validate";
 
 const MANIFEST_URL = "/dict/manifest.json";
 
 let manifestPromise: Promise<DictManifest> | null = null;
+const shardKeys: Record<DictLang, Set<string>> = { en: new Set(), ja: new Set() };
 
 /**
  * Network-first with cache fallback: prefer a fresh manifest whenever the
@@ -40,7 +41,13 @@ async function loadManifest(): Promise<DictManifest> {
       if (issues.length > 0) {
         throw new Error(`Invalid dictionary manifest: ${issues[0]?.message}`);
       }
-      return data as DictManifest;
+      const manifest = data as DictManifest;
+      for (const lang of ["en", "ja"] as const) {
+        shardKeys[lang] = new Set(
+          manifest.shards.filter((ref) => ref.lang === lang).map((ref) => ref.key),
+        );
+      }
+      return manifest;
     })().catch((error: unknown) => {
       manifestPromise = null;
       throw error;
@@ -91,9 +98,11 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
   if (!normalized) {
     return [];
   }
-  const key = shardKeyFor(normalized, lang);
+  await loadManifest();
+  const key = resolveShardKey(normalized, lang, shardKeys[lang]);
+  if (!key) return [];
   const entries = await loadShard(lang, key);
-  return entries[normalized] ?? [];
+  return Object.hasOwn(entries, normalized) ? (entries[normalized] ?? []) : [];
 }
 
 export async function dictionaryLicenses(): Promise<DictionarySource[]> {
@@ -122,4 +131,6 @@ export async function dictionaryManifestInfo(): Promise<DictionaryManifestInfo> 
 export function resetDictionaryCaches(): void {
   manifestPromise = null;
   shardCache.clear();
+  shardKeys.en.clear();
+  shardKeys.ja.clear();
 }
