@@ -26,6 +26,7 @@
     "dict:build:jmdict": "tsx scripts/build-jmdict.ts",
     "dict:validate": "tsx scripts/validate-dict.ts",
     "dict:spotcheck": "tsx scripts/check-jmdict-lookups.ts",
+    "eval:lookup": "tsx scripts/eval-lookup.ts",
     "deploy:temporary": "wrangler deploy --temporary",
     "smoke:url": "tsx scripts/smoke-url.ts",
     "audit": "pnpm audit --prod",
