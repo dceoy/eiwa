@@ -5,6 +5,8 @@
  * All written forms/readings are indexed, respecting re_restr/re_nokanji and
  * sense stagk/stagr. EN indexes only the first gloss of the first sense, when
  * it is a short literal headword (<=4 words/64 chars), not a definition search.
+ * Verb infinitives strip "to "; compatible JA candidates rank by published
+ * corpus counts, and JA entries by JMdict priorities. Sense order is retained.
  * The official daily endpoint is content-pinned: rotation fails closed, never
  * silently upgrades. Keep the verified cache or deliberately update date + hash.
  */

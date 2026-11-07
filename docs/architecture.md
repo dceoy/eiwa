@@ -98,9 +98,16 @@ per the free-tier guardrails in issue #6.
    1 MiB size budget. The full build also enforces dist-wide file-count
    and 5 MiB asset limits. Tests force recursive splits for hot `し`, `か`
    and English prefixes, including supplementary Unicode headwords.
-4. The browser fetches the manifest once and only the matching shard per
-   lookup, validating and caching them in CacheStorage (`src/dict-cache.ts`).
-   No full-dictionary download/precache is performed. A miss returns `[]`.
+4. The browser fetches the manifest once and matching entry shards on demand,
+   validating and caching them in CacheStorage (`src/dict-cache.ts`). Build-time
+   `dict/search/*.json` tables contain sorted `[headword, score]` or
+   `[inflected form, lemmas]` rows in non-overlapping ranges (256 KiB target).
+   Manifest `search` references record language/kind, range, count, bytes and hash.
+   Validation also checks complete headword coverage and resolvable lemma targets.
+   Typing fetches only intersecting headword ranges; explicit lookup scans the
+   compact language headword tables for bounded prefix/substring results. Entry
+   shards are fetched only for the capped candidates, never downloaded wholesale.
+   A true miss returns `[]`; spelling suggestions are separate, not dictionary hits.
    `pnpm run dict:spotcheck` exercises this same app path against local
    production files for `mountain` → 山, 電車 → train and でんしゃ → 電車.
 
@@ -111,19 +118,35 @@ inherits part-of-speech labels between senses. It retains all compatible
 written-form/reading pairs, but at most three applicable senses and three
 English glosses per sense. Examples, cross-references, dialect/field tags,
 loanword history and other extended metadata are omitted; this is not a
-complete scholarly presentation of JMdict. General/news common vocabulary
-is ordered before specialist/loanword entries, then remaining entries,
-with source order preserved within each tier.
+complete scholarly presentation of JMdict. JA entries rank by their applicable
+written-form/reading common markers (`ichi/news/gai/spec`, `nf`), then corpus
+frequency; authored sense order and source order on score ties are preserved.
 
 The reverse EN index emits **one entry per JMdict entry**, only for the
 first gloss of its first sense: exact normalized ASCII headword-style
 strings of at most four words / 64 characters (letters, spaces, hyphens,
-apostrophes). Typed explanatory/figurative/literal glosses are excluded.
-No substring/token/fuzzy search, secondary-gloss indexing or inflection
-handling is implemented. A common word may therefore be a miss even when
-it appears somewhere in a Japanese entry's definition. JA lookup includes
-the retained English senses and reading aliases independently of this EN
-index limitation.
+apostrophes). Verb infinitives drop `to ` so morphology can target the lemma.
+Typed explanatory/figurative/literal glosses are excluded. Up to three compatible
+JA spellings per EN entry are frequency-ranked; EN entries rank by their target
+JA counts with commonness as tie-breaker. A common word may still miss if it only
+appears in a secondary or explanatory gloss. JA lookup includes the retained
+English senses and reading aliases independently of this EN limitation.
+
+Production-only `scripts/frequency.ts` verifies immutable FrequencyWords source
+revision and SHA-256 pins (EN 2018 / JA 2016 OpenSubtitles lists). Attribution
+(Hermit Dave / OPUS, CC BY-SA 4.0) and hashes are recorded in the manifest; cache
+files live under `.cache/frequency/`. CI fixtures never fetch this source.
+Token counts rank candidates, not senses; corpus ambiguity remains a limitation.
+
+`src/dict.ts` orders exact/reading aliases, build-time lemma resolutions, prefixes,
+then substrings; results cap at 30, related headwords at eight per tier. Prefix
+suggestions debounce 150 ms and ignore stale responses/IME composition. POS-gated
+English rules and common JMdict conjugation classes generate the inflection table
+(`scripts/inflections.ts`); coverage is intentionally incomplete (no general
+sentence analysis or arbitrary auxiliary chains). Matches retain their actual
+lemma headword and annotate the queried form. Miss spelling suggestions use
+on-device bounded Levenshtein distance, never AI or a remote search endpoint.
+Related headwords cannot become alternative translations of an exact hit.
 
 JMdict belongs to the Electronic Dictionary Research and Development Group
 (EDRDG); the trimmed/indexed adaptation is distributed under

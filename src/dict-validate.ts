@@ -50,14 +50,18 @@ export function validateManifest(value: unknown): ValidationIssue[] {
       const paths = new Set<string>();
       const ends = new Map<string, string>();
       for (const ref of manifest.search) {
+        if (!ref || typeof ref !== "object") {
+          issues.push({ path: "manifest.search", message: "expected a search reference object" });
+          continue;
+        }
         const group = `${ref.lang}:${ref.kind}`;
         if (
           !["en", "ja"].includes(ref.lang) ||
           !["headwords", "inflections"].includes(ref.kind) ||
           !/^dict\/search\/[a-z0-9-]+\.json$/.test(ref.path) ||
           paths.has(ref.path) ||
-          !ref.start ||
-          !ref.end ||
+          !isNonEmptyString(ref.start) ||
+          !isNonEmptyString(ref.end) ||
           ref.start > ref.end ||
           (ends.has(group) && ref.start <= (ends.get(group) ?? "")) ||
           !Number.isInteger(ref.entryCount) ||
@@ -98,8 +102,11 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
   if (entry.lang !== "en" && entry.lang !== "ja") {
     issues.push({ path: `${path}.lang`, message: 'lang must be "en" or "ja"' });
   }
-  if (entry.frequency !== undefined && (!Number.isFinite(entry.frequency) || entry.frequency < 0)) {
-    issues.push({ path: `${path}.frequency`, message: "expected a non-negative frequency" });
+  for (const field of ["frequency", "headwordFrequency"] as const) {
+    const score = entry[field];
+    if (score !== undefined && (!Number.isFinite(score) || score < 0)) {
+      issues.push({ path: `${path}.${field}`, message: "expected a non-negative frequency" });
+    }
   }
   if (!Array.isArray(entry.translations) || entry.translations.length === 0) {
     issues.push({ path: `${path}.translations`, message: "expected at least one translation" });
