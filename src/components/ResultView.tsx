@@ -117,6 +117,11 @@ export function ResultView({ result }: { result: EiwaResult }) {
               <li key={entry.id} class="dictionary-entry">
                 <div class="dictionary-entry-head">
                   <strong lang={entry.lang}>{entry.headword}</strong>
+                  {entry.level && (
+                    <span class="pos-tags" title="Eiwa coarse NGSL band (not CEFR/SVL)">
+                      {entry.level} · NGSL
+                    </span>
+                  )}
                   {entry.match && (
                     <span class="pos-tags">
                       {entry.match.kind === "inflection"
@@ -146,6 +151,59 @@ export function ResultView({ result }: { result: EiwaResult }) {
                     </li>
                   ))}
                 </ol>
+                {entry.source
+                  .filter((source) => source.name.includes("Wiktionary") && source.url)
+                  .map((source) => (
+                    <p key={source.url}>
+                      <a href={source.url} target="_blank" rel="noreferrer">
+                        Wiktionary headword data / contributors
+                      </a>{" "}
+                      (trimmed, not sense-aligned)
+                    </p>
+                  ))}
+                {entry.relatedWords?.length ? (
+                  <p>Related terms: {entry.relatedWords.join(", ")}</p>
+                ) : null}
+                {entry.inflectionForms?.length ? (
+                  <p>Inflection forms: {entry.inflectionForms.join(", ")}</p>
+                ) : null}
+                {entry.examples?.length ? (
+                  <details class="entry-examples" open={entry.id === result.dictionary[0]?.id}>
+                    <summary>
+                      Examples — dictionary data (headword-level, not sense-aligned)
+                    </summary>
+                    <ul>
+                      {entry.examples.slice(0, 3).map((pair) => (
+                        <li key={`${pair.en.id}:${pair.ja.id}`}>
+                          <p lang="en">{pair.en.text}</p>
+                          <p lang="ja">{pair.ja.text}</p>
+                          <small>
+                            Tatoeba — CC BY 2.0 FR.{" "}
+                            {(["en", "ja"] as const).map((lang) => (
+                              <span key={lang}>
+                                <a
+                                  href={`https://tatoeba.org/en/sentences/show/${pair[lang].id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  #{pair[lang].id}
+                                </a>
+                                {" by "}
+                                <a
+                                  href={`https://tatoeba.org/en/user/profile/${encodeURIComponent(pair[lang].author)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {pair[lang].author}
+                                </a>{" "}
+                              </span>
+                            ))}
+                          </small>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -261,7 +319,24 @@ export function ResultView({ result }: { result: EiwaResult }) {
           <ul class="sources-list">
             {sources.map((source) => (
               <li key={`${source.name}:${source.license}`}>
-                {source.name} — {source.license}
+                {source.name} —{" "}
+                {source.licenseUrl ? (
+                  <a href={source.licenseUrl} target="_blank" rel="noreferrer">
+                    {source.license}
+                  </a>
+                ) : (
+                  source.license
+                )}
+                {source.url && (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a href={source.url} target="_blank" rel="noreferrer">
+                      Source / contributors
+                    </a>
+                  </>
+                )}
+                {source.attribution && <p>{source.attribution}</p>}
               </li>
             ))}
           </ul>

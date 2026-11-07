@@ -70,7 +70,10 @@ and source-pin updates are documented in
 [`architecture.md`](./architecture.md#dictionary-shard-flow). The official
 URL rotates daily: preserve the verified `.cache/jmdict/` archive for
 repeat builds; a changed upstream archive fails verification rather than
-silently upgrading. Wiktextract/etymology ingestion is still deferred.
+silently upgrading. The same production build now includes pinned Tatoeba,
+streamed English Wiktextract and NGSL data; preserve `.cache/depth/` too.
+Run `pnpm exec tsx scripts/check-depth-lookups.ts` after the production build.
+See [data-depth.md](./data-depth.md) for licensing, caps and source preflight.
 
 This data work does **not** complete Phase 4: no permanent Cloudflare
 account is designated and no permanent deployment is claimed.

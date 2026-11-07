@@ -4,6 +4,8 @@ export interface DictionarySource {
   name: string;
   license: string;
   url?: string;
+  licenseUrl?: string;
+  attribution?: string;
 }
 
 export interface DictionaryTranslation {
@@ -25,6 +27,17 @@ export interface DictionaryPronunciation {
   audioText?: string;
 }
 
+export interface ExampleSentence {
+  id: number;
+  text: string;
+  author: string;
+}
+
+export interface DictionaryExample {
+  en: ExampleSentence;
+  ja: ExampleSentence;
+}
+
 export interface DictionaryEntry {
   id: string;
   headword: string;
@@ -33,6 +46,12 @@ export interface DictionaryEntry {
   /** Build-time published frequency score (higher is more common). */
   frequency?: number;
   headwordFrequency?: number;
+  /** Coarse Eiwa bands derived from NGSL ranks, not CEFR/SVL levels. */
+  level?: "basic" | "intermediate" | "advanced";
+  examples?: DictionaryExample[];
+  /** Attested Wiktextract morphology, merged with Phase A generated forms. */
+  inflectionForms?: string[];
+  relatedWords?: string[];
   /** Runtime search metadata; never dictionary or AI-generated facts. */
   match?: { kind: "inflection" | "prefix" | "partial"; query: string };
   pronunciation?: DictionaryPronunciation;

@@ -10,6 +10,29 @@ const source = {
 
 afterEach(cleanup);
 
+it("shows license URLs and adaptation/attribution notes from depth sources", () => {
+  render(
+    <SourcesModal
+      open
+      onClose={() => undefined}
+      licenses={[
+        {
+          name: "Tatoeba contributors",
+          license: "CC BY 2.0 FR",
+          licenseUrl: "https://creativecommons.org/licenses/by/2.0/fr/",
+          attribution: "Text unchanged; contributor credits accompany every sentence.",
+        },
+      ]}
+    />,
+  );
+  expect(screen.getByRole("link", { name: "CC BY 2.0 FR" }).getAttribute("href")).toBe(
+    "https://creativecommons.org/licenses/by/2.0/fr/",
+  );
+  expect(
+    screen.getByText("Text unchanged; contributor credits accompany every sentence."),
+  ).toBeTruthy();
+});
+
 it("shows the production manifest's EDRDG attribution, license and link", () => {
   render(<SourcesModal open onClose={() => undefined} licenses={[source]} />);
   expect(screen.getByText(source.name)).toBeTruthy();
