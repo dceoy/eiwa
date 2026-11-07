@@ -122,7 +122,7 @@ describe("lookup", () => {
     expect(events.at(-1)?.type).toBe("result");
   });
 
-  it("emits a terminal ai-status reflecting the engine's post-generation status before an invalid-JSON error", async () => {
+  it("settles status quietly after invalid JSON without replacing dictionary content", async () => {
     mockedLookupDictionary.mockResolvedValue([catEntry]);
     const aiEngine = makeAiEngine({
       status: "ready",
@@ -130,9 +130,8 @@ describe("lookup", () => {
     });
     const events = await collect("cat", { aiEngine });
 
-    const errorIndex = events.findIndex((e) => e.type === "error");
-    expect(events[errorIndex - 1]).toEqual({ type: "ai-status", status: "ready" });
-    expect(events.at(-1)?.type).toBe("result");
+    expect(events.at(-1)).toEqual({ type: "ai-status", status: "ready" });
+    expect(events.some((e) => e.type === "error")).toBe(false);
   });
 
   it("emits a terminal ai-status reflecting the engine's post-generation status before a cancellation", async () => {
@@ -200,7 +199,7 @@ describe("lookup", () => {
     }
   });
 
-  it("falls back to dictionary-only and reports an error on invalid AI JSON", async () => {
+  it("leaves the immediate dictionary result intact without banners on invalid AI JSON", async () => {
     mockedLookupDictionary.mockResolvedValue([catEntry]);
     const aiEngine = makeAiEngine({
       status: "ready",
@@ -208,14 +207,12 @@ describe("lookup", () => {
     });
     const events = await collect("cat", { aiEngine });
 
-    expect(
-      events.some((e) => e.type === "error" && e.error.code === "generation-invalid-json"),
-    ).toBe(true);
-    const resultEvent = events.at(-1);
+    expect(events.some((e) => e.type === "error")).toBe(false);
+    const resultEvent = events.find((e) => e.type === "result");
     expect(resultEvent?.type).toBe("result");
     if (resultEvent?.type === "result") {
       expect(resultEvent.result.sourceKinds).toEqual(["dictionary"]);
-      expect(resultEvent.result.warnings.length).toBeGreaterThan(0);
+      expect(resultEvent.result.warnings).toEqual([]);
     }
   });
 
@@ -240,7 +237,74 @@ describe("lookup", () => {
     const events = await collect("cat", { aiEngine });
 
     expect(events.at(-1)).toEqual({ type: "cancelled" });
-    expect(events.some((e) => e.type === "result")).toBe(false);
+    expect(events.filter((e) => e.type === "result")).toHaveLength(1);
+  });
+
+  it.each([false, true])(
+    "preserves streamed AI on a late failure/cancellation (cancel=%s), with no transient miss warnings",
+    async (cancel) => {
+      const output = {
+        translation: { primary: "走る", alternatives: [] },
+        correction: { corrected: null, explanation: null },
+        nuance: [],
+        warnings: [],
+      };
+      const aiEngine = makeAiEngine({
+        explain: vi.fn(async (params) => {
+          params.onProgress?.(output);
+          params.onProgress?.({ ...output, nuance: ["足で移動する"] });
+          throw cancel
+            ? new DOMException("Cancelled", "AbortError")
+            : new Error("generation-invalid-json");
+        }),
+      });
+      const events = await collect("run", { aiEngine });
+      const results = events.filter((e) => e.type === "result");
+      expect(results).toHaveLength(3);
+      expect(results[0]?.result.translation.primary).toBe("");
+      expect(results[1]?.result.translation.primary).toBe("走る");
+      expect(results[2]?.result.nuance).toEqual(["足で移動する"]);
+      expect(results.every((e) => e.result.warnings.length === 0)).toBe(true);
+      expect(events.some((e) => e.type === "error")).toBe(false);
+    },
+  );
+
+  it("awaits a cancelled Worker when the result consumer stops early", async () => {
+    let finish: (() => void) | undefined;
+    let params: Parameters<AiEngine["explain"]>[0] | undefined;
+    const aiEngine = makeAiEngine({
+      explain: vi.fn<AiEngine["explain"]>((input) => {
+        params = input;
+        return new Promise((_resolve, reject) => {
+          finish = () => reject(new DOMException("Cancelled", "AbortError"));
+        });
+      }),
+    });
+    const controller = new AbortController();
+    const events = lookup("cat", { aiEngine, signal: controller.signal });
+    while ((await events.next()).value?.type !== "result") {
+      /* initial dictionary */
+    }
+    await events.next(); // generating
+    const reading = events.next(); // starts engine, waits for progress
+    await vi.waitFor(() => expect(params).toBeDefined());
+    params?.onProgress?.({
+      translation: { primary: "猫", alternatives: [] },
+      correction: { corrected: null, explanation: null },
+      nuance: [],
+      warnings: [],
+    });
+    await reading;
+    controller.abort();
+    let returned = false;
+    const returning = events.return(undefined).then(() => {
+      returned = true;
+    });
+    await Promise.resolve();
+    expect(returned).toBe(false);
+    finish?.();
+    await returning;
+    expect(returned).toBe(true);
   });
 
   it("honors an explicit direction override instead of auto-detecting", async () => {

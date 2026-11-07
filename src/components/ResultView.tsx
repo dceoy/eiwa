@@ -52,9 +52,15 @@ function SpeakButton({ text, lang }: { text: string; lang: "en" | "ja" }) {
 export function ResultView({
   result,
   onLookup,
+  onBackTranslate,
+  backTranslation,
+  backTranslating = false,
 }: {
   result: EiwaResult;
   onLookup?: (word: string, lang: DictLang) => void;
+  onBackTranslate?: () => void;
+  backTranslation?: string | null;
+  backTranslating?: boolean;
 }) {
   const [resolved, setResolved] = useState<{ en: Set<string>; ja: Set<string> }>({
     en: new Set(),
@@ -170,6 +176,31 @@ export function ResultView({
             <p class="translation-alternatives">
               Also: <span lang={targetLang}>{result.aiTranslation.alternatives.join(", ")}</span>
             </p>
+          )}
+        </section>
+      )}
+
+      {result.aiTranslation?.primary && (onBackTranslate || backTranslating || backTranslation) && (
+        <section class="card" aria-label="AI back-translation check">
+          {(onBackTranslate || backTranslating) && (
+            <button
+              type="button"
+              class="btn btn-secondary"
+              disabled={!onBackTranslate || backTranslating}
+              onClick={onBackTranslate}
+            >
+              {backTranslating ? "Checking…" : "Back-translate AI translation"}
+            </button>
+          )}
+          {backTranslation && (
+            <div aria-live="polite">
+              <h2>AI back-translation</h2>
+              <ProvenanceTag hasDictionary={false} hasAi />
+              <p lang={sourceLang}>{backTranslation}</p>
+              <p class="settings-note">
+                AI output for nuance verification, not dictionary data or a guarantee of accuracy.
+              </p>
+            </div>
           )}
         </section>
       )}

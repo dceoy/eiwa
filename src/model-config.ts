@@ -5,6 +5,7 @@ export interface ModelOption {
   approxDownloadSizeMb: number;
   recommendedDeviceClass: "mobile" | "desktop";
   description: string;
+  requiresConfirmation?: boolean;
 }
 
 export const MODEL_OPTIONS: ModelOption[] = [
@@ -22,6 +23,16 @@ export const MODEL_OPTIONS: ModelOption[] = [
     recommendedDeviceClass: "desktop",
     description:
       "Larger download with more capable explanations. Recommended for laptops/desktops.",
+  },
+  {
+    // Verified in @mlc-ai/web-llm 0.2.87 prebuiltAppConfig (lib/index.js).
+    id: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
+    label: "Pro",
+    approxDownloadSizeMb: 2000,
+    recommendedDeviceClass: "desktop",
+    description:
+      "Optional 3B model for capable desktops. Needs about 2.5 GB GPU memory; download size varies with caching.",
+    requiresConfirmation: true,
   },
 ];
 

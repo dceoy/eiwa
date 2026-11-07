@@ -1,4 +1,5 @@
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
+import { parseAiProgress } from "./ai-progress";
 import type { DictionaryEntry } from "./dict-types";
 import type { Direction } from "./language";
 import { DEFAULT_MODEL_ID, MODEL_OPTIONS } from "./model-config";
@@ -18,6 +19,8 @@ export interface ExplainParams {
   input: string;
   dictionaryContext: DictionaryEntry[];
   signal?: AbortSignal;
+  /** Cumulative, schema-validated completed sections; translation arrives first. */
+  onProgress?: (output: AiExplanationOutput) => void;
 }
 
 export interface AiEngine {
@@ -126,6 +129,7 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
     activeEngine: MLCEngineInterface,
     params: ExplainParams,
   ): Promise<AiExplanationOutput> {
+    if (params.signal?.aborted) throw new DOMException("Generation cancelled", "AbortError");
     const onAbort = () => activeEngine.interruptGenerate();
     params.signal?.addEventListener("abort", onAbort, { once: true });
 
@@ -133,6 +137,7 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
       const stream = await activeEngine.chat.completions.create({
         stream: true,
         temperature: 0.3,
+        max_tokens: 768,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: buildSystemPrompt() },
@@ -141,11 +146,20 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
       });
 
       let accumulated = "";
+      let lastProgress = "";
       for await (const chunk of stream) {
         if (params.signal?.aborted) {
           throw new DOMException("Generation cancelled", "AbortError");
         }
         accumulated += chunk.choices[0]?.delta?.content ?? "";
+        if (params.onProgress && engine === activeEngine) {
+          const progress = parseAiProgress(accumulated);
+          const serialized = JSON.stringify(progress);
+          if (progress && serialized !== lastProgress) {
+            lastProgress = serialized;
+            params.onProgress(progress);
+          }
+        }
       }
 
       if (params.signal?.aborted) {

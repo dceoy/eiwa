@@ -1,10 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import type { AiEngine, AiStatus } from "./llm";
-import { probeWebGpuAdapter } from "./llm";
+import type { AiEngine, AiStatus, ExplainParams } from "./llm";
+import { createLocalAiEngine, probeWebGpuAdapter } from "./llm";
 import { MODEL_OPTIONS } from "./model-config";
 
+const explainMock = vi.fn<AiEngine["explain"]>();
 const ensureReadyMock = vi.fn(async (onStatus?: (status: AiStatus) => void) => {
   onStatus?.("ready");
 });
@@ -19,7 +20,7 @@ vi.mock("./llm", async () => {
       (): AiEngine => ({
         getStatus: () => "ready",
         ensureReady: ensureReadyMock,
-        explain: vi.fn(),
+        explain: explainMock,
         dispose: vi.fn(),
       }),
     ),
@@ -61,6 +62,8 @@ function jsonResponse(body: unknown) {
 beforeEach(() => {
   localStorage.clear();
   ensureReadyMock.mockClear();
+  explainMock.mockReset();
+  vi.mocked(createLocalAiEngine).mockClear();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -79,6 +82,129 @@ afterEach(() => {
 });
 
 describe("App", () => {
+  it.each(["fail", "cancel"])(
+    "preserves shown translation and nuance on late %s with no warning/miss flash",
+    async (mode) => {
+      localStorage.setItem(
+        "eiwa:settings:v1",
+        JSON.stringify({
+          aiEnabled: true,
+          modelCached: true,
+          modelId: MODEL_OPTIONS[0]?.id,
+          directionChoice: "auto",
+        }),
+      );
+      let params: ExplainParams | undefined;
+      let reject: (error: Error) => void = () => {};
+      explainMock.mockImplementationOnce((input) => {
+        params = input;
+        return new Promise((_resolve, rejectPromise) => {
+          reject = rejectPromise;
+          input.signal?.addEventListener("abort", () =>
+            rejectPromise(new DOMException("Cancelled", "AbortError")),
+          );
+        });
+      });
+      render(<App />);
+      await waitFor(() => expect(ensureReadyMock).toHaveBeenCalled());
+      fireEvent.input(screen.getByLabelText(/english or japanese/i), {
+        target: { value: "unlisted sentence" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /^translate$/i }));
+      await waitFor(() => expect(params).toBeDefined());
+      expect(screen.queryByRole("heading", { name: "Warnings" })).toBeNull();
+      expect(screen.queryByText(/no dictionary entry was found/i)).toBeNull();
+      const translation = { primary: "試しの訳", alternatives: [] };
+      const output = {
+        translation,
+        correction: { corrected: null, explanation: null },
+        nuance: [],
+        warnings: [],
+      };
+      params?.onProgress?.(output);
+      await waitFor(() => expect(screen.getByText("試しの訳")).toBeTruthy());
+      expect(screen.queryByRole("heading", { name: "Nuance" })).toBeNull();
+      params?.onProgress?.({ ...output, nuance: ["後から届く解説"] });
+      await waitFor(() => expect(screen.getByText("後から届く解説")).toBeTruthy());
+      if (mode === "cancel") fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+      else reject(new Error("generation-invalid-json"));
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: /^translate$/i })).toBeTruthy(),
+      );
+      expect(screen.getByText("試しの訳")).toBeTruthy();
+      expect(screen.getByText("後から届く解説")).toBeTruthy();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.queryByRole("heading", { name: "Warnings" })).toBeNull();
+      expect(screen.queryByText(/no dictionary entry was found/i)).toBeNull();
+    },
+  );
+
+  it("shows dictionary before AI, then offers a ready-only labeled back-translation", async () => {
+    localStorage.setItem(
+      "eiwa:settings:v1",
+      JSON.stringify({
+        aiEnabled: true,
+        modelCached: true,
+        modelId: MODEL_OPTIONS[0]?.id,
+        directionChoice: "auto",
+      }),
+    );
+    let finish: (() => void) | undefined;
+    const output = {
+      translation: { primary: "ねこです", alternatives: [] },
+      correction: { corrected: null, explanation: null },
+      nuance: [],
+      warnings: [],
+    };
+    explainMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve(output);
+        }),
+    );
+    explainMock.mockResolvedValueOnce({
+      ...output,
+      translation: { primary: "It is a cat.", alternatives: [] },
+    });
+    render(<App />);
+    await waitFor(() => expect(ensureReadyMock).toHaveBeenCalled());
+    fireEvent.input(screen.getByLabelText(/english or japanese/i), { target: { value: "cat" } });
+    fireEvent.click(screen.getByRole("button", { name: /^translate$/i }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Dictionary" })).toBeTruthy());
+    expect(screen.queryByRole("button", { name: /back-translate/i })).toBeNull();
+    finish?.();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /back-translate/i })).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /back-translate/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "AI back-translation" })).toBeTruthy(),
+    );
+    expect(screen.getByText("It is a cat.")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Dictionary" })).toBeTruthy();
+    expect(explainMock.mock.calls[1]?.[0]).toMatchObject({
+      direction: "ja-en",
+      input: "ねこです",
+      dictionaryContext: [],
+    });
+  });
+
+  it("discloses Pro size and requires confirmation before creating its engine", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    const toggle = screen.getByRole("checkbox", { name: /enable ai/i });
+    await waitFor(() => expect(toggle).toHaveProperty("disabled", false));
+    fireEvent.click(toggle);
+    const pro = screen.getByRole("radio", { name: /Pro.*2000 MB/i });
+    const calls = vi.mocked(createLocalAiEngine).mock.calls.length;
+    fireEvent.click(pro);
+    expect(createLocalAiEngine).toHaveBeenCalledTimes(calls);
+    expect(pro).toHaveProperty("checked", false);
+    fireEvent.click(screen.getByRole("button", { name: /Download Pro.*2000 MB/i }));
+    await waitFor(() =>
+      expect(createLocalAiEngine).toHaveBeenLastCalledWith("Qwen2.5-3B-Instruct-q4f16_1-MLC"),
+    );
+  });
   it("renders the header and a usable input on first load", () => {
     render(<App />);
     expect(screen.getByRole("heading", { name: /eiwa/i })).toBeTruthy();

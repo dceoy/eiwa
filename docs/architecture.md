@@ -190,9 +190,12 @@ normalize input (src/normalize.ts)
   -> detect direction: en-ja | ja-en (src/language.ts), or use the user's
      Auto/EN→JA/JA→EN override
   -> look up dictionary entries (src/dict.ts)              [renders immediately]
-  -> if an AI engine is already `ready`: generate a structured explanation
-  -> merge dictionary facts + AI output (src/result-merge.ts) into an
-     EiwaResult (src/result-schema.ts)
+  -> if an AI engine is already `ready`: render a dictionary baseline without
+     transient miss warnings, then stream completed AI sections (translation
+     first, then nuance/correction/warnings)
+  -> merge each validated AI snapshot with dictionary facts (src/result-merge.ts)
+     into an EiwaResult (src/result-schema.ts); late failures/cancellation keep
+     already-shown content and do not insert error or dictionary-miss banners
 ```
 
 `lookup()` never triggers model loading itself. If no AI engine was passed,
@@ -230,14 +233,33 @@ other module imports `@mlc-ai/web-llm` directly.
 - **Web Worker.** `CreateWebWorkerMLCEngine` runs the actual model in
   `src/llm-worker.ts` via `WebWorkerMLCEngineHandler`, keeping the UI thread
   responsive during load and generation.
+- **Grounding.** `src/prompt.ts` includes up to three entries for the leading
+  headword, up to three retained senses per entry, supplied readings, IPA and
+  examples, with source labels `[D1]` etc. Navigational headwords are excluded.
+  Per-field caps and an 1800-byte UTF-8 grounding ceiling bound compute; omitted
+  facts remain unknown. This informs AI explanation only, not dictionary facts.
 - **Structured output.** `explain()` requests
-  `response_format: { type: "json_object" }`, streams the response (so a
-  live "generating…" state is possible), then parses and validates the
-  accumulated JSON against `AiExplanationOutput` before it's ever rendered.
-  Invalid JSON is treated as `generation-invalid-json`, not a crash.
+  `response_format: { type: "json_object" }` and up to 768 output tokens.
+  `src/ai-progress.ts` reads completed top-level JSON sections from the existing
+  token stream (never unfinished strings or fabricated JSON repairs), using the
+  same `AiExplanationOutput` validator as the final response. The final full JSON
+  is still parsed/validated; `generation-invalid-json` preserves earlier sections.
+  `lookup()` bridges progress callbacks to result events and awaits cancellation
+  even if the UI stops consuming the stream.
 - **Cancellation.** An `AbortSignal` maps to `engine.interruptGenerate()`.
-- **Models.** `src/model-config.ts` offers a "Lite" (`Qwen2.5-0.5B-Instruct`,
-  ~400 MB) and "Balanced" (`Qwen2.5-1.5B-Instruct`, ~1 GB) choice.
+- **Models.** `src/model-config.ts` offers "Lite" (`Qwen2.5-0.5B-Instruct`,
+  ~400 MB, unchanged default), "Balanced" (`Qwen2.5-1.5B-Instruct`, ~1 GB),
+  and explicit opt-in "Pro" (`Qwen2.5-3B-Instruct-q4f16_1-MLC`, ~2000 MB,
+  desktop-class GPU with about 2.5 GB available memory). Settings discloses the
+  size before loading and requires Pro download confirmation. Registry tests
+  verify every ID and WebGPU library against pinned WebLLM 0.2.87.
+- **Back-translation.** An AI result offers a one-tap check only with the local
+  engine ready. `src/back-translation.ts` uses `explain()` in the reverse direction
+  without dictionary context or model initialization. Output is labeled AI
+  back-translation; failures/cancellation leave the original result intact.
+  New lookups, cache/model changes and Clear cancel the check. No server calls.
+
+See [ai-quality.md](./ai-quality.md) for verification and on-device limitations.
 
 ### Why WebLLM is loaded from a CDN
 
@@ -276,7 +298,7 @@ function. `WEBLLM_SHA256` must be recomputed by hand whenever
 `@mlc-ai/web-llm` devDependency pin in `package.json` so the two can't drift
 silently, though it can't verify the hash itself was recomputed correctly.
 
-The model weights themselves (hundreds of MB to ~1 GB) are always fetched
+The model weights themselves (hundreds of MB to ~2 GB) are always fetched
 by WebLLM directly from Hugging Face at runtime, cached by the browser —
 they were never a static-asset candidate in the first place.
 
@@ -299,5 +321,6 @@ indefinitely.
 the pipeline: `empty-input`, `unsupported-language`, `dictionary-miss`,
 `webgpu-unavailable`, `model-load-failed`, `generation-cancelled`,
 `generation-invalid-json`, `network-unavailable-for-dictionary-shard`. Every
-failure mode degrades to a dictionary-only (or empty) result rather than
-breaking the UI.
+initial lookup failure degrades to a dictionary-only (or empty) result rather
+than breaking the UI. AI-stage failures leave the already-shown dictionary/AI
+snapshot intact without adding banners.

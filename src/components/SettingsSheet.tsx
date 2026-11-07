@@ -1,3 +1,4 @@
+import { useState } from "preact/hooks";
 import type { AiStatus, ModelLoadProgress } from "../llm";
 import type { ModelOption } from "../model-config";
 import { ModalOverlay } from "./ModalOverlay";
@@ -34,6 +35,9 @@ export function SettingsSheet({
   onClearCache,
   onOpenSources,
 }: SettingsSheetProps) {
+  const [pendingModelId, setPendingModelId] = useState<string | null>(null);
+  const pendingModel = modelOptions.find((option) => option.id === pendingModelId);
+  const selectedModel = modelOptions.find((option) => option.id === selectedModelId);
   if (!open) return null;
 
   return (
@@ -57,6 +61,10 @@ export function SettingsSheet({
             Dictionary lookup still works.
           </p>
         )}
+        <p class="settings-note">
+          Selected: {selectedModel?.label} — approximately {selectedModel?.approxDownloadSizeMb} MB
+          download before first use. Cached weights may reduce the download.
+        </p>
         <label class="toggle-row">
           <span>Enable AI explanations</span>
           <input
@@ -78,7 +86,13 @@ export function SettingsSheet({
                     name="model"
                     value={option.id}
                     checked={selectedModelId === option.id}
-                    onChange={() => onSelectModel(option.id)}
+                    onChange={() => {
+                      if (option.requiresConfirmation) setPendingModelId(option.id);
+                      else {
+                        setPendingModelId(null);
+                        onSelectModel(option.id);
+                      }
+                    }}
                   />
                   <span>
                     <strong>{option.label}</strong> — ~{option.approxDownloadSizeMb} MB,{" "}
@@ -88,6 +102,28 @@ export function SettingsSheet({
               ))}
             </fieldset>
 
+            {pendingModel && (
+              <section class="card" aria-label="Confirm model download">
+                <p>
+                  {pendingModel.label} is optional: approximately{" "}
+                  {pendingModel.approxDownloadSizeMb} MB will be downloaded to this device.{" "}
+                  {pendingModel.description}
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onClick={() => {
+                    onSelectModel(pendingModel.id);
+                    setPendingModelId(null);
+                  }}
+                >
+                  Download {pendingModel.label} (~{pendingModel.approxDownloadSizeMb} MB)
+                </button>
+                <button type="button" class="btn btn-ghost" onClick={() => setPendingModelId(null)}>
+                  Keep current model
+                </button>
+              </section>
+            )}
             <p class="settings-note" aria-live="polite">
               Status: {aiStatus}
               {aiStatus === "loading-model" && aiProgress

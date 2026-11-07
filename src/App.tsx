@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { backTranslate } from "./back-translation";
 import { type DirectionChoice, InputBar } from "./components/InputBar";
 import { LearningSheet } from "./components/LearningSheet";
 import { ResultView } from "./components/ResultView";
@@ -66,6 +67,8 @@ export function App() {
   const [result, setResult] = useState<EiwaResult | null>(null);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [backTranslation, setBackTranslation] = useState<string | null>(null);
+  const [backTranslating, setBackTranslating] = useState(false);
   const [spelling, setSpelling] = useState<string[]>([]);
   useEffect(() => {
     let cancelled = false;
@@ -205,6 +208,8 @@ export function App() {
         setSavedView(false);
         setBanner(null);
         setResult(null);
+        setBackTranslation(null);
+        let historyRecorded = false;
 
         try {
           for await (const event of lookup(query, {
@@ -222,7 +227,8 @@ export function App() {
                 break;
               case "result":
                 setResult(event.result);
-                if (historyOnRef.current) {
+                if (historyOnRef.current && !historyRecorded) {
+                  historyRecorded = true;
                   setHistory((current) => {
                     const next = addHistory(current, {
                       input: event.result.input,
@@ -246,13 +252,17 @@ export function App() {
                 );
                 break;
               case "cancelled":
-                setBanner({ kind: "info", message: "Cancelled." });
+                // Cancellation is auxiliary: leave shown sections untouched.
                 break;
               default:
                 break;
             }
           }
         } finally {
+          // Clear/snapshot invalidates UI events but still lets the cancelled
+          // engine settle. Don't leave Settings stuck at "generating".
+          const status = engineRef.current?.getStatus();
+          if (status && status !== "generating") setAiStatus(status);
           if (isCurrent()) setBusy(false);
         }
       })();
@@ -262,6 +272,36 @@ export function App() {
     },
     [input, aiEnabled, directionChoice, cancelActiveLookup],
   );
+
+  const handleBackTranslate = useCallback(async () => {
+    const engine = engineRef.current;
+    const translation = result?.aiTranslation?.primary;
+    if (
+      !result ||
+      !translation ||
+      !aiEnabled ||
+      busy ||
+      backTranslating ||
+      engine?.getStatus() !== "ready"
+    )
+      return;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const requestId = requestIdRef.current;
+    setBackTranslating(true);
+    setAiStatus("generating");
+    const run = (async () => {
+      try {
+        const text = await backTranslate(engine, result.direction, translation, controller.signal);
+        if (requestIdRef.current === requestId && text) setBackTranslation(text);
+      } finally {
+        setBackTranslating(false);
+        if (engineRef.current === engine) setAiStatus(engine.getStatus());
+      }
+    })();
+    activeLookupRef.current = run;
+    await run;
+  }, [result, aiEnabled, busy, backTranslating]);
 
   const handleRelookup = useCallback(
     (word: string, lang: DictLang) => {
@@ -302,14 +342,18 @@ export function App() {
 
   const handleClear = useCallback(() => {
     abortRef.current?.abort();
+    requestIdRef.current++;
+    setBusy(false);
     setInput("");
     setResult(null);
+    setBackTranslation(null);
     setBanner(null);
   }, []);
 
   const handleToggleAi = useCallback(
     async (enabled: boolean) => {
       if (!enabled) {
+        await cancelActiveLookup();
         setAiEnabled(false);
         return;
       }
@@ -330,7 +374,7 @@ export function App() {
         setBanner({ kind: "error", message: lookupError("model-load-failed").message });
       }
     },
-    [selectedModelId, webGpuSupported],
+    [selectedModelId, webGpuSupported, cancelActiveLookup],
   );
 
   const handleSelectModel = useCallback(
@@ -461,7 +505,15 @@ export function App() {
                   : "Save to wordbook"}
               </button>
             </div>
-            <ResultView result={result} onLookup={handleRelookup} />
+            <ResultView
+              result={result}
+              onLookup={handleRelookup}
+              onBackTranslate={
+                aiEnabled && aiStatus === "ready" && !busy ? handleBackTranslate : undefined
+              }
+              backTranslation={backTranslation}
+              backTranslating={backTranslating}
+            />
           </>
         )}
       </main>
@@ -494,6 +546,7 @@ export function App() {
             setInput(word.input);
             if (directionChoice !== "auto") setDirectionChoice(word.direction);
             setResult(reopen(word));
+            setBackTranslation(null);
             setSavedView(true);
             setBanner(null);
             setLearningOpen(false);
