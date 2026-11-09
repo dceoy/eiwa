@@ -33,11 +33,11 @@
     "format:check": "biome format . && oxfmt --check '**/*.{md,mdx}' --no-error-on-unmatched-pattern"
   },
   "dependencies": {
-    "preact": "11.1.1"
+    "preact": "11.2.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.5",
-    "@cloudflare/workers-types": "5.20261104.1",
+    "@biomejs/biome": "2.6.6",
+    "@cloudflare/workers-types": "5.20261108.1",
     "@mlc-ai/web-llm": "0.2.87",
     "@playwright/test": "1.65.0",
     "@preact/preset-vite": "2.10.6",
@@ -45,7 +45,7 @@
     "@testing-library/user-event": "14.6.8",
     "@types/node": "26.6.6",
     "happy-dom": "21.0.4",
-    "oxfmt": "0.76.0",
+    "oxfmt": "0.77.0",
     "saxes": "6.0.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
