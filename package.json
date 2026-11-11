@@ -37,12 +37,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
-    "@cloudflare/workers-types": "5.20261109.1",
-    "@mlc-ai/web-llm": "0.2.87",
+    "@cloudflare/workers-types": "5.20261110.1",
+    "@mlc-ai/web-llm": "0.2.88",
     "@playwright/test": "1.65.0",
     "@preact/preset-vite": "2.10.6",
     "@testing-library/preact": "3.2.6",
-    "@testing-library/user-event": "14.6.8",
+    "@testing-library/user-event": "14.6.9",
     "@types/node": "26.6.6",
     "happy-dom": "21.0.4",
     "oxfmt": "0.78.0",
@@ -52,7 +52,7 @@
     "vite": "8.3.7",
     "vite-plugin-pwa": "2.0.0",
     "vitest": "5.1.0",
-    "wrangler": "4.159.0"
+    "wrangler": "4.160.0"
   },
   "packageManager": "pnpm@11.8.0",
   "devEngines": {
