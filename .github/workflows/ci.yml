@@ -33,7 +33,7 @@ jobs:
       - run: pnpm run test:e2e
   dependabot-auto-merge:
     if: >
-      github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+      github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
     needs:
       - check
       - e2e
