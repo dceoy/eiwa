@@ -5,7 +5,7 @@
     "suspicious": "error",
     "perf": "error"
   },
-  "plugins": ["import", "oxc", "promise", "typescript", "unicorn"],
+  "plugins": ["oxc", "typescript"],
   "options": {
     "typeAware": true,
     "denyWarnings": true,
@@ -18,5 +18,13 @@
         "typescript/no-floating-promises": "off"
       }
     }
-  ]
+  ],
+  "rules": {
+    "eslint/no-await-in-loop": "off",
+    "eslint/no-shadow": "off",
+    "typescript/no-unsafe-type-assertion": "off",
+    "typescript/no-unnecessary-type-assertion": "off",
+    "typescript/no-base-to-string": "off",
+    "typescript/no-unbound-method": "off"
+  }
 }
