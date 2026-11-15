@@ -6,7 +6,20 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["src/**", "worker/**", "scripts/**", "tests/**", "*.ts", "*.tsx", "*.json", "*.jsonc", "!**/*.md", "!**/*.mdx", "!!**/*.yaml", "!!**/*.yml"]
+    "includes": [
+      "src/**",
+      "worker/**",
+      "scripts/**",
+      "tests/**",
+      "*.ts",
+      "*.tsx",
+      "*.json",
+      "*.jsonc",
+      "!**/*.md",
+      "!**/*.mdx",
+      "!!**/*.yaml",
+      "!!**/*.yml"
+    ]
   },
   "formatter": {
     "enabled": true,
