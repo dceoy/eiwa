@@ -6,20 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": [
-      "src/**",
-      "worker/**",
-      "scripts/**",
-      "tests/**",
-      "*.ts",
-      "*.tsx",
-      "*.json",
-      "*.jsonc",
-      "!**/*.md",
-      "!**/*.mdx",
-      "!!**/*.yaml",
-      "!!**/*.yml"
-    ]
+    "includes": ["src/**", "worker/**", "scripts/**", "tests/**", "*.ts", "*.tsx", "*.json", "*.jsonc", "!**/*.md", "!**/*.mdx", "!!**/*.yaml", "!!**/*.yml"]
   },
   "formatter": {
     "enabled": true,
@@ -37,7 +24,17 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "all",
+      "correctness": {
+        "useQwikValidLexicalScope": "off"
+      },
+      "complexity": {
+        "useLiteralKeys": "off"
+      },
+      "style": {
+        "useExportsLast": "off",
+        "noExcessiveLinesPerFile": "off"
+      }
     }
   },
   "json": {
