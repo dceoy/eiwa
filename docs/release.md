@@ -6,13 +6,13 @@ there's something worth keeping a permanent URL for.
 
 ## Roadmap status
 
-| Phase                            | Scope                                                                                                             | Status                  |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| 0 — Deployable shell             | Workers Static Assets app shell, `/api/health`, temporary deploy (#1)                                             | Done                    |
-| 1 — Dictionary-first MVP         | JMdict production ingestion, mobile-sized shards, reading/reverse indexes, UI/PWA, sources/licenses (#3, #5, #11) | Done                    |
-| 2 — Browser-side AI              | WebLLM in a Web Worker, structured JSON, dictionary+AI merge, WebGPU fallback (#2, #4)                            | Done                    |
-| 3 — Quality & privacy hardening  | CI, unit + e2e tests, privacy guard, free-tier guardrails (#6)                                                    | Done                    |
-| 4 — Permanent Cloudflare account | Claim or otherwise provision a permanent account; production deployment instructions                              | Not started — see below |
+| Phase                            | Scope                                                                                                             | Status            |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------- |
+| 0 — Deployable shell             | Workers Static Assets app shell, `/api/health`, temporary deploy (#1)                                             | Done              |
+| 1 — Dictionary-first MVP         | JMdict production ingestion, mobile-sized shards, reading/reverse indexes, UI/PWA, sources/licenses (#3, #5, #11) | Done              |
+| 2 — Browser-side AI              | WebLLM in a Web Worker, structured JSON, dictionary+AI merge, WebGPU fallback (#2, #4)                            | Done              |
+| 3 — Quality & privacy hardening  | CI, unit + e2e tests, privacy guard, free-tier guardrails (#6)                                                    | Done              |
+| 4 — Permanent Cloudflare account | Claim or otherwise provision a permanent account; production deployment instructions                              | Done (2026-11-15) |
 
 ## Temporary Accounts workflow
 
@@ -75,8 +75,8 @@ streamed English Wiktextract and NGSL data; preserve `.cache/depth/` too.
 Run `pnpm exec tsx scripts/check-depth-lookups.ts` after the production build.
 See [data-depth.md](./data-depth.md) for licensing, caps and source preflight.
 
-This data work does **not** complete Phase 4: no permanent Cloudflare
-account is designated and no permanent deployment is claimed.
+Phase 4 was completed separately on 2026-11-15 (see below); this data
+work is what the claimed production deployment serves.
 
 ## Claim flow
 
@@ -89,23 +89,22 @@ If a temporary preview is worth keeping:
    deployment and can be managed from the dashboard or via a
    credentialed `wrangler deploy`.
 
-## Permanent deployment (not yet configured)
+## Permanent deployment
 
-This repository does not currently assume a permanent Cloudflare account
-exists, and no CI workflow deploys anywhere automatically. When a permanent
-deployment is actually wanted:
+Completed on 2026-11-15 via the claim flow above: a production build from
+`main` (`b960eb6`) was deployed with `wrangler deploy --temporary` and the
+owner claimed it into their permanent Cloudflare account.
 
-1. Claim a temporary deployment (above), or run `wrangler deploy` from a
-   machine authenticated against a real Cloudflare account
-   (`wrangler login` or `CLOUDFLARE_API_TOKEN`).
-2. Only then add a deployment job to CI, using a repository secret for the
-   API token — never commit credentials, and never require them for the
-   existing `check`/`e2e` CI jobs, which must keep working for any
-   contributor without Cloudflare access.
-3. Add a custom domain / route in `wrangler.jsonc` if desired.
+- Production URL: https://eiwa.pool-minotaurasaurus.workers.dev
+- First claimed version ID: `3e5ec851-0586-4cc9-b9da-7c87faf9c19b`
 
-Until this happens, treat any statement about a "production" or "live"
-Eiwa deployment as false — only temporary preview URLs exist.
+No CI workflow deploys anywhere automatically. To update production, run
+`wrangler deploy` from a machine authenticated against the owner's
+Cloudflare account (`wrangler login` or `CLOUDFLARE_API_TOKEN`), or repeat
+the temporary-deploy + claim flow. Never commit credentials, and never
+require them for the existing `check`/`e2e` CI jobs, which must keep
+working for any contributor without Cloudflare access. A custom domain /
+route in `wrangler.jsonc` remains optional and is not configured.
 
 ## Free-tier architecture guardrails
 
