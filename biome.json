@@ -37,7 +37,17 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "correctness": {
+        "useQwikValidLexicalScope": "off"
+      },
+      "complexity": {
+        "useLiteralKeys": "off"
+      },
+      "style": {
+        "useExportsLast": "off",
+        "noExcessiveLinesPerFile": "off"
+      }
     }
   },
   "json": {
