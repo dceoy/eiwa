@@ -5,13 +5,7 @@
     "suspicious": "error",
     "perf": "error"
   },
-  "plugins": [
-    "import",
-    "oxc",
-    "promise",
-    "typescript",
-    "unicorn"
-  ],
+  "plugins": ["import", "oxc", "promise", "typescript", "unicorn"],
   "options": {
     "typeAware": true,
     "denyWarnings": true,
@@ -19,10 +13,7 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/*.test.ts",
-        "**/*.test.tsx"
-      ],
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
         "typescript/no-floating-promises": "off"
       }
