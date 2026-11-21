@@ -41,7 +41,7 @@ function hotEntries(lang: DictLang, prefix: string): DictionaryEntry[] {
     id: `${lang}:${i}`,
     lang,
     headword: `${prefix}${i}`,
-    reading: lang === "ja" ? `カ${i}` : undefined,
+    ...(lang === "ja" ? { reading: `カ${i}` } : {}),
     pos: [],
     translations: [{ text: "test", lang: "en" }],
     senses: [{ gloss: "test" }],

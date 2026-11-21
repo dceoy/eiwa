@@ -40,16 +40,16 @@ function assertFixtureEntry(value: unknown, lang: DictLang, index: number): Fixt
     throw new Error(`fixtures/dict/${lang}.json[${index}]: expected an object`);
   }
   const entry = value as Record<string, unknown>;
-  if (typeof entry.headword !== "string" || entry.headword.trim() === "") {
+  if (typeof entry["headword"] !== "string" || entry["headword"].trim() === "") {
     throw new Error(`fixtures/dict/${lang}.json[${index}]: missing non-empty "headword"`);
   }
-  if (!Array.isArray(entry.pos) || entry.pos.some((p) => typeof p !== "string")) {
+  if (!Array.isArray(entry["pos"]) || entry["pos"].some((p) => typeof p !== "string")) {
     throw new Error(`fixtures/dict/${lang}.json[${index}]: "pos" must be a string array`);
   }
-  if (!Array.isArray(entry.translations) || entry.translations.length === 0) {
+  if (!Array.isArray(entry["translations"]) || entry["translations"].length === 0) {
     throw new Error(`fixtures/dict/${lang}.json[${index}]: needs at least one translation`);
   }
-  if (!Array.isArray(entry.senses) || entry.senses.length === 0) {
+  if (!Array.isArray(entry["senses"]) || entry["senses"].length === 0) {
     throw new Error(`fixtures/dict/${lang}.json[${index}]: needs at least one sense`);
   }
   return entry as unknown as FixtureEntry;
@@ -108,7 +108,7 @@ export function groupByShard(entries: DictionaryEntry[], lang: DictLang): Map<st
   const shards = new Map<string, ShardFile>();
 
   for (const entry of entries) {
-    const normalizedHeadword = normalizeHeadword(entry.headword, lang);
+    const normalizedHeadword = normalizeHeadword(entry["headword"], lang);
     addToShard(shards, lang, shardKeyFor(normalizedHeadword, lang), normalizedHeadword, entry);
 
     // Japanese entries commonly store kanji headwords with a kana reading
@@ -203,7 +203,7 @@ export async function buildDictionary(
   extraLicenses: DictionarySource[] = [],
 ) {
   for (const entry of [...en, ...ja]) {
-    entry.translations.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
+    entry["translations"].sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
   }
   en.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
   ja.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
@@ -240,7 +240,7 @@ export async function buildDictionary(
 }
 
 async function main() {
-  const source = process.env.DICT_SOURCE ?? "fixtures";
+  const source = process.env["DICT_SOURCE"] ?? "fixtures";
   if (source === "jmdict") {
     const { buildJmdict } = await import("./build-jmdict");
     await buildJmdict();

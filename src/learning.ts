@@ -109,17 +109,17 @@ export function parseWordbook(text: string): SavedWord[] {
   for (const word of data.words) {
     if (
       !isItem(word) ||
-      typeof word.savedAt !== "string" ||
-      !Number.isFinite(Date.parse(word.savedAt)) ||
-      word.id !== wordId(word) ||
-      ids.has(word.id) ||
-      !Array.isArray(word.dictionary) ||
-      !word.dictionary.length ||
-      word.dictionary.length > 30 ||
-      !word.dictionary.every(isEntry)
+      typeof word["savedAt"] !== "string" ||
+      !Number.isFinite(Date.parse(word["savedAt"])) ||
+      word["id"] !== wordId(word) ||
+      ids.has(word["id"]) ||
+      !Array.isArray(word["dictionary"]) ||
+      !word["dictionary"].length ||
+      word["dictionary"].length > 30 ||
+      !word["dictionary"].every(isEntry)
     )
       throw new Error("Invalid wordbook entry.");
-    ids.add(word.id);
+    ids.add(word["id"]);
   }
   return data.words as SavedWord[];
 }

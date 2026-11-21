@@ -257,7 +257,10 @@ export function ResultView({
                   ))}
                 </ol>
                 {entry.source
-                  .filter((source) => source.name.includes("Wiktionary") && source.url)
+                  .filter(
+                    (source): source is typeof source & { url: string } =>
+                      source.name.includes("Wiktionary") && !!source.url,
+                  )
                   .map((source) => (
                     <p key={source.url}>
                       <a href={source.url} target="_blank" rel="noreferrer">

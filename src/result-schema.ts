@@ -57,21 +57,24 @@ export function validateAiExplanationOutput(value: unknown): AiExplanationOutput
   if (typeof value !== "object" || value === null) return null;
   const obj = value as Record<string, unknown>;
 
-  const translation = obj.translation as Record<string, unknown> | undefined;
+  const translation = obj["translation"] as Record<string, unknown> | undefined;
   if (typeof translation !== "object" || translation === null) return null;
-  if (typeof translation.primary !== "string") return null;
-  const alternatives = isStringArray(translation.alternatives) ? translation.alternatives : [];
+  if (typeof translation["primary"] !== "string") return null;
+  const alternatives = isStringArray(translation["alternatives"])
+    ? translation["alternatives"]
+    : [];
 
-  const correctionRaw = obj.correction as Record<string, unknown> | undefined;
-  const corrected = typeof correctionRaw?.corrected === "string" ? correctionRaw.corrected : null;
+  const correctionRaw = obj["correction"] as Record<string, unknown> | undefined;
+  const corrected =
+    typeof correctionRaw?.["corrected"] === "string" ? correctionRaw["corrected"] : null;
   const explanation =
-    typeof correctionRaw?.explanation === "string" ? correctionRaw.explanation : null;
+    typeof correctionRaw?.["explanation"] === "string" ? correctionRaw["explanation"] : null;
 
-  const nuance = isStringArray(obj.nuance) ? obj.nuance : [];
-  const warnings = isStringArray(obj.warnings) ? obj.warnings : [];
+  const nuance = isStringArray(obj["nuance"]) ? obj["nuance"] : [];
+  const warnings = isStringArray(obj["warnings"]) ? obj["warnings"] : [];
 
   return {
-    translation: { primary: translation.primary, alternatives },
+    translation: { primary: translation["primary"], alternatives },
     correction: { corrected, explanation },
     nuance,
     warnings,

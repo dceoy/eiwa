@@ -102,6 +102,10 @@ export function rankEntries(
       translation.priority = -(jaRank.get(translation.text) ?? 0);
     entry.translations.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
     entry.translations = entry.translations.slice(0, 3);
-    for (const sense of entry.senses) sense.translation = entry.translations[0]?.text;
+    const translation = entry.translations[0]?.text;
+    for (const sense of entry.senses) {
+      if (translation !== undefined) sense.translation = translation;
+      else delete sense.translation;
+    }
   }
 }

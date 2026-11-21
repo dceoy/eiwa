@@ -25,7 +25,9 @@ const aiOutput: AiExplanationOutput = {
 
 describe("mergeResult", () => {
   it("never borrows lexical summaries from a different related headword", () => {
-    const exact = { ...catEntry, etymology: undefined, pronunciation: undefined, derivedWords: [] };
+    const exact = { ...catEntry, derivedWords: [] };
+    delete exact.etymology;
+    delete exact.pronunciation;
     const related: DictionaryEntry = {
       ...catEntry,
       id: "catsup",

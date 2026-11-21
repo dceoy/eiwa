@@ -339,7 +339,9 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
         });
     }
     if (/^[a-z]+$/.test(word)) {
-      entry.level = coarseLevel(ranks.get(word));
+      const level = coarseLevel(ranks.get(word));
+      if (level !== undefined) entry.level = level;
+      else delete entry.level;
       entry.source.push(NGSL_SOURCE);
     }
   }

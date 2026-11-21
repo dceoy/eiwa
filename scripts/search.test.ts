@@ -167,7 +167,7 @@ describe("on-device indexed search", () => {
     if (!ref) throw new Error("Missing inflection ref");
     assets.set(`/${ref.path}`, [["took", ["go", "take"]]]);
     Object.assign(ref, { start: "took", end: "took", entryCount: 1 });
-    manifest.search = manifest.search?.filter((r) => r.kind === "headwords" || r === ref);
+    manifest.search = manifest.search?.filter((r) => r.kind === "headwords" || r === ref) ?? [];
     for (const other of manifest.search ?? []) {
       if (other !== ref) assets.delete(`/${other.path}`);
     }

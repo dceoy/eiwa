@@ -212,10 +212,12 @@ export function App() {
         let historyRecorded = false;
 
         try {
+          const selectedDirection =
+            direction ?? (directionChoice === "auto" ? undefined : directionChoice);
           for await (const event of lookup(query, {
             signal: controller.signal,
             aiEngine: aiEnabled ? engineRef.current : null,
-            direction: direction ?? (directionChoice === "auto" ? undefined : directionChoice),
+            ...(selectedDirection ? { direction: selectedDirection } : {}),
           })) {
             if (!isCurrent()) return;
             switch (event.type) {
@@ -508,9 +510,9 @@ export function App() {
             <ResultView
               result={result}
               onLookup={handleRelookup}
-              onBackTranslate={
-                aiEnabled && aiStatus === "ready" && !busy ? handleBackTranslate : undefined
-              }
+              {...(aiEnabled && aiStatus === "ready" && !busy
+                ? { onBackTranslate: handleBackTranslate }
+                : {})}
               backTranslation={backTranslation}
               backTranslating={backTranslating}
             />
@@ -520,7 +522,7 @@ export function App() {
 
       {learningOpen && (
         <LearningSheet
-          error={banner?.kind === "error" ? banner.message : undefined}
+          {...(banner?.kind === "error" ? { error: banner.message } : {})}
           words={words}
           onWords={updateWords}
           history={history}

@@ -110,12 +110,12 @@ export function englishForms(word: string, pos: string[]): string[] {
     forms.push(
       ...(exceptions(irregularVerbs) ?? [
         plural(first),
-        /e$/.test(first)
+        first.endsWith('e')
           ? `${first}d`
           : /[^aeiou]y$/.test(first)
             ? `${first.slice(0, -1)}ied`
             : `${doubled}ed`,
-        /ie$/.test(first)
+        first.endsWith('ie')
           ? `${first.slice(0, -2)}ying`
           : /[^e]e$/.test(first)
             ? `${first.slice(0, -1)}ing`

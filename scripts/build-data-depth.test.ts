@@ -74,7 +74,7 @@ describe("streamed Wiktextract projection", () => {
     expect(data.get("run")?.etymology).toHaveLength(600);
     expect(data.get("run")?.etymology?.endsWith("…")).toBe(true);
     expect(data.get("run")?.derived).toHaveLength(8);
-    const lemma = { ...entry("run"), inflectionForms: data.get("run")?.forms };
+    const lemma = { ...entry("run"), inflectionForms: data.get("run")?.forms ?? [] };
     expect(searchRows([lemma], "en").inflections).toContainEqual(["ran", ["run"]]);
   });
   it("retains one Commons recording, prefers MP3 across rows, and rejects other origins", async () => {
@@ -190,7 +190,7 @@ it("accounts for repeated entries and Japanese reading aliases in byte budgets",
   const build = (reading?: string) =>
     indexExamples(lines("1\t2"), en, ja, {
       en: [entry("run")],
-      ja: [{ ...entry("電車", "ja"), reading }],
+      ja: [{ ...entry("電車", "ja"), ...(reading ? { reading } : {}) }],
     });
   expect((await build("でんしゃ")).bytes.ja).toBe((await build()).bytes.ja * 2);
 });

@@ -15,7 +15,7 @@ export async function backTranslate(
       direction: direction === "en-ja" ? "ja-en" : "en-ja",
       input: translation,
       dictionaryContext: [],
-      signal,
+      ...(signal ? { signal } : {}),
     });
     return signal?.aborted ? null : output.translation.primary.trim() || null;
   } catch {

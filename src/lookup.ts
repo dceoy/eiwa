@@ -117,7 +117,7 @@ export async function* lookup(
       direction,
       input: normalized.text,
       dictionaryContext: entries,
-      signal,
+      ...(signal ? { signal } : {}),
       onProgress: (output) => {
         if (!acceptingUpdates || signal?.aborted) return;
         updates.push(output);

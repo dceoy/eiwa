@@ -97,9 +97,9 @@ describe("buildUserPrompt", () => {
       ...runEntry,
       reading: "はしる",
       examples: [],
-      pronunciation: undefined,
       senses: [{ gloss: "to run", examples: ["速く走る"] }],
     };
+    delete entry.pronunciation;
     const prompt = buildUserPrompt({
       direction: "ja-en",
       input: "走る",

@@ -185,13 +185,13 @@ function convertEntry(node: XmlNode): {
     entry.translations.some((translation) => translation.text === gloss),
   );
   const en: DictionaryEntry[] =
-    first && !primaryGloss?.attrs.g_type && englishHeadword(gloss)
+    first && !primaryGloss?.attrs["g_type"] && englishHeadword(gloss)
       ? [
           {
             id: `jmdict-en:${seq}`,
             lang: "en",
             headword:
-              /^to /.test(gloss) && first.pos.some((pos) => /verb/.test(pos) && !/adverb/.test(pos))
+              gloss.startsWith('to ') && first.pos.some((pos) => /verb/.test(pos) && !/adverb/.test(pos))
                 ? gloss.slice(3)
                 : gloss,
             pos: first.pos,

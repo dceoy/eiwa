@@ -156,7 +156,7 @@ test("recording Play decodes media and advances playback using intercepted fixtu
   let requests = 0;
   await page.route("https://upload.wikimedia.org/**", async (route) => {
     requests++;
-    expect(route.request().headers().referer).toBeUndefined();
+    expect(route.request().headers()["referer"]).toBeUndefined();
     await route.fulfill({
       status: 200,
       contentType: "audio/wav",

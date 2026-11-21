@@ -130,7 +130,7 @@ export function localDictionaryFetch(publicDir: string): typeof fetch {
 
 export function requireJmdict(versions: Record<string, string>): void {
   if (
-    !versions.JMdict_e ||
+    !versions["JMdict_e"] ||
     !/^[a-f0-9]{64}$/.test(versions["JMdict_e.sha256"] ?? "") ||
     Object.hasOwn(versions, "eiwa-fixtures")
   ) {
