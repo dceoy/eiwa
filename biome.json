@@ -37,7 +37,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended",
+      "preset": "all",
       "correctness": {
         "useQwikValidLexicalScope": "off"
       },
@@ -46,7 +46,8 @@
       },
       "style": {
         "useExportsLast": "off",
-        "noExcessiveLinesPerFile": "off"
+        "noExcessiveLinesPerFile": "off",
+        "noDefaultExport": "off"
       }
     }
   },
