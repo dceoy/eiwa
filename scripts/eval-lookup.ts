@@ -10,6 +10,9 @@ import { normalizeHeadword } from "../src/dict-normalize";
 import type { DictionaryEntry, DictLang } from "../src/dict-types";
 import { sourceLangFor, targetLangFor } from "../src/language";
 
+const LINE_BREAK_RE = /\r?\n/u;
+const SHA256_HEX_RE = /^[a-f0-9]{64}$/u;
+
 export const CATEGORIES = [
   "single-word",
   "inflected-form",
@@ -62,7 +65,7 @@ export function parseQueries(text: string): LookupQuery[] {
   const ids = new Set<string>();
   const inputs = new Set<string>();
   const queries: LookupQuery[] = [];
-  for (const [index, line] of text.split(/\r?\n/u).entries()) {
+  for (const [index, line] of text.split(LINE_BREAK_RE).entries()) {
     if (!line.trim()) {
       continue;
     }
@@ -104,15 +107,14 @@ export function scoreLookup(query: LookupQuery, entries: DictionaryEntry[]): Sco
   const translation = first?.translations[0];
   return {
     exact: entries.some((entry) => normalize(entry.headword) === normalize(query.input)),
-    top1: Boolean(
-      first &&
-        translation?.lang === target &&
-        query.expected.some(
-          (expected) =>
-            normalize(first.headword) === normalize(expected.headword) &&
-            expected.senses.some((sense) => senseMatches(translation.text, sense, target)),
-        ),
-    ),
+    top1:
+      first !== undefined &&
+      translation?.lang === target &&
+      query.expected.some(
+        (expected) =>
+          normalize(first.headword) === normalize(expected.headword) &&
+          expected.senses.some((sense) => senseMatches(translation.text, sense, target)),
+      ),
     miss: entries.length === 0,
   };
 }
@@ -139,7 +141,7 @@ export function localDictionaryFetch(publicDir: string): typeof fetch {
 
 export function requireJmdict(versions: Record<string, string>): void {
   if (
-    !(versions["JMdict_e"] && /^[a-f0-9]{64}$/u.test(versions["JMdict_e.sha256"] ?? "")) ||
+    !(versions["JMdict_e"] && SHA256_HEX_RE.test(versions["JMdict_e.sha256"] ?? "")) ||
     Object.hasOwn(versions, "eiwa-fixtures")
   ) {
     throw new Error(
@@ -178,7 +180,7 @@ async function main() {
       `Manifest SHA-256: ${sha256(manifest)}; built at ${info.builtAt}; ${info.shardCount} shards`,
     );
     console.log(`Source versions: ${JSON.stringify(info.sourceVersions)}`);
-    const results = [];
+    const results: Array<{ query: LookupQuery; entries: DictionaryEntry[]; score: Score }> = [];
     for (const query of queries) {
       // Do not catch lookup failures: a broken asset is not a quality miss.
       const entries = await lookupDictionary(query.input, sourceLangFor(query.direction));

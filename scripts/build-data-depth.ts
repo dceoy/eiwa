@@ -15,6 +15,13 @@ import type {
 import { type CommonsRecording, isCommonsRecording } from "../src/recording";
 import { depthArchive, depthVersions } from "./depth-sources";
 
+const CONTROL_CHARACTERS_RE = /[\r\n\t]/u;
+const LOWERCASE_ENGLISH_RE = /^[a-z]+$/u;
+const ENGLISH_WORD_SEQUENCE_RE = /^[a-z]+(?:[ '-][a-z]+)*$/iu;
+const ENGLISH_WORD_RE = /^[a-z]+$/iu;
+const WHITESPACE_ONLY_RE = /^\s+$/u;
+const DIGITS_ONLY_RE = /^\d+$/u;
+
 export const TATOEBA_SOURCE: DictionarySource = {
   name: "Tatoeba contributors",
   license: "CC BY 2.0 FR",
@@ -111,7 +118,10 @@ function appendUnique(target: string[], values: string[], cap: number) {
 }
 function term(value: string | undefined): value is string {
   return (
-    typeof value === "string" && value.length > 0 && value.length <= 64 && !/[\r\n\t]/u.test(value)
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 64 &&
+    !CONTROL_CHARACTERS_RE.test(value)
   );
 }
 function usableForm(tags: string[] = []): boolean {
@@ -209,7 +219,7 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
       out.forms,
       (row.forms ?? []).flatMap((item) =>
         term(item.form) &&
-        /^[a-z]+(?:[ '-][a-z]+)*$/iu.test(item.form) &&
+        ENGLISH_WORD_SEQUENCE_RE.test(item.form) &&
         usableForm(item.tags) &&
         item.form !== word
           ? [normalizeHeadword(item.form, "en")]
@@ -228,7 +238,7 @@ export async function ngslRanks(lines: AsyncIterable<string>): Promise<Map<strin
   const ranks = new Map<string, number>();
   for await (const line of lines) {
     const [word, rank] = line.split(",");
-    if (word && /^[a-z]+$/iu.test(word) && Number.isInteger(Number(rank)) && Number(rank) > 0) {
+    if (word && ENGLISH_WORD_RE.test(word) && Number.isInteger(Number(rank)) && Number(rank) > 0) {
       ranks.set(normalizeHeadword(word, "en"), Number(rank));
     }
   }
@@ -251,7 +261,7 @@ export async function sentenceMap(lines: AsyncIterable<string>, language: "eng" 
       text.length > (language === "eng" ? 240 : 120) ||
       !author ||
       author === "\\N" ||
-      !/^\d+$/u.test(id ?? "")
+      !DIGITS_ONLY_RE.test(id ?? "")
     ) {
       continue;
     }
@@ -276,7 +286,7 @@ export function exampleHeadwords(text: string, lang: DictLang, words: Set<string
     let count = 0;
     for (let j = i; j < parts.length && count < 4; j++) {
       const part = parts[j];
-      if (!part || !(part.isWordLike || /^\s+$/u.test(part.segment))) {
+      if (!(part && (part.isWordLike || WHITESPACE_ONLY_RE.test(part.segment)))) {
         break;
       }
       span += part.segment;
@@ -400,7 +410,7 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
         });
       }
     }
-    if (/^[a-z]+$/u.test(word)) {
+    if (LOWERCASE_ENGLISH_RE.test(word)) {
       const level = coarseLevel(ranks.get(word));
       if (level === undefined) {
         delete entry.level;

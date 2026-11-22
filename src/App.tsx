@@ -74,13 +74,14 @@ export function App() {
     let cancelled = false;
     setSpelling([]);
     if (!result || result.dictionary.length) {
-      return;
+      return undefined;
     }
     void suggestSpellings(result.input, sourceLangFor(result.direction))
-      .then((words) => {
+      .then((suggestions) => {
         if (!cancelled) {
-          setSpelling(words);
+          setSpelling(suggestions);
         }
+        return undefined;
       })
       .catch(() => undefined);
     return () => {
@@ -130,6 +131,7 @@ export function App() {
         if (!cancelled) {
           setDictInfo({ builtAt: info.builtAt, shardCount: info.shardCount });
         }
+        return undefined;
       })
       .catch(() => undefined);
     void dictionaryLicenses()
@@ -137,6 +139,7 @@ export function App() {
         if (!cancelled) {
           setLicenses(list);
         }
+        return undefined;
       })
       .catch(() => undefined);
     return () => {
@@ -156,7 +159,7 @@ export function App() {
     let cancelled = false;
     void probeWebGpuAdapter().then((supported) => {
       if (cancelled) {
-        return;
+        return undefined;
       }
       setWebGpuSupported(supported);
       // A persisted "enabled" from a previous device/browser is meaningless
@@ -166,6 +169,7 @@ export function App() {
       if (!supported) {
         setAiEnabled(false);
       }
+      return undefined;
     });
     return () => {
       cancelled = true;
@@ -505,7 +509,8 @@ export function App() {
             ))}
           </section>
         )}
-        {!!wordbookLoad.failed && (
+        {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
+        {wordbookLoad.failed && (
           <p role="alert">
             Saved wordbook could not be read. It has not been overwritten. Check browser storage or
             restore from a backup.
@@ -514,7 +519,8 @@ export function App() {
         {!!result && (
           <>
             <div class="wordbook-save">
-              {!!savedView && <p>Saved dictionary snapshot — content from save time.</p>}
+              {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
+              {savedView && <p>Saved dictionary snapshot — content from save time.</p>}
               <button
                 type="button"
                 class="btn btn-secondary"
@@ -554,7 +560,8 @@ export function App() {
         )}
       </main>
 
-      {!!learningOpen && (
+      {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
+      {learningOpen && (
         <LearningSheet
           {...(banner?.kind === "error" ? { error: banner.message } : {})}
           words={words}

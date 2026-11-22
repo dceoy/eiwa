@@ -1,5 +1,23 @@
 import type { DictionaryEntry } from "../src/dict-types";
 
+const CONSONANT_Y_ENDING_RE = /[^aeiou]y$/u;
+const CONSONANT_E_ENDING_RE = /[^e]e$/u;
+const SIBILANT_ENDING_RE = /(?:s|x|z|ch|sh)$/u;
+const VERB_TAG_RE = /verb/u;
+const ICHIDAN_VERB_RE = /Ichidan verb/u;
+const GODAN_VERB_RE = /Godan verb/u;
+const IKU_VERB_RE = /Iku\/Yuku/u;
+const ADVERB_TAG_RE = /adverb/u;
+const NOUN_TAG_RE = /noun/u;
+const SURU_VERB_RE = /suru verb - included/u;
+const KURU_VERB_RE = /Kuru verb/u;
+const I_ADJECTIVE_TAG_RE = /adjective \(keiyoushi\)/u;
+const YOI_ADJECTIVE_RE = /yoi\/ii class/u;
+const ADJECTIVE_TAG_RE = /adjective|adj-i|adj-na/u;
+const NA_ADJECTIVE_TAG_RE = /adjectival nouns|na-adjective/u;
+const LOWERCASE_ENGLISH_RE = /^[a-z]+$/u;
+const DOUBLE_CONSONANT_ENDING_RE = /^[^aeiou]+[aeiou][bdgmnprt]$/u;
+
 // Deliberately bounded morphology, not a general-purpose analyzer. POS gates
 // avoid treating arbitrary glosses/names as verbs. Phrase verbs inflect the
 // first word only. Irregulars suppress the corresponding regular forms.
@@ -84,20 +102,19 @@ const irregularAdjectives: Record<string, string[]> = {
   bad: ["worse", "worst"],
 };
 function plural(word: string): string {
-  return /[^aeiou]y$/u.test(word)
+  return CONSONANT_Y_ENDING_RE.test(word)
     ? `${word.slice(0, -1)}ies`
-    : /(?:s|x|z|ch|sh)$/u.test(word)
+    : SIBILANT_ENDING_RE.test(word)
       ? `${word}es`
       : `${word}s`;
 }
 export function englishForms(word: string, pos: string[]): string[] {
-  word = word.toLowerCase();
-  const [first = "", ...rest] = word.split(" ");
+  const [first = "", ...rest] = word.toLowerCase().split(" ");
   const tags = pos.join(" ").toLowerCase();
-  const verb = /verb/u.test(tags) && !/adverb/u.test(tags);
-  const noun = /noun/u.test(tags);
-  const adjective = /adjective|adj-i|adj-na/u.test(tags);
-  if (!(/^[a-z]+$/u.test(first) && (verb || noun || adjective))) {
+  const verb = VERB_TAG_RE.test(tags) && !ADVERB_TAG_RE.test(tags);
+  const noun = NOUN_TAG_RE.test(tags);
+  const adjective = ADJECTIVE_TAG_RE.test(tags);
+  if (!(LOWERCASE_ENGLISH_RE.test(first) && (verb || noun || adjective))) {
     return [];
   }
   const forms: string[] = [];
@@ -108,7 +125,7 @@ export function englishForms(word: string, pos: string[]): string[] {
   }
   // Double only unambiguous one-syllable CVC stems; do not invent e.g.
   // "visitted". Wider irregular/lexical coverage belongs in sourced data.
-  const cvc = /^[^aeiou]+[aeiou][bdgmnprt]$/u.test(first);
+  const cvc = DOUBLE_CONSONANT_ENDING_RE.test(first);
   const doubled = cvc ? first + first.slice(-1) : first;
   if (verb) {
     forms.push(
@@ -116,19 +133,19 @@ export function englishForms(word: string, pos: string[]): string[] {
         plural(first),
         first.endsWith("e")
           ? `${first}d`
-          : /[^aeiou]y$/u.test(first)
+          : CONSONANT_Y_ENDING_RE.test(first)
             ? `${first.slice(0, -1)}ied`
             : `${doubled}ed`,
         first.endsWith("ie")
           ? `${first.slice(0, -2)}ying`
-          : /[^e]e$/u.test(first)
+          : CONSONANT_E_ENDING_RE.test(first)
             ? `${first.slice(0, -1)}ing`
             : `${doubled}ing`,
       ]),
     );
   }
   if (adjective && !rest.length) {
-    const stem = /[^aeiou]y$/u.test(first) ? `${first.slice(0, -1)}i` : doubled;
+    const stem = CONSONANT_Y_ENDING_RE.test(first) ? `${first.slice(0, -1)}i` : doubled;
     forms.push(
       ...(exceptions(irregularAdjectives) ??
         (first.length <= 6
@@ -158,9 +175,9 @@ export function japaneseForms(word: string, pos: string[]): string[] {
       `${stem + te}いた`,
     );
   };
-  if (/Ichidan verb/u.test(tags) && word.endsWith("る")) {
+  if (ICHIDAN_VERB_RE.test(tags) && word.endsWith("る")) {
     addVerb(word.slice(0, -1), "", "", "て", "た");
-  } else if (/Godan verb/u.test(tags)) {
+  } else if (GODAN_VERB_RE.test(tags)) {
     const endings: Record<string, string[]> = {
       う: ["い", "わ", "って", "った"],
       く: ["き", "か", "いて", "いた"],
@@ -175,12 +192,12 @@ export function japaneseForms(word: string, pos: string[]): string[] {
     const ending = endings[word.slice(-1)];
     if (ending) {
       const [i = "", a = "", te = "", ta = ""] = ending;
-      const iku = /Iku\/Yuku/u.test(tags);
+      const iku = IKU_VERB_RE.test(tags);
       addVerb(word.slice(0, -1), i, a, iku ? "って" : te, iku ? "った" : ta);
     }
-  } else if (/suru verb - included/u.test(tags) && word.endsWith("する")) {
+  } else if (SURU_VERB_RE.test(tags) && word.endsWith("する")) {
     addVerb(word.slice(0, -2), "し", "し", "して", "した");
-  } else if (/Kuru verb/u.test(tags)) {
+  } else if (KURU_VERB_RE.test(tags)) {
     if (word.endsWith("来る")) {
       forms.push(
         ...["来た", "来て", "来ます", "来ました", "来ない", "来なかった"].map(
@@ -196,14 +213,14 @@ export function japaneseForms(word: string, pos: string[]): string[] {
       );
     }
   }
-  if (/adjective \(keiyoushi\)/u.test(tags) && word.endsWith("い")) {
+  if (I_ADJECTIVE_TAG_RE.test(tags) && word.endsWith("い")) {
     const stem =
-      /yoi\/ii class/u.test(tags) && word.endsWith("いい")
+      YOI_ADJECTIVE_RE.test(tags) && word.endsWith("いい")
         ? `${word.slice(0, -2)}よ`
         : word.slice(0, -1);
     forms.push(`${stem}かった`, `${stem}くない`, `${stem}くなかった`, `${stem}くて`);
   }
-  if (/adjectival nouns|na-adjective/u.test(tags)) {
+  if (NA_ADJECTIVE_TAG_RE.test(tags)) {
     forms.push(`${word}だった`, `${word}ではない`, `${word}じゃない`, `${word}でした`);
   }
   return forms;

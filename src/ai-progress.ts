@@ -1,16 +1,19 @@
 import { type AiExplanationOutput, validateAiExplanationOutput } from "./result-schema";
 
+const OPENING_JSON_FENCE_RE = /^```(?:json)?\s*/iu;
+const WHITESPACE_CHARACTER_RE = /\s/u;
+
 /** Read only completed top-level JSON values. Never repair unfinished strings,
  * evaluate model text, or mistake nested/quoted keys for result sections. */
 export function parseAiProgress(text: string): AiExplanationOutput | null {
-  const input = text.trimStart().replace(/^```(?:json)?\s*/iu, "");
+  const input = text.trimStart().replace(OPENING_JSON_FENCE_RE, "");
   if (input[0] !== "{") {
     return null;
   }
   const fields: Record<string, unknown> = {};
   let i = 1;
   const whitespace = () => {
-    while (/\s/u.test(input[i] ?? "") && i < input.length) {
+    while (WHITESPACE_CHARACTER_RE.test(input[i] ?? "") && i < input.length) {
       i++;
     }
   };

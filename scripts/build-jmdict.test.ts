@@ -5,9 +5,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { englishHeadword, JMDICT_SOURCE, parseJmdict, verifyArchive } from "./build-jmdict";
 
-async function* chunks(xml: string) {
-  for (let i = 0; i < xml.length; i += 7) {
-    yield xml.slice(i, i + 7);
+async function* chunks(source: string) {
+  for (let i = 0; i < source.length; i += 7) {
+    yield source.slice(i, i + 7);
   }
 }
 const xml = `<?xml version="1.0"?>

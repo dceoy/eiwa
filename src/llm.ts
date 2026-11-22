@@ -7,6 +7,8 @@ import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import { type AiExplanationOutput, validateAiExplanationOutput } from "./result-schema";
 import { loadWebLlm } from "./webllm-cdn";
 
+const FENCED_JSON_RE = /```(?:json)?\s*([\s\S]*?)```/iu;
+
 export type AiStatus = "idle" | "loading-model" | "ready" | "generating" | "failed";
 
 export interface ModelLoadProgress {
@@ -71,7 +73,7 @@ export async function clearAllModelCaches(): Promise<void> {
 
 /** Strips ```json fences a model may add despite instructions not to. */
 function extractJsonPayload(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/iu);
+  const fenced = text.match(FENCED_JSON_RE);
   return (fenced?.[1] ?? text).trim();
 }
 

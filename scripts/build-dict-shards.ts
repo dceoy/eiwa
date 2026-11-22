@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { MAX_SHARD_HASH_DEPTH, normalizeHeadword, shardKeyFor } from "../src/dict-normalize";
 import type {
@@ -79,12 +78,11 @@ export async function loadFixtures(
 
   return raw.map((value, index) => {
     const fixture = assertFixtureEntry(value, lang, index);
-    return {
-      ...fixture,
+    return Object.assign({}, fixture, {
       id: makeId(lang, fixture.headword, fixture.reading, seenIds),
       lang,
       source: [FIXTURE_SOURCE, ...(fixture.source ?? [])],
-    } satisfies DictionaryEntry;
+    }) satisfies DictionaryEntry;
   });
 }
 
@@ -243,27 +241,4 @@ export async function buildDictionary(
     `Built ${all.length} dictionary entries into ${shardRefs.length} shards ` +
       `(${shardFiles.length} files) at ${path.relative(ROOT, OUT_DIR)}/`,
   );
-}
-
-async function main() {
-  const source = process.env["DICT_SOURCE"] ?? "fixtures";
-  if (source === "jmdict") {
-    const { buildJmdict } = await import("./build-jmdict");
-    await buildJmdict();
-    return;
-  }
-  if (source !== "fixtures") {
-    throw new Error(`Unknown DICT_SOURCE: ${source}`);
-  }
-  const seenIds = new Set<string>();
-  await buildDictionary(await loadFixtures("en", seenIds), await loadFixtures("ja", seenIds), {
-    "eiwa-fixtures": "0.1.0",
-  });
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error: unknown) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
 }

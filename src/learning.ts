@@ -5,6 +5,8 @@ import type { Direction } from "./language";
 import { mergeResult } from "./result-merge";
 import type { EiwaResult } from "./result-schema";
 
+const HTTP_URL_RE = /^https?:\/\//u;
+
 export const WORDBOOK_KEY = "eiwa:wordbook:v1";
 export const HISTORY_KEY = "eiwa:history:v1";
 export const HISTORY_ENABLED_KEY = "eiwa:history-enabled:v1";
@@ -59,7 +61,7 @@ function strings(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === "string");
 }
 function safeLink(value: unknown): boolean {
-  return value === undefined || (typeof value === "string" && /^https?:\/\//u.test(value));
+  return value === undefined || (typeof value === "string" && HTTP_URL_RE.test(value));
 }
 /** Imports are untrusted files: validate every field consumed by ResultView. */
 function isEntry(value: unknown): value is DictionaryEntry {

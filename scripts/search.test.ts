@@ -13,6 +13,7 @@ import {
   SUGGESTION_LIMIT,
   validateSearchRows,
 } from "../src/search-index";
+import { requestUrl } from "../tests/fetch-input";
 import { groupByShard } from "./build-dict-shards";
 import { chunkRows, searchRows } from "./build-search-index";
 
@@ -90,7 +91,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
-      const file = String(input).split("?")[0] ?? "";
+      const file = requestUrl(input).split("?")[0] ?? "";
       return new Response(JSON.stringify(assets.get(file) ?? null), {
         status: assets.has(file) ? 200 : 404,
       });
@@ -105,7 +106,7 @@ afterEach(() => {
 describe("on-device indexed search", () => {
   it("suggests frequent prefix headwords, fetches only intersecting ranges, keeps queries private", async () => {
     expect(await suggestHeadwords("moun", "en")).toEqual(["mountain", "mountainous", "mount"]);
-    const calls = vi.mocked(fetch).mock.calls.map(([url]) => String(url));
+    const calls = vi.mocked(fetch).mock.calls.map(([url]) => requestUrl(url));
     expect(calls.every((url) => url.startsWith("/dict/") && !url.includes("moun"))).toBe(true);
     expect(calls.length).toBeLessThan((manifest.search?.length ?? 0) + 1);
     expect(await suggestHeadwords("", "en")).toEqual([]);
@@ -146,7 +147,7 @@ describe("on-device indexed search", () => {
       if (failure === "offline") {
         const onlineFetch = vi.mocked(fetch).getMockImplementation();
         vi.mocked(fetch).mockImplementation((input, init) => {
-          if (String(input).includes("headwords")) {
+          if (requestUrl(input).includes("headwords")) {
             return Promise.reject(new Error("offline"));
           }
           if (!onlineFetch) {

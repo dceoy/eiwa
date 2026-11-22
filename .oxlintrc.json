@@ -15,7 +15,14 @@
     {
       "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
-        "typescript/no-floating-promises": "off"
+        "typescript/no-floating-promises": "off",
+        "typescript/unbound-method": "off"
+      }
+    },
+    {
+      "files": ["src/main.tsx"],
+      "rules": {
+        "import/no-unassigned-import": "off"
       }
     }
   ],

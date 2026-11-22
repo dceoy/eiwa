@@ -4,10 +4,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { dictionaryLicenses, lookupDictionary } from "../src/dict";
 import { mergeResult } from "../src/result-merge";
+import { requestUrl } from "../tests/fetch-input";
 
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (input) => {
-  const url = new URL(String(input), "http://localhost");
+  const url = new URL(requestUrl(input), "http://localhost");
   assert(url.pathname.startsWith("/dict/"), "Only local dictionary files may be fetched");
   return new Response(
     await readFile(path.resolve(import.meta.dirname, "../public", `.${url.pathname}`), "utf8"),
@@ -38,7 +39,7 @@ try {
       (entry) => entry.headword === "run" && entry.match?.kind === "inflection",
     ),
   );
-  for (const entry of [first, ...train.filter((entry) => entry.headword === "電車")]) {
+  for (const entry of [first, ...train.filter((item) => item.headword === "電車")]) {
     for (const pair of entry.examples ?? []) {
       assert(pair.en.author && pair.ja.author && pair.en.id > 0 && pair.ja.id > 0);
       console.log(

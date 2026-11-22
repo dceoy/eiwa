@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { requestUrl } from "../tests/fetch-input";
 import { App } from "./App";
 import type { AiEngine, AiStatus, ExplainParams } from "./llm";
 import { createLocalAiEngine, probeWebGpuAdapter } from "./llm";
@@ -67,7 +68,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = requestUrl(input);
       if (url.endsWith("/dict/manifest.json")) {
         return jsonResponse(manifest);
       }
@@ -99,7 +100,7 @@ describe("App", () => {
         }),
       );
       let params: ExplainParams | undefined;
-      let reject: (error: Error) => void = () => {};
+      let reject!: (error: Error) => void;
       explainMock.mockImplementationOnce((input) => {
         params = input;
         return new Promise((_resolve, rejectPromise) => {

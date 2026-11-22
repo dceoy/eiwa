@@ -20,6 +20,8 @@ import {
   validateSearchRows,
 } from "./search-index";
 
+const SENTENCE_PUNCTUATION_RE = /[.!?。！？]/u;
+
 const MANIFEST_URL = "/dict/manifest.json";
 
 let manifestPromise: Promise<DictManifest> | null = null;
@@ -192,7 +194,7 @@ export async function suggestHeadwords(query: string, lang: DictLang): Promise<s
 /** Suggestions are never silently treated as dictionary hits. */
 export async function suggestSpellings(query: string, lang: DictLang): Promise<string[]> {
   const q = normalizeHeadword(query, lang);
-  if (q.length < 3 || q.length > MAX_SEARCH_LENGTH || /[.!?。！？]/u.test(q)) {
+  if (q.length < 3 || q.length > MAX_SEARCH_LENGTH || SENTENCE_PUNCTUATION_RE.test(q)) {
     return [];
   }
   const limit = q.length < 5 ? 1 : 2;

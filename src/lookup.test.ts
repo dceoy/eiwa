@@ -299,6 +299,7 @@ describe("lookup", () => {
     let returned = false;
     const returning = events.return(undefined).then(() => {
       returned = true;
+      return undefined;
     });
     await Promise.resolve();
     expect(returned).toBe(false);

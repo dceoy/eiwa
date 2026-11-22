@@ -42,7 +42,7 @@ export function InputBar({
     setCandidates([]);
     const selected = direction === "auto" ? detectDirection(value) : direction;
     if (!focused || composing || !selected || busy) {
-      return;
+      return undefined;
     }
     const timer = setTimeout(() => {
       void suggestHeadwords(value, sourceLangFor(selected))
@@ -50,6 +50,7 @@ export function InputBar({
           if (!cancelled) {
             setCandidates(words);
           }
+          return undefined;
         })
         .catch(() => undefined);
     }, 150);
@@ -62,6 +63,7 @@ export function InputBar({
   // Re-run whenever `value` changes (not just on mount) so programmatic
   // updates — e.g. Clear resetting the value via props rather than a DOM
   // input event — also shrink the textarea back down.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: value changes trigger textarea resizing.
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) {

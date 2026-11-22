@@ -39,7 +39,9 @@ async function stubLocalWorker(page: Page) {
             this.pending?.();
           };
         }
-        terminate() {}
+        terminate() {
+          /* No resources to release in the mock worker. */
+        }
         postMessage(msg: {
           kind: string;
           uuid: string;

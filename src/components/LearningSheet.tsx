@@ -80,6 +80,7 @@ export function LearningSheet(props: LearningSheetProps) {
                   if (props.onWords(words)) {
                     setMessage("Imported. Existing snapshots kept; new entries appended.");
                   }
+                  return undefined;
                 })
                 .catch(() => setMessage("Import failed: invalid wordbook. Nothing changed."));
             }}

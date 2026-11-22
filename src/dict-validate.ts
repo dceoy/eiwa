@@ -1,6 +1,9 @@
 import type { DictionaryEntry, DictManifest } from "./dict-types";
 import { isCommonsRecording } from "./recording";
 
+const SEARCH_INDEX_PATH_RE = /^dict\/search\/[a-z0-9-]+\.json$/u;
+const SHA256_CHECKSUM_RE = /^sha256:[a-f0-9]{64}$/u;
+
 export interface ValidationIssue {
   path: string;
   message: string;
@@ -58,7 +61,7 @@ export function validateManifest(value: unknown): ValidationIssue[] {
           !(
             ["en", "ja"].includes(ref.lang) &&
             ["headwords", "inflections"].includes(ref.kind) &&
-            /^dict\/search\/[a-z0-9-]+\.json$/u.test(ref.path)
+            SEARCH_INDEX_PATH_RE.test(ref.path)
           ) ||
           paths.has(ref.path) ||
           !isNonEmptyString(ref.start) ||
@@ -70,7 +73,7 @@ export function validateManifest(value: unknown): ValidationIssue[] {
           !Number.isInteger(ref.bytes) ||
           ref.bytes <= 0 ||
           ref.bytes >= 1024 * 1024 ||
-          !/^sha256:[a-f0-9]{64}$/u.test(ref.checksum)
+          !SHA256_CHECKSUM_RE.test(ref.checksum)
         ) {
           issues.push({
             path: "manifest.search",

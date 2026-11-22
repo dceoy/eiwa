@@ -17,8 +17,12 @@ const mockedLoadWebLlm = vi.mocked(loadWebLlm);
 
 class FakeWorker {
   onmessage: ((event: MessageEvent) => void) | null = null;
-  postMessage(): void {}
-  terminate(): void {}
+  postMessage(): void {
+    /* Test worker does not send messages. */
+  }
+  terminate(): void {
+    /* No resources to release in the test worker. */
+  }
 }
 
 describe("isWebGpuSupported", () => {
@@ -39,7 +43,6 @@ describe("probeWebGpuAdapter", () => {
 
   it("resolves false when requestAdapter() resolves null", async () => {
     vi.stubGlobal("navigator", {
-      ...navigator,
       gpu: { requestAdapter: vi.fn().mockResolvedValue(null) },
     });
     expect(await probeWebGpuAdapter()).toBe(false);
@@ -48,7 +51,6 @@ describe("probeWebGpuAdapter", () => {
 
   it("resolves true when requestAdapter() resolves an adapter", async () => {
     vi.stubGlobal("navigator", {
-      ...navigator,
       gpu: { requestAdapter: vi.fn().mockResolvedValue({}) },
     });
     expect(await probeWebGpuAdapter()).toBe(true);
@@ -57,7 +59,6 @@ describe("probeWebGpuAdapter", () => {
 
   it("resolves false when requestAdapter() throws", async () => {
     vi.stubGlobal("navigator", {
-      ...navigator,
       gpu: { requestAdapter: vi.fn().mockRejectedValue(new Error("boom")) },
     });
     expect(await probeWebGpuAdapter()).toBe(false);
@@ -126,7 +127,7 @@ describe("createLocalAiEngine", () => {
 
 describe("createLocalAiEngine with WebGPU available (mocked worker/CDN)", () => {
   it("streams translation before completion and sends grounded prompts to the engine", async () => {
-    let resume = () => {};
+    let resume!: () => void;
     const gate = new Promise<void>((resolve) => {
       resume = resolve;
     });

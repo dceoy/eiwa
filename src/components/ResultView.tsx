@@ -27,10 +27,11 @@ function CopyButton({ text }: { text: string }) {
       onClick={() => {
         void copyToClipboard(text).then((ok) => {
           if (!ok) {
-            return;
+            return undefined;
           }
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
+          return undefined;
         });
       }}
     >
@@ -77,12 +78,12 @@ export function ResultView({
     let cancelled = false;
     setResolved({ en: new Set(), ja: new Set() });
     if (!onLookup) {
-      return;
+      return undefined;
     }
     const terms = { en: new Set<string>(), ja: new Set<string>() };
-    const add = (text: string, lang: DictLang) => {
-      terms[lang].add(tokenKey(text, lang));
-      for (const token of lookupTokens(text, lang)) {
+    const add = (term: string, lang: DictLang) => {
+      terms[lang].add(tokenKey(term, lang));
+      for (const token of lookupTokens(term, lang)) {
         if (isLookupToken(token, lang)) {
           terms[lang].add(tokenKey(token, lang));
         }
@@ -112,6 +113,7 @@ export function ResultView({
       if (!cancelled) {
         setResolved({ en, ja });
       }
+      return undefined;
     });
     return () => {
       cancelled = true;
@@ -186,7 +188,8 @@ export function ResultView({
         </section>
       )}
 
-      {!!hasDict && result.aiTranslation && (
+      {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
+      {hasDict && result.aiTranslation && (
         <section class="card" aria-labelledby={`${headingPrefix}-ai-translation-heading`}>
           <header class="card-header">
             <h2 id={`${headingPrefix}-ai-translation-heading`}>AI translation</h2>
@@ -205,30 +208,31 @@ export function ResultView({
         </section>
       )}
 
-      {!!result.aiTranslation?.primary && (onBackTranslate || backTranslating || backTranslation) && (
-        <section class="card" aria-label="AI back-translation check">
-          {!!(onBackTranslate || backTranslating) && (
-            <button
-              type="button"
-              class="btn btn-secondary"
-              disabled={!onBackTranslate || backTranslating}
-              onClick={onBackTranslate}
-            >
-              {backTranslating ? "Checking…" : "Back-translate AI translation"}
-            </button>
-          )}
-          {!!backTranslation && (
-            <div aria-live="polite">
-              <h2>AI back-translation</h2>
-              <ProvenanceTag hasDictionary={false} hasAi={true} />
-              <p lang={sourceLang}>{backTranslation}</p>
-              <p class="settings-note">
-                AI output for nuance verification, not dictionary data or a guarantee of accuracy.
-              </p>
-            </div>
-          )}
-        </section>
-      )}
+      {!!result.aiTranslation?.primary &&
+        (onBackTranslate || backTranslating || backTranslation) && (
+          <section class="card" aria-label="AI back-translation check">
+            {!!(onBackTranslate || backTranslating) && (
+              <button
+                type="button"
+                class="btn btn-secondary"
+                disabled={!onBackTranslate || backTranslating}
+                onClick={onBackTranslate}
+              >
+                {backTranslating ? "Checking…" : "Back-translate AI translation"}
+              </button>
+            )}
+            {!!backTranslation && (
+              <div aria-live="polite">
+                <h2>AI back-translation</h2>
+                <ProvenanceTag hasDictionary={false} hasAi={true} />
+                <p lang={sourceLang}>{backTranslation}</p>
+                <p class="settings-note">
+                  AI output for nuance verification, not dictionary data or a guarantee of accuracy.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
 
       {hasDict && (
         <section class="card" aria-labelledby={`${headingPrefix}-dictionary-heading`}>

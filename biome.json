@@ -67,6 +67,9 @@
           },
           "suspicious": {
             "noUnknownAttribute": "off"
+          },
+          "performance": {
+            "noJsxPropsBind": "off"
           }
         }
       }
@@ -83,6 +86,9 @@
         "rules": {
           "correctness": {
             "noNodejsModules": "off"
+          },
+          "suspicious": {
+            "noConsole": "off"
           }
         }
       }
@@ -103,10 +109,140 @@
         "rules": {
           "suspicious": {
             "noMisplacedAssertion": "off",
-            "noConditionalExpect": "off"
+            "noConditionalExpect": "off",
+            "useAwait": "off"
           },
           "performance": {
-            "useTopLevelRegex": "off"
+            "useTopLevelRegex": "off",
+            "noDelete": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noVoid": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/dict.ts", "src/llm.ts", "worker/index.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/check-depth-lookups.ts", "scripts/check-jmdict-lookups.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noMisplacedAssertion": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/build-data-depth.ts",
+        "scripts/build-dict-shards.ts",
+        "scripts/inflections.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useMaxParams": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/build-data-depth.ts", "scripts/frequency.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noDelete": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/dict-validate.ts", "scripts/validate-dict.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnnecessaryConditions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/speech.ts", "tests/e2e/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useGlobalThis": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**/*.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useBaseline": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/build-data-depth.ts",
+        "scripts/eval-lookup.ts",
+        "src/App.tsx",
+        "src/components/InputBar.tsx",
+        "src/components/RecordingPlayer.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnnecessaryConditions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/App.tsx",
+        "src/components/InputBar.tsx",
+        "src/components/LearningSheet.tsx",
+        "src/components/ResultView.tsx",
+        "src/llm-worker.ts",
+        "src/lookup.ts",
+        "src/lookup.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noUselessUndefined": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/build-dict-shards.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useObjectSpread": "off"
           }
         }
       }

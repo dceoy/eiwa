@@ -29,6 +29,16 @@ import {
   rankEntries,
 } from "./frequency";
 
+const VERB_TAG_RE = /verb/u;
+const SECONDARY_PRIORITY_RE = /^(ichi|news|gai|spec)2$/u;
+const SPECIFIC_PRIMARY_PRIORITY_RE = /^(spec|gai)1$/u;
+const PRIMARY_PRIORITY_RE = /^(ichi|news|gai|spec)1$/u;
+const ENGLISH_WORD_SEQUENCE_RE = /^[a-z]+(?:[ '-][a-z]+)*$/iu;
+const ADVERB_TAG_RE = /adverb/u;
+const COMMON_PRIMARY_PRIORITY_RE = /^(ichi|news)1$/u;
+const DIGITS_ONLY_RE = /^\d+$/u;
+const FREQUENCY_PRIORITY_RE = /^nf\d\d$/u;
+
 export const JMDICT_VERSION = "2026-11-07";
 export const JMDICT_URL = "https://www.edrdg.org/pub/Nihongo/JMdict_e.gz";
 export const JMDICT_SHA256 = "490d2fef9cd8dfcdfcd618863c827fe2efd52992b002fb502679d4e1b7fb039d";
@@ -105,9 +115,7 @@ function unique(values: string[]): string[] {
 }
 
 export function englishHeadword(gloss: string): boolean {
-  return (
-    gloss.length <= 64 && gloss.split(" ").length <= 4 && /^[a-z]+(?:[ '-][a-z]+)*$/iu.test(gloss)
-  );
+  return gloss.length <= 64 && gloss.split(" ").length <= 4 && ENGLISH_WORD_SEQUENCE_RE.test(gloss);
 }
 
 function convertEntry(node: XmlNode): {
@@ -116,7 +124,7 @@ function convertEntry(node: XmlNode): {
   rank: number;
 } {
   const seq = text(node, "ent_seq");
-  if (!/^\d+$/u.test(seq)) {
+  if (!DIGITS_ONLY_RE.test(seq)) {
     throw new Error("JMdict entry missing numeric ent_seq");
   }
   const writings = nodes(node, "k_ele").map((writing) => text(writing, "keb"));
@@ -124,9 +132,9 @@ function convertEntry(node: XmlNode): {
   const priorities = [...nodes(node, "k_ele"), ...readings].flatMap((element) =>
     texts(element, "ke_pri").concat(texts(element, "re_pri")),
   );
-  const rank = priorities.some((pri) => /^(ichi|news)1$/u.test(pri))
+  const rank = priorities.some((pri) => COMMON_PRIMARY_PRIORITY_RE.test(pri))
     ? 0
-    : priorities.some((pri) => /^(spec|gai)1$/u.test(pri))
+    : priorities.some((pri) => SPECIFIC_PRIMARY_PRIORITY_RE.test(pri))
       ? 1
       : 2;
   let inheritedPos: string[] = [];
@@ -140,7 +148,7 @@ function convertEntry(node: XmlNode): {
       readings: texts(sense, "stagr"),
       pos: inheritedPos,
       glosses: nodes(sense, "gloss").filter(
-        (gloss) => !gloss.attrs["xml:lang"] || gloss.attrs["xml:lang"] === "eng",
+        (item) => !item.attrs["xml:lang"] || item.attrs["xml:lang"] === "eng",
       ),
     };
   });
@@ -165,7 +173,7 @@ function convertEntry(node: XmlNode): {
         continue;
       }
       const glosses = unique(
-        applicable.flatMap((sense) => sense.glosses.slice(0, 3).map((gloss) => gloss.text.trim())),
+        applicable.flatMap((sense) => sense.glosses.slice(0, 3).map((item) => item.text.trim())),
       );
       ja.push({
         id: `jmdict:${seq}:${headword}:${reading}`,
@@ -179,11 +187,11 @@ function convertEntry(node: XmlNode): {
             .flatMap((k) => texts(k, "ke_pri")),
         ]),
         pos: unique(applicable.flatMap((sense) => sense.pos)),
-        translations: glosses.map((gloss) => ({ text: gloss, lang: "en" })),
+        translations: glosses.map((item) => ({ text: item, lang: "en" })),
         senses: applicable.map((sense) => ({
           gloss: sense.glosses
             .slice(0, 3)
-            .map((gloss) => gloss.text.trim())
+            .map((item) => item.text.trim())
             .join("; "),
         })),
         source: [JMDICT_SOURCE],
@@ -204,7 +212,7 @@ function convertEntry(node: XmlNode): {
             lang: "en",
             headword:
               gloss.startsWith("to ") &&
-              first.pos.some((pos) => /verb/u.test(pos) && !/adverb/u.test(pos))
+              first.pos.some((pos) => VERB_TAG_RE.test(pos) && !ADVERB_TAG_RE.test(pos))
                 ? gloss.slice(3)
                 : gloss,
             pos: first.pos,
@@ -226,11 +234,11 @@ export function priorityScore(priorities: string[]): number {
   let common = 0;
   let newspaper = 0;
   for (const pri of new Set(priorities)) {
-    if (/^(ichi|news|gai|spec)1$/u.test(pri)) {
+    if (PRIMARY_PRIORITY_RE.test(pri)) {
       common = Math.max(common, 100_000);
-    } else if (/^(ichi|news|gai|spec)2$/u.test(pri)) {
+    } else if (SECONDARY_PRIORITY_RE.test(pri)) {
       common = Math.max(common, 10_000);
-    } else if (/^nf\d\d$/u.test(pri)) {
+    } else if (FREQUENCY_PRIORITY_RE.test(pri)) {
       newspaper = Math.max(newspaper, Math.max(0, 49 - Number(pri.slice(2))) * 1000);
     }
   }

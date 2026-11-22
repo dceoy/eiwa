@@ -129,9 +129,11 @@ export async function* lookup(
     .then(
       (output) => {
         final = output;
+        return undefined;
       },
       (error: unknown) => {
         failure = error;
+        return undefined;
       },
     )
     .finally(() => {
@@ -140,6 +142,8 @@ export async function* lookup(
     });
 
   try {
+    // settled is updated asynchronously by the generation promise above.
+    // oxlint-disable-next-line eslint/no-unmodified-loop-condition
     while (!settled || updates.length) {
       const ai = updates.shift();
       if (ai && !signal?.aborted) {
@@ -154,6 +158,7 @@ export async function* lookup(
           }),
         };
       } else if (!settled) {
+        // biome-ignore lint/suspicious/noLoopFunc: Each wait installs its own resolver for the producer.
         await new Promise<void>((resolve) => {
           wake = resolve;
         });

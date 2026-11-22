@@ -9,11 +9,14 @@ import {
   suggestHeadwords,
   suggestSpellings,
 } from "../src/dict";
+import { requestUrl } from "../tests/fetch-input";
+
+const TRAIN_TRANSLATION_RE = /train/u;
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (input) => {
-  const url = new URL(String(input), "http://localhost");
+  const url = new URL(requestUrl(input), "http://localhost");
   assert(url.pathname.startsWith("/dict/"), "Only local dictionary assets may be fetched");
   const content = await readFile(path.join(ROOT, "public", url.pathname), "utf8");
   return new Response(content, { headers: { "content-type": "application/json" } });
@@ -22,7 +25,7 @@ try {
   const mountain = await lookupDictionary("mountain", "en");
   assert.equal(mountain[0]?.translations[0]?.text, "山");
   const train = await lookupDictionary("電車", "ja");
-  assert(train.some((entry) => entry.translations.some((t) => /train/u.test(t.text))));
+  assert(train.some((entry) => entry.translations.some((t) => TRAIN_TRANSLATION_RE.test(t.text))));
   const reading = await lookupDictionary("でんしゃ", "ja");
   assert(
     reading.some((entry) => entry.headword === "電車" && train.some((t) => t.id === entry.id)),

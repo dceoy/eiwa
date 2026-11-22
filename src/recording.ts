@@ -1,3 +1,6 @@
+const UNSAFE_FILENAME_CHARACTER_RE = /[\r\n\t/#?]/u;
+const AUDIO_EXTENSION_RE = /\.(mp3|ogg|wav)$/iu;
+
 export interface CommonsRecording {
   url: string;
   file: string;
@@ -14,7 +17,7 @@ export function isCommonsRecording(value: unknown): value is CommonsRecording {
     typeof audio.file !== "string" ||
     !audio.file ||
     audio.file.length > 240 ||
-    /[\r\n\t/#?]/u.test(audio.file) ||
+    UNSAFE_FILENAME_CHARACTER_RE.test(audio.file) ||
     typeof audio.url !== "string" ||
     audio.url.length > 1500
   ) {
@@ -31,7 +34,7 @@ export function isCommonsRecording(value: unknown): value is CommonsRecording {
       !url.search &&
       !url.hash &&
       url.pathname.startsWith("/wikipedia/commons/") &&
-      /\.(mp3|ogg|wav)$/iu.test(url.pathname)
+      AUDIO_EXTENSION_RE.test(url.pathname)
     );
   } catch {
     return false;

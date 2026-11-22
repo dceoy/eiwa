@@ -6,6 +6,9 @@ import { fileURLToPath } from "node:url";
 import { normalizeHeadword } from "../src/dict-normalize";
 import type { DictionaryEntry, DictionarySource, DictLang } from "../src/dict-types";
 
+const LINE_BREAK_RE = /\r?\n/u;
+const FREQUENCY_ROW_RE = /^(\S+) ([0-9]+)$/u;
+
 export const FREQUENCY_REVISION = "525f9b560de45753a5ea01069454e72e9aa541c6";
 export const FREQUENCY_SOURCE: DictionarySource = {
   name: "FrequencyWords — Hermit Dave; OPUS OpenSubtitles (EN 2018, JA 2016)",
@@ -27,8 +30,8 @@ const CACHE_FILES = {
 } as const;
 export function parseFrequency(text: string, lang: DictLang): Map<string, number> {
   const scores = new Map<string, number>();
-  for (const line of text.trim().split(/\r?\n/u)) {
-    const match = /^(\S+) ([0-9]+)$/u.exec(line);
+  for (const line of text.trim().split(LINE_BREAK_RE)) {
+    const match = FREQUENCY_ROW_RE.exec(line);
     if (!(match?.[1] && match[2])) {
       throw new Error("Malformed frequency row");
     }
@@ -41,8 +44,8 @@ export function parseFrequency(text: string, lang: DictLang): Map<string, number
 export async function loadFrequency(lang: DictLang): Promise<Map<string, number>> {
   const pin = FREQUENCY_PINS[lang];
   const file = CACHE_FILES[lang];
-  const verify = (bytes: Uint8Array) => {
-    if (createHash("sha256").update(bytes).digest("hex") !== pin.sha256) {
+  const verify = (payload: Uint8Array) => {
+    if (createHash("sha256").update(payload).digest("hex") !== pin.sha256) {
       throw new Error(`Frequency ${lang} checksum mismatch`);
     }
   };

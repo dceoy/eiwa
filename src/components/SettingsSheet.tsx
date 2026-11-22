@@ -78,7 +78,8 @@ export function SettingsSheet({
           />
         </label>
 
-        {!!aiEnabled && (
+        {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
+        {aiEnabled && (
           <>
             <fieldset class="model-choice">
               <legend>Model</legend>

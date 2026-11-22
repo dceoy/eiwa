@@ -81,7 +81,7 @@ describe("adaptive shard routing", () => {
               licenses: [{ name: "Test", license: "CC0-1.0" }],
             });
           }
-          const ref = refs.find((ref) => url.startsWith(`/${ref.path}?`));
+          const ref = refs.find((candidate) => url.startsWith(`/${candidate.path}?`));
           if (!ref) {
             throw new Error(`Unexpected fetch ${url}`);
           }

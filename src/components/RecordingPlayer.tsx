@@ -49,7 +49,8 @@ export function RecordingPlayer({ recording }: { recording: CommonsRecording }) 
         </a>
         . Streams only when played.
       </small>
-      {!!failed && <p role="status">Recording unavailable. Try the device voice (Listen) instead.</p>}
+      {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
+      {failed && <p role="status">Recording unavailable. Try the device voice (Listen) instead.</p>}
     </div>
   );
 }

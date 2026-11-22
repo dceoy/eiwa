@@ -22,7 +22,7 @@
     "format": "biome format --write . && oxfmt --write '**/*.{md,mdx}' --no-error-on-unmatched-pattern",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.worker.json && tsc --noEmit -p tsconfig.node.json",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run test",
-    "dict:build": "tsx scripts/build-dict-shards.ts",
+    "dict:build": "tsx scripts/build-dict.ts",
     "dict:build:jmdict": "tsx scripts/build-jmdict.ts",
     "dict:validate": "tsx scripts/validate-dict.ts",
     "dict:spotcheck": "tsx scripts/check-jmdict-lookups.ts",

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { requestUrl } from "../tests/fetch-input";
 import { dictionaryLicenses, lookupDictionary } from "./dict";
 
 const manifest = {
@@ -55,7 +56,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = requestUrl(input);
       if (url.endsWith("/dict/manifest.json")) {
         return jsonResponse(manifest);
       }
@@ -98,7 +99,7 @@ describe("lookupDictionary", () => {
 
   it("never sends the lookup query to a remote endpoint", async () => {
     await lookupDictionary("some private lookup text", "en");
-    const calls = vi.mocked(fetch).mock.calls.map(([input]) => String(input));
+    const calls = vi.mocked(fetch).mock.calls.map(([input]) => requestUrl(input));
     for (const url of calls) {
       expect(url).not.toContain("private");
       expect(url.startsWith("/dict/")).toBe(true);
@@ -117,11 +118,11 @@ function createFakeCacheStorage(): CacheStorage {
   const store = new Map<string, Response>();
   const cache = {
     match: async (url: RequestInfo | URL) => {
-      const cached = store.get(String(url));
+      const cached = store.get(requestUrl(url));
       return cached ? cached.clone() : undefined;
     },
     put: async (url: RequestInfo | URL, response: Response) => {
-      store.set(String(url), response.clone());
+      store.set(requestUrl(url), response.clone());
     },
   };
   return { open: async () => cache, delete: async () => true } as unknown as CacheStorage;
@@ -157,7 +158,7 @@ describe("loadManifest offline fallback", () => {
     const cache = {
       match: async () => undefined,
       put: async (url: RequestInfo | URL) => {
-        if (String(url).endsWith("manifest.json")) {
+        if (requestUrl(url).endsWith("manifest.json")) {
           throw new Error("quota exceeded");
         }
       },
@@ -193,7 +194,7 @@ describe("resetDictionaryCaches", () => {
       },
     };
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input);
+      const url = requestUrl(input);
       if (url.endsWith("/dict/manifest.json")) {
         return jsonResponse(manifest);
       }

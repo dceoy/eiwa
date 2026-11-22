@@ -17,4 +17,5 @@ void loadWebLlm().then(({ WebWorkerMLCEngineHandler: Handler }) => {
   for (const event of pendingMessages.splice(0)) {
     handler.onmessage(event);
   }
+  return undefined;
 });
