@@ -1,3 +1,4 @@
+import { useId } from "preact/hooks";
 import type { DictionarySource } from "../dict-types";
 import { ModalOverlay } from "./ModalOverlay";
 
@@ -8,12 +9,13 @@ export interface SourcesModalProps {
 }
 
 export function SourcesModal({ open, onClose, licenses }: SourcesModalProps) {
+  const headingId = useId();
   if (!open) return null;
 
   return (
-    <ModalOverlay onClose={onClose} labelledBy="sources-modal-heading">
+    <ModalOverlay onClose={onClose} labelledBy={headingId}>
       <header class="sheet-header">
-        <h2 id="sources-modal-heading">Sources &amp; licenses</h2>
+        <h2 id={headingId}>Sources &amp; licenses</h2>
         <button type="button" class="icon-btn" aria-label="Close" onClick={onClose}>
           ✕
         </button>

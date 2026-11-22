@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useId, useState } from "preact/hooks";
 import { copyToClipboard } from "../clipboard";
 import { resolveHeadwords } from "../dict";
 import type { DictLang } from "../dict-types";
@@ -62,6 +62,7 @@ export function ResultView({
   backTranslation?: string | null;
   backTranslating?: boolean;
 }) {
+  const headingPrefix = useId();
   const [resolved, setResolved] = useState<{ en: Set<string>; ja: Set<string> }>({
     en: new Set(),
     ja: new Set(),
@@ -136,9 +137,9 @@ export function ResultView({
   return (
     <div class="result-view">
       {result.translation.primary !== "" && (
-        <section class="card" aria-labelledby="translation-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-translation-heading`}>
           <header class="card-header">
-            <h2 id="translation-heading">Translation</h2>
+            <h2 id={`${headingPrefix}-translation-heading`}>Translation</h2>
             <ProvenanceTag hasDictionary={hasDict} hasAi={!hasDict && hasAi} />
           </header>
           {(result.dictionary[0]?.match?.kind === "prefix" ||
@@ -162,9 +163,9 @@ export function ResultView({
       )}
 
       {hasDict && result.aiTranslation && (
-        <section class="card" aria-labelledby="ai-translation-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-ai-translation-heading`}>
           <header class="card-header">
-            <h2 id="ai-translation-heading">AI translation</h2>
+            <h2 id={`${headingPrefix}-ai-translation-heading`}>AI translation</h2>
             <ProvenanceTag hasDictionary={false} hasAi />
           </header>
           <p class="translation-primary">
@@ -206,9 +207,9 @@ export function ResultView({
       )}
 
       {hasDict && (
-        <section class="card" aria-labelledby="dictionary-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-dictionary-heading`}>
           <header class="card-header">
-            <h2 id="dictionary-heading">Dictionary</h2>
+            <h2 id={`${headingPrefix}-dictionary-heading`}>Dictionary</h2>
             <ProvenanceTag hasDictionary hasAi={false} />
           </header>
           {onLookup && (
@@ -319,9 +320,9 @@ export function ResultView({
       )}
 
       {result.nuance.length > 0 && (
-        <section class="card" aria-labelledby="nuance-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-nuance-heading`}>
           <header class="card-header">
-            <h2 id="nuance-heading">Nuance</h2>
+            <h2 id={`${headingPrefix}-nuance-heading`}>Nuance</h2>
             <ProvenanceTag hasDictionary={false} hasAi={true} />
           </header>
           <ul lang="ja">
@@ -333,9 +334,9 @@ export function ResultView({
       )}
 
       {(result.correction.corrected !== null || result.correction.explanation !== null) && (
-        <section class="card" aria-labelledby="correction-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-correction-heading`}>
           <header class="card-header">
-            <h2 id="correction-heading">Writing correction</h2>
+            <h2 id={`${headingPrefix}-correction-heading`}>Writing correction</h2>
             <ProvenanceTag hasDictionary={false} hasAi={true} />
           </header>
           {result.correction.corrected !== null && (
@@ -353,9 +354,9 @@ export function ResultView({
       )}
 
       {result.etymology !== null && (
-        <section class="card" aria-labelledby="etymology-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-etymology-heading`}>
           <header class="card-header">
-            <h2 id="etymology-heading">Etymology</h2>
+            <h2 id={`${headingPrefix}-etymology-heading`}>Etymology</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <p class="collapsible-text" lang="en">
@@ -365,9 +366,9 @@ export function ResultView({
       )}
 
       {result.pronunciation !== null && (
-        <section class="card" aria-labelledby="pronunciation-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-pronunciation-heading`}>
           <header class="card-header">
-            <h2 id="pronunciation-heading">Pronunciation</h2>
+            <h2 id={`${headingPrefix}-pronunciation-heading`}>Pronunciation</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <p class="pronunciation">
@@ -389,9 +390,9 @@ export function ResultView({
       )}
 
       {result.derivedWords.length > 0 && (
-        <section class="card" aria-labelledby="derived-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-derived-heading`}>
           <header class="card-header">
-            <h2 id="derived-heading">Derived words</h2>
+            <h2 id={`${headingPrefix}-derived-heading`}>Derived words</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <p lang={sourceLang}>{result.derivedWords.join(", ")}</p>
@@ -399,9 +400,9 @@ export function ResultView({
       )}
 
       {examples.length > 0 && (
-        <section class="card" aria-labelledby="examples-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-examples-heading`}>
           <header class="card-header">
-            <h2 id="examples-heading">Examples</h2>
+            <h2 id={`${headingPrefix}-examples-heading`}>Examples</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <ul lang={sourceLang}>
@@ -413,9 +414,9 @@ export function ResultView({
       )}
 
       {result.warnings.length > 0 && (
-        <section class="card card--warning" aria-labelledby="warnings-heading">
+        <section class="card card--warning" aria-labelledby={`${headingPrefix}-warnings-heading`}>
           <header class="card-header">
-            <h2 id="warnings-heading">Warnings</h2>
+            <h2 id={`${headingPrefix}-warnings-heading`}>Warnings</h2>
           </header>
           <ul>
             {result.warnings.map((warning) => (
@@ -426,9 +427,9 @@ export function ResultView({
       )}
 
       {sources.length > 0 && (
-        <section class="card card--muted" aria-labelledby="sources-heading">
+        <section class="card card--muted" aria-labelledby={`${headingPrefix}-sources-heading`}>
           <header class="card-header">
-            <h2 id="sources-heading">Sources</h2>
+            <h2 id={`${headingPrefix}-sources-heading`}>Sources</h2>
           </header>
           <ul class="sources-list">
             {sources.map((source) => (

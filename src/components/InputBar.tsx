@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useId, useRef, useState } from "preact/hooks";
 import { suggestHeadwords } from "../dict";
 import { type Direction, detectDirection, sourceLangFor } from "../language";
 
@@ -31,6 +31,8 @@ export function InputBar({
   onCancel,
   busy,
 }: InputBarProps) {
+  const inputId = useId();
+  const suggestionsId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [candidates, setCandidates] = useState<string[]>([]);
   const [focused, setFocused] = useState(false);
@@ -94,11 +96,11 @@ export function InputBar({
         ))}
       </fieldset>
 
-      <label class="visually-hidden" for="eiwa-input">
+      <label class="visually-hidden" for={inputId}>
         English or Japanese word, phrase, or sentence
       </label>
       <textarea
-        id="eiwa-input"
+        id={inputId}
         ref={textareaRef}
         class="input-textarea"
         placeholder="Type English or Japanese…"
@@ -110,7 +112,7 @@ export function InputBar({
         onFocus={() => setFocused(true)}
         onCompositionStart={() => setComposing(true)}
         onCompositionEnd={() => setComposing(false)}
-        aria-describedby={candidates.length ? "headword-suggestions" : undefined}
+        aria-describedby={candidates.length ? suggestionsId : undefined}
         onInput={(event) => {
           const target = event.currentTarget;
           onChange(target.value);
@@ -132,11 +134,7 @@ export function InputBar({
       />
 
       {candidates.length > 0 && (
-        <section
-          id="headword-suggestions"
-          class="search-suggestions"
-          aria-label="Headword suggestions"
-        >
+        <section id={suggestionsId} class="search-suggestions" aria-label="Headword suggestions">
           <span>Headwords: </span>
           {candidates.map((word) => (
             <button

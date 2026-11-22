@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useId, useState } from "preact/hooks";
 import {
   exportWordbook,
   type HistoryItem,
@@ -24,11 +24,12 @@ export interface LearningSheetProps {
   onClose: () => void;
 }
 export function LearningSheet(props: LearningSheetProps) {
+  const headingId = useId();
   const [message, setMessage] = useState("");
   return (
-    <ModalOverlay onClose={props.onClose} labelledBy="learning-heading">
+    <ModalOverlay onClose={props.onClose} labelledBy={headingId}>
       <header class="sheet-header">
-        <h2 id="learning-heading">Wordbook &amp; history</h2>
+        <h2 id={headingId}>Wordbook &amp; history</h2>
         <button type="button" class="icon-btn" onClick={props.onClose} aria-label="Close wordbook">
           ✕
         </button>
