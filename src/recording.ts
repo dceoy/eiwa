@@ -5,18 +5,21 @@ export interface CommonsRecording {
 }
 /** Shared by ingestion, shard validation and playback; never accept arbitrary media origins. */
 export function isCommonsRecording(value: unknown): value is CommonsRecording {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
   const audio = value as CommonsRecording;
   if (
     audio.source !== "Wikimedia Commons" ||
     typeof audio.file !== "string" ||
     !audio.file ||
     audio.file.length > 240 ||
-    /[\r\n\t/#?]/.test(audio.file) ||
+    /[\r\n\t/#?]/u.test(audio.file) ||
     typeof audio.url !== "string" ||
     audio.url.length > 1500
-  )
+  ) {
     return false;
+  }
   try {
     const url = new URL(audio.url);
     return (
@@ -28,7 +31,7 @@ export function isCommonsRecording(value: unknown): value is CommonsRecording {
       !url.search &&
       !url.hash &&
       url.pathname.startsWith("/wikipedia/commons/") &&
-      /\.(mp3|ogg|wav)$/i.test(url.pathname)
+      /\.(mp3|ogg|wav)$/iu.test(url.pathname)
     );
   } catch {
     return false;

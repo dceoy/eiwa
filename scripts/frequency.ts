@@ -27,9 +27,11 @@ const CACHE_FILES = {
 } as const;
 export function parseFrequency(text: string, lang: DictLang): Map<string, number> {
   const scores = new Map<string, number>();
-  for (const line of text.trim().split(/\r?\n/)) {
-    const match = /^(\S+) ([0-9]+)$/.exec(line);
-    if (!match?.[1] || !match[2]) throw new Error("Malformed frequency row");
+  for (const line of text.trim().split(/\r?\n/u)) {
+    const match = /^(\S+) ([0-9]+)$/u.exec(line);
+    if (!(match?.[1] && match[2])) {
+      throw new Error("Malformed frequency row");
+    }
     const word = normalizeHeadword(match[1], lang);
     const score = Math.round(1000 * Math.log10(1 + Number(match[2])));
     scores.set(word, Math.max(scores.get(word) ?? 0, score));
@@ -40,19 +42,24 @@ export async function loadFrequency(lang: DictLang): Promise<Map<string, number>
   const pin = FREQUENCY_PINS[lang];
   const file = CACHE_FILES[lang];
   const verify = (bytes: Uint8Array) => {
-    if (createHash("sha256").update(bytes).digest("hex") !== pin.sha256)
+    if (createHash("sha256").update(bytes).digest("hex") !== pin.sha256) {
       throw new Error(`Frequency ${lang} checksum mismatch`);
+    }
   };
   try {
     const bytes = await readFile(file);
     verify(bytes);
     return parseFrequency(bytes.toString("utf8"), lang);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
   }
   const url = `https://raw.githubusercontent.com/hermitdave/FrequencyWords/${FREQUENCY_REVISION}/content/${pin.year}/${lang}/${lang}_50k.txt`;
   const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
-  if (!response.ok) throw new Error(`Frequency download: HTTP ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`Frequency download: HTTP ${response.status}`);
+  }
   // Authenticate raw network bytes in memory before parsing or any disk write.
   const bytes = Buffer.from(await response.arrayBuffer());
   verify(bytes);
@@ -70,10 +77,13 @@ export async function loadFrequency(lang: DictLang): Promise<Map<string, number>
 
 export function frequencyScore(text: string, lang: DictLang, scores: Map<string, number>): number {
   const word = normalizeHeadword(text, lang);
-  if (scores.has(word)) return scores.get(word) ?? 0;
+  if (scores.has(word)) {
+    return scores.get(word) ?? 0;
+  }
   // Phrase score is the least frequent token, not a made-up phrase count.
-  if (lang === "en" && word.includes(" "))
+  if (lang === "en" && word.includes(" ")) {
     return Math.min(...word.split(" ").map((token) => scores.get(token) ?? 0));
+  }
   return 0;
 }
 export function rankEntries(
@@ -98,14 +108,18 @@ export function rankEntries(
   for (const entry of en) {
     entry.headwordFrequency = frequencyScore(entry.headword, "en", enScores);
     entry.frequency = Math.max(...entry.translations.map((t) => jaRank.get(t.text) ?? 0));
-    for (const translation of entry.translations)
+    for (const translation of entry.translations) {
       translation.priority = -(jaRank.get(translation.text) ?? 0);
+    }
     entry.translations.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
     entry.translations = entry.translations.slice(0, 3);
     const translation = entry.translations[0]?.text;
     for (const sense of entry.senses) {
-      if (translation !== undefined) sense.translation = translation;
-      else delete sense.translation;
+      if (translation === undefined) {
+        delete sense.translation;
+      } else {
+        sense.translation = translation;
+      }
     }
   }
 }

@@ -10,7 +10,9 @@ export interface SourcesModalProps {
 
 export function SourcesModal({ open, onClose, licenses }: SourcesModalProps) {
   const headingId = useId();
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <ModalOverlay onClose={onClose} labelledBy={headingId}>
@@ -39,13 +41,13 @@ export function SourcesModal({ open, onClose, licenses }: SourcesModalProps) {
               ) : (
                 source.license
               )}
-              {source.url && (
+              {!!source.url && (
                 <>
                   {" "}
                   (<a href={source.url}>{source.url}</a>)
                 </>
               )}
-              {source.attribution && <p>{source.attribution}</p>}
+              {!!source.attribution && <p>{source.attribution}</p>}
             </li>
           ))}
         </ul>

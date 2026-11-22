@@ -1,7 +1,7 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test as it, type Page } from "@playwright/test";
 
 async function lookup(page: Page, word: string) {
-  await page.getByLabel(/english or japanese/i).fill(word);
+  await page.getByLabel(/english or japanese/iu).fill(word);
   await page.getByRole("button", { name: "Translate", exact: true }).click();
   await expect(
     page
@@ -15,7 +15,7 @@ async function openWordbook(page: Page) {
   return page.getByRole("dialog", { name: "Wordbook & history" });
 }
 
-test("wordbook saves, reorders, exports/imports and reopens the same snapshot offline", async ({
+it("wordbook saves, reorders, exports/imports and reopens the same snapshot offline", async ({
   page,
   context,
 }) => {
@@ -34,18 +34,22 @@ test("wordbook saves, reorders, exports/imports and reopens the same snapshot of
   await dialog.getByRole("button", { name: "Export JSON" }).click();
   const download = await downloaded;
   const file = await download.path();
-  if (!file) throw new Error("No export download");
+  if (!file) {
+    throw new Error("No export download");
+  }
   await dialog.getByRole("button", { name: "Delete saved run", exact: true }).click();
   await dialog.getByRole("button", { name: "Delete saved cat", exact: true }).click();
   await expect(dialog.getByText("No saved words yet.")).toBeVisible();
-  await dialog.getByLabel(/Import JSON/).setInputFiles(file);
+  await dialog.getByLabel(/Import JSON/u).setInputFiles(file);
   await expect(dialog.locator(".saved-words li")).toHaveCount(2);
   await expect(dialog.locator(".saved-words li").first()).toContainText("cat");
   // No dictionary cache needed: deliberately erase CacheStorage and reload the UI,
   // then block every dictionary request to simulate unavailable offline data.
   await dialog.getByRole("button", { name: "Close wordbook" }).click();
   await page.evaluate(async () => {
-    for (const key of await caches.keys()) await caches.delete(key);
+    for (const key of await caches.keys()) {
+      await caches.delete(key);
+    }
   });
   await page.reload();
   await page.route("**/dict/**", (route) => route.abort("internetdisconnected"));
@@ -60,14 +64,14 @@ test("wordbook saves, reorders, exports/imports and reopens the same snapshot of
   await context.setOffline(false);
 });
 
-test("gloss, example and headword relookup use dictionary-resolved terms and correct direction", async ({
+it("gloss, example and headword relookup use dictionary-resolved terms and correct direction", async ({
   page,
 }) => {
   await page.goto("/");
   await lookup(page, "study");
   const senses = page.locator(".senses").first();
   await senses.getByRole("button", { name: "Look up time", exact: true }).click();
-  await expect(page.getByLabel(/english or japanese/i)).toHaveValue("time");
+  await expect(page.getByLabel(/english or japanese/iu)).toHaveValue("time");
   await expect(
     page.getByRole("button", { name: "Look up time", exact: true }).first(),
   ).toBeVisible();
@@ -76,7 +80,7 @@ test("gloss, example and headword relookup use dictionary-resolved terms and cor
     .locator(".entry-examples")
     .getByRole("button", { name: "Look up run", exact: true });
   await exampleRun.click();
-  await expect(page.getByLabel(/english or japanese/i)).toHaveValue("run");
+  await expect(page.getByLabel(/english or japanese/iu)).toHaveValue("run");
   await expect(
     page
       .locator(".dictionary-entry-head")
@@ -91,7 +95,7 @@ test("gloss, example and headword relookup use dictionary-resolved terms and cor
     .getByRole("region", { name: "Translation", exact: true })
     .getByRole("button", { name: "Look up 走る", exact: true })
     .click();
-  await expect(page.getByLabel(/english or japanese/i)).toHaveValue("走る");
+  await expect(page.getByLabel(/english or japanese/iu)).toHaveValue("走る");
   await expect(page.getByLabel("JA → EN", { exact: true })).toBeChecked();
   await expect(
     page
@@ -100,7 +104,7 @@ test("gloss, example and headword relookup use dictionary-resolved terms and cor
   ).toBeVisible();
 });
 
-test("history is off by default, opt-in, deletable and erased when disabled", async ({ page }) => {
+it("history is off by default, opt-in, deletable and erased when disabled", async ({ page }) => {
   await page.goto("/");
   await lookup(page, "cat");
   let dialog = await openWordbook(page);
@@ -136,11 +140,11 @@ test("history is off by default, opt-in, deletable and erased when disabled", as
   ).not.toBeChecked();
 });
 
-test("recording Play decodes media and advances playback using intercepted fixture bytes", async ({
+it("recording Play decodes media and advances playback using intercepted fixture bytes", async ({
   page,
 }) => {
   // One second of silent PCM WAV; no production audio is hosted or downloaded by CI.
-  const wav = Buffer.alloc(44 + 16000);
+  const wav = Buffer.alloc(44 + 16_000);
   wav.write("RIFF", 0);
   wav.writeUInt32LE(wav.length - 8, 4);
   wav.write("WAVEfmt ", 8);
@@ -148,11 +152,11 @@ test("recording Play decodes media and advances playback using intercepted fixtu
   wav.writeUInt16LE(1, 20);
   wav.writeUInt16LE(1, 22);
   wav.writeUInt32LE(8000, 24);
-  wav.writeUInt32LE(16000, 28);
+  wav.writeUInt32LE(16_000, 28);
   wav.writeUInt16LE(2, 32);
   wav.writeUInt16LE(16, 34);
   wav.write("data", 36);
-  wav.writeUInt32LE(16000, 40);
+  wav.writeUInt32LE(16_000, 40);
   let requests = 0;
   await page.route("https://upload.wikimedia.org/**", async (route) => {
     requests++;
@@ -174,7 +178,7 @@ test("recording Play decodes media and advances playback using intercepted fixtu
   expect(requests).toBeGreaterThan(0);
 });
 
-test("recording requests only follow Play; Commons is attributed and missing audio keeps TTS", async ({
+it("recording requests only follow Play; Commons is attributed and missing audio keeps TTS", async ({
   page,
 }) => {
   const media: string[] = [];
@@ -188,7 +192,7 @@ test("recording requests only follow Play; Commons is attributed and missing aud
   await expect(
     pronunciation.getByRole("button", { name: "Play recording (Commons)" }),
   ).toBeVisible();
-  await expect(pronunciation.getByRole("link", { name: /Wikimedia Commons/ })).toHaveAttribute(
+  await expect(pronunciation.getByRole("link", { name: /Wikimedia Commons/u })).toHaveAttribute(
     "href",
     "https://commons.wikimedia.org/wiki/File:en-us-run.ogg",
   );

@@ -6,7 +6,9 @@ import { describe, expect, it } from "vitest";
 import { englishHeadword, JMDICT_SOURCE, parseJmdict, verifyArchive } from "./build-jmdict";
 
 async function* chunks(xml: string) {
-  for (let i = 0; i < xml.length; i += 7) yield xml.slice(i, i + 7);
+  for (let i = 0; i < xml.length; i += 7) {
+    yield xml.slice(i, i + 7);
+  }
 }
 const xml = `<?xml version="1.0"?>
 <!DOCTYPE JMdict [<!ENTITY n "noun">]>
@@ -50,11 +52,11 @@ describe("JMdict streaming conversion", () => {
     expect(ja[0]?.translations.some((t) => t.text === "second")).toBe(false);
     expect(en[0]?.translations[0]?.text).toBe("乙");
     expect(ja.every((entry) => entry.pos.includes("noun") && entry.senses.length === 3)).toBe(true);
-    expect(JSON.stringify(ja)).not.toMatch(/trimmed|omit/);
+    expect(JSON.stringify(ja)).not.toMatch(/trimmed|omit/u);
   });
 
   it("rejects malformed, empty or externally defined entity input", async () => {
-    await expect(parseJmdict(chunks("<JMdict/>"))).rejects.toThrow(/no entries/);
+    await expect(parseJmdict(chunks("<JMdict/>"))).rejects.toThrow(/no entries/u);
     await expect(parseJmdict(chunks(xml.slice(0, -8)))).rejects.toThrow();
     await expect(
       parseJmdict(
@@ -77,7 +79,7 @@ describe("JMdict streaming conversion", () => {
       await writeFile(file, "test archive bytes");
       const hash = createHash("sha256").update("test archive bytes").digest("hex");
       await expect(verifyArchive(file, hash)).resolves.toBeUndefined();
-      await expect(verifyArchive(file, "0".repeat(64))).rejects.toThrow(/SHA-256 mismatch/);
+      await expect(verifyArchive(file, "0".repeat(64))).rejects.toThrow(/SHA-256 mismatch/u);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

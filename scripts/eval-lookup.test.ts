@@ -66,10 +66,10 @@ describe("curated v1 data", () => {
       expect(() => parseQueries(invalid)).toThrow();
     }
     const line = JSON.stringify(query);
-    expect(() => parseQueries(`${line}\n${line}`)).toThrow(/duplicate/);
+    expect(() => parseQueries(`${line}\n${line}`)).toThrow(/duplicate/u);
     expect(() =>
       parseQueries(`${line}\n${JSON.stringify({ ...query, id: "v1-other", input: " CAT " })}`),
-    ).toThrow(/duplicate/);
+    ).toThrow(/duplicate/u);
     expect(parseQueries(`\n${line}\r\n`)).toEqual([query]);
   });
 });
@@ -124,7 +124,7 @@ describe("quality metrics", () => {
   });
 
   it("refuses fixtures/missing provenance rather than publishing misleading scores", () => {
-    expect(() => requireJmdict({ "eiwa-fixtures": "0.1.0" })).toThrow(/Production JMdict/);
+    expect(() => requireJmdict({ "eiwa-fixtures": "0.1.0" })).toThrow(/Production JMdict/u);
     expect(() => requireJmdict({ JMdict_e: "date" })).toThrow();
     expect(() =>
       requireJmdict({ JMdict_e: "date", "JMdict_e.sha256": "a".repeat(64) }),
@@ -154,12 +154,12 @@ it("feeds local assets through src/dict.ts and fails closed on missing/invalid a
     vi.stubGlobal("fetch", fetchLocal);
     expect(await lookupDictionary("CAT", "en")).toEqual([entry]);
     expect(await lookupDictionary("caterpillar", "en")).toEqual([]);
-    await expect(fetchLocal("https://example.com/dict/c.json")).rejects.toThrow(/Only local/);
-    await expect(fetchLocal("/dict/%2e%2e%2fsecret")).rejects.toThrow(/Only local/);
-    await expect(fetchLocal("/dict/missing.json")).rejects.toThrow(/ENOENT/);
+    await expect(fetchLocal("https://example.com/dict/c.json")).rejects.toThrow(/Only local/u);
+    await expect(fetchLocal("/dict/%2e%2e%2fsecret")).rejects.toThrow(/Only local/u);
+    await expect(fetchLocal("/dict/missing.json")).rejects.toThrow(/ENOENT/u);
     await writeFile(path.join(dir, "dict/c.json"), "{}");
     resetDictionaryCaches();
-    await expect(lookupDictionary("cat", "en")).rejects.toThrow(/Invalid dictionary shard/);
+    await expect(lookupDictionary("cat", "en")).rejects.toThrow(/Invalid dictionary shard/u);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

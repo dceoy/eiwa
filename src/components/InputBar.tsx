@@ -41,11 +41,15 @@ export function InputBar({
     let cancelled = false;
     setCandidates([]);
     const selected = direction === "auto" ? detectDirection(value) : direction;
-    if (!focused || composing || !selected || busy) return;
+    if (!focused || composing || !selected || busy) {
+      return;
+    }
     const timer = setTimeout(() => {
       void suggestHeadwords(value, sourceLangFor(selected))
         .then((words) => {
-          if (!cancelled) setCandidates(words);
+          if (!cancelled) {
+            setCandidates(words);
+          }
         })
         .catch(() => undefined);
     }, 150);
@@ -60,7 +64,9 @@ export function InputBar({
   // input event — also shrink the textarea back down.
   useEffect(() => {
     const el = textareaRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
   }, [value]);
@@ -69,7 +75,9 @@ export function InputBar({
     <form
       class="input-bar"
       onFocusOut={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false);
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocused(false);
+        }
       }}
       onSubmit={(event) => {
         event.preventDefault();

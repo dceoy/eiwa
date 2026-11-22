@@ -111,7 +111,7 @@ describe("createLocalAiEngine", () => {
     const engine = createLocalAiEngine();
     await expect(
       engine.explain({ direction: "en-ja", input: "cat", dictionaryContext: [] }),
-    ).rejects.toThrow(/not ready/);
+    ).rejects.toThrow(/not ready/u);
   });
 
   it("dispose() resets status back to idle", async () => {

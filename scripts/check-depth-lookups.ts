@@ -47,12 +47,13 @@ try {
     }
   }
   const licenses = await dictionaryLicenses();
-  for (const name of ["Tatoeba", "Wiktionary", "General Service List"])
+  for (const name of ["Tatoeba", "Wiktionary", "General Service List"]) {
     assert(
       licenses.some(
         (source) => source.name.includes(name) && source.licenseUrl && source.attribution,
       ),
     );
+  }
   console.log(
     `run: ${first.pronunciation.ipa}; level ${first.level}; etymology ${first.etymology?.length} chars; derived ${first.derivedWords?.length ?? 0}, related ${first.relatedWords?.length ?? 0}, forms ${first.inflectionForms?.length ?? 0}.`,
   );

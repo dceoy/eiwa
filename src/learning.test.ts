@@ -89,8 +89,9 @@ describe("wordbook", () => {
         schemaVersion: 1,
         words: [{ ...word, dictionary: [{ ...word.dictionary[0], pos: null }] }],
       },
-    ])
+    ]) {
       expect(() => parseWordbook(JSON.stringify(value))).toThrow();
+    }
     const unsafe = structuredClone(word);
     unsafe.dictionary[0]?.source.push({ name: "Bad", license: "?", url: "javascript:alert(1)" });
     expect(() => parseWordbook(exportWordbook([unsafe]))).toThrow();
@@ -120,6 +121,8 @@ it("history defaults off and only reads persisted queries after explicit opt-in"
   expect(loadHistory()).toHaveLength(1);
   expect(addHistory(loadHistory(), { input: "CAT", direction: "en-ja" })).toHaveLength(1);
   let items = loadHistory();
-  for (let i = 0; i < 60; i++) items = addHistory(items, { input: `word${i}`, direction: "en-ja" });
+  for (let i = 0; i < 60; i++) {
+    items = addHistory(items, { input: `word${i}`, direction: "en-ja" });
+  }
   expect(items).toHaveLength(50);
 });

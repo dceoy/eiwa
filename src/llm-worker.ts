@@ -4,13 +4,13 @@ import { loadWebLlm } from "./webllm-cdn";
 let handler: WebWorkerMLCEngineHandler | null = null;
 const pendingMessages: MessageEvent[] = [];
 
-self.onmessage = (event: MessageEvent) => {
+self.addEventListener("message", (event: MessageEvent) => {
   if (handler) {
     handler.onmessage(event);
     return;
   }
   pendingMessages.push(event);
-};
+});
 
 void loadWebLlm().then(({ WebWorkerMLCEngineHandler: Handler }) => {
   handler = new Handler();

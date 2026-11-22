@@ -9,7 +9,9 @@ export function validateSearchRows(
   value: unknown,
   kind: SearchIndexRef["kind"],
 ): value is HeadwordRow[] | InflectionRow[] {
-  if (!Array.isArray(value) || !value.length) return false;
+  if (!(Array.isArray(value) && value.length)) {
+    return false;
+  }
   let previous = "";
   return value.every((row) => {
     if (
@@ -18,8 +20,9 @@ export function validateSearchRows(
       typeof row[0] !== "string" ||
       !row[0] ||
       row[0] <= previous
-    )
+    ) {
       return false;
+    }
     previous = row[0];
     return kind === "headwords"
       ? typeof row[1] === "number" && Number.isFinite(row[1]) && row[1] >= 0
@@ -34,7 +37,9 @@ export function validateSearchRows(
 export function editDistance(a: string, b: string, limit: number): number {
   const x = Array.from(a);
   const y = Array.from(b);
-  if (Math.abs(x.length - y.length) > limit) return limit + 1;
+  if (Math.abs(x.length - y.length) > limit) {
+    return limit + 1;
+  }
   let row = y.map((_, i) => i + 1);
   row.unshift(0);
   for (let i = 1; i <= x.length; i++) {
@@ -46,7 +51,9 @@ export function editDistance(a: string, b: string, limit: number): number {
         (row[j - 1] ?? 0) + (x[i - 1] === y[j - 1] ? 0 : 1),
       );
     }
-    if (Math.min(...next) > limit) return limit + 1;
+    if (Math.min(...next) > limit) {
+      return limit + 1;
+    }
     row = next;
   }
   return row[y.length] ?? 0;

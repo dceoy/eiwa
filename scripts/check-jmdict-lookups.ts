@@ -22,7 +22,7 @@ try {
   const mountain = await lookupDictionary("mountain", "en");
   assert.equal(mountain[0]?.translations[0]?.text, "山");
   const train = await lookupDictionary("電車", "ja");
-  assert(train.some((entry) => entry.translations.some((t) => /train/.test(t.text))));
+  assert(train.some((entry) => entry.translations.some((t) => /train/u.test(t.text))));
   const reading = await lookupDictionary("でんしゃ", "ja");
   assert(
     reading.some((entry) => entry.headword === "電車" && train.some((t) => t.id === entry.id)),

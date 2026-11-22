@@ -56,9 +56,15 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.endsWith("/dict/manifest.json")) return jsonResponse(manifest);
-      if (url.includes("/dict/en/c.json")) return jsonResponse(enShard);
-      if (url.includes("/dict/ja/ね.json")) return jsonResponse(jaShard);
+      if (url.endsWith("/dict/manifest.json")) {
+        return jsonResponse(manifest);
+      }
+      if (url.includes("/dict/en/c.json")) {
+        return jsonResponse(enShard);
+      }
+      if (url.includes("/dict/ja/ね.json")) {
+        return jsonResponse(jaShard);
+      }
       return jsonResponse({ error: "not found" }, false);
     }),
   );
@@ -188,8 +194,12 @@ describe("resetDictionaryCaches", () => {
     };
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.endsWith("/dict/manifest.json")) return jsonResponse(manifest);
-      if (url.includes("/dict/en/c.json")) return jsonResponse(updatedShard);
+      if (url.endsWith("/dict/manifest.json")) {
+        return jsonResponse(manifest);
+      }
+      if (url.includes("/dict/en/c.json")) {
+        return jsonResponse(updatedShard);
+      }
       return jsonResponse({ error: "not found" }, false);
     });
 

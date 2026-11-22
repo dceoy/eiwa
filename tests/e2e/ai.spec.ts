@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test as it, type Page } from "@playwright/test";
 import { WEBLLM_CDN_URL } from "../../src/webllm-cdn";
 
 /** Use the real, hash-checked pinned WebLLM library, stubbing only its Worker
@@ -58,7 +58,9 @@ async function stubLocalWorker(page: Page) {
             this.generation++;
             this.index = 0;
             this.interrupted = false;
-            if (msg.content?.request) control.aiRequests.push(msg.content.request);
+            if (msg.content?.request) {
+              control.aiRequests.push(msg.content.request);
+            }
             reply(null);
           } else if (msg.kind === "completionStreamNextChunk") {
             const next = () => {
@@ -84,24 +86,28 @@ async function stubLocalWorker(page: Page) {
               const content = chunks[this.index++];
               reply(content === undefined ? undefined : { choices: [{ delta: { content } }] });
             };
-            if (this.generation === 1 && this.index > this.allowed && this.index < 3)
+            if (this.generation === 1 && this.index > this.allowed && this.index < 3) {
               this.pending = next;
-            else next();
+            } else {
+              next();
+            }
           } else if (msg.kind === "interruptGenerate") {
             this.interrupted = true;
             this.pending?.();
             reply(null);
-          } else reply(null);
+          } else {
+            reply(null);
+          }
         }
       },
       configurable: true,
     });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: /open settings/i }).click();
-  await page.getByRole("checkbox", { name: /enable ai explanations/i }).check();
+  await page.getByRole("button", { name: /open settings/iu }).click();
+  await page.getByRole("checkbox", { name: /enable ai explanations/iu }).check();
   await expect(page.getByText("Status: ready")).toBeVisible();
-  await page.getByRole("button", { name: /close settings/i }).click();
+  await page.getByRole("button", { name: /close settings/iu }).click();
 }
 
 async function release(page: Page, fail = false) {
@@ -112,22 +118,22 @@ async function release(page: Page, fail = false) {
   }, fail);
 }
 
-test("dictionary paints immediately; AI sections stream, then back-translate locally", async ({
+it("dictionary paints immediately; AI sections stream, then back-translate locally", async ({
   page,
 }) => {
   await stubLocalWorker(page);
-  await page.getByLabel(/english or japanese/i).fill("cat");
-  await page.getByRole("button", { name: /^translate$/i }).click();
+  await page.getByLabel(/english or japanese/iu).fill("cat");
+  await page.getByRole("button", { name: /^translate$/iu }).click();
   await expect(page.getByRole("heading", { name: "Dictionary" })).toBeVisible();
   await expect(page.getByText("AI fixture translation", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Nuance" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /back-translate/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /cancel/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /back-translate/iu })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /cancel/iu })).toBeVisible();
   await release(page);
   await expect(page.getByText("AI fixture nuance", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: /cancel/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /cancel/iu })).toBeVisible();
   await release(page);
-  await page.getByRole("button", { name: /back-translate AI translation/i }).click();
+  await page.getByRole("button", { name: /back-translate AI translation/iu }).click();
   await expect(page.getByRole("heading", { name: "AI back-translation" })).toBeVisible();
   await expect(page.getByText("AI fixture back-translation", { exact: true })).toBeVisible();
   const requests = await page.evaluate(
@@ -139,22 +145,25 @@ test("dictionary paints immediately; AI sections stream, then back-translate loc
 });
 
 for (const ending of ["failure", "cancel"] as const) {
-  test(`late ${ending} retains streamed content without warning/miss banners`, async ({ page }) => {
+  it(`late ${ending} retains streamed content without warning/miss banners`, async ({ page }) => {
     await stubLocalWorker(page);
-    await page.getByLabel(/english or japanese/i).fill("unlisted sentence");
-    await page.getByRole("button", { name: /^translate$/i }).click();
+    await page.getByLabel(/english or japanese/iu).fill("unlisted sentence");
+    await page.getByRole("button", { name: /^translate$/iu }).click();
     await expect(page.getByText("AI fixture translation", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Warnings" })).toHaveCount(0);
-    await expect(page.getByText(/no dictionary entry was found/i)).toHaveCount(0);
+    await expect(page.getByText(/no dictionary entry was found/iu)).toHaveCount(0);
     await release(page);
     await expect(page.getByText("AI fixture nuance", { exact: true })).toBeVisible();
-    if (ending === "failure") await release(page, true);
-    else await page.getByRole("button", { name: /cancel/i }).click();
-    await expect(page.getByRole("button", { name: /^translate$/i })).toBeVisible();
+    if (ending === "failure") {
+      await release(page, true);
+    } else {
+      await page.getByRole("button", { name: /cancel/iu }).click();
+    }
+    await expect(page.getByRole("button", { name: /^translate$/iu })).toBeVisible();
     await expect(page.getByText("AI fixture translation", { exact: true })).toBeVisible();
     await expect(page.getByText("AI fixture nuance", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Warnings" })).toHaveCount(0);
     await expect(page.getByRole("alert")).toHaveCount(0);
-    await expect(page.getByText(/no dictionary entry was found/i)).toHaveCount(0);
+    await expect(page.getByText(/no dictionary entry was found/iu)).toHaveCount(0);
   });
 }

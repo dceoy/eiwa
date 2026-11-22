@@ -119,7 +119,9 @@ export async function* lookup(
       dictionaryContext: entries,
       ...(signal ? { signal } : {}),
       onProgress: (output) => {
-        if (!acceptingUpdates || signal?.aborted) return;
+        if (!acceptingUpdates || signal?.aborted) {
+          return;
+        }
         updates.push(output);
         wake?.();
       },

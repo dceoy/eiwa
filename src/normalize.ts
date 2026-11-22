@@ -6,8 +6,8 @@ export interface NormalizedInput {
   isSentenceLike: boolean;
 }
 
-const WHITESPACE_RE = /\s+/g;
-const WORD_BOUNDARY_RE = /[\s、。，,.!?！？]/;
+const WHITESPACE_RE = /\s+/gu;
+const WORD_BOUNDARY_RE = /[\s、。，,.!?！？]/u;
 
 export function normalizeInput(raw: string): NormalizedInput {
   const text = raw.normalize("NFKC").trim().replace(WHITESPACE_RE, " ");

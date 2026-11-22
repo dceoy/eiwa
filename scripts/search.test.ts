@@ -134,15 +134,24 @@ describe("on-device indexed search", () => {
     async (failure) => {
       expect(validateManifest(manifest)).toEqual([]);
       for (const ref of manifest.search ?? []) {
-        if (ref.kind !== "headwords") continue;
-        if (failure === "malformed") assets.set(`/${ref.path}`, [["broken", "not a score"]]);
-        else assets.delete(`/${ref.path}`);
+        if (ref.kind !== "headwords") {
+          continue;
+        }
+        if (failure === "malformed") {
+          assets.set(`/${ref.path}`, [["broken", "not a score"]]);
+        } else {
+          assets.delete(`/${ref.path}`);
+        }
       }
       if (failure === "offline") {
         const onlineFetch = vi.mocked(fetch).getMockImplementation();
         vi.mocked(fetch).mockImplementation((input, init) => {
-          if (String(input).includes("headwords")) return Promise.reject(new Error("offline"));
-          if (!onlineFetch) throw new Error("Missing test fetch");
+          if (String(input).includes("headwords")) {
+            return Promise.reject(new Error("offline"));
+          }
+          if (!onlineFetch) {
+            throw new Error("Missing test fetch");
+          }
           return onlineFetch(input, init);
         });
       }
@@ -153,10 +162,14 @@ describe("on-device indexed search", () => {
   );
   it("preserves exact and related hits when an inflection index or related shard is unavailable", async () => {
     for (const ref of manifest.search ?? []) {
-      if (ref.kind === "inflections") assets.delete(`/${ref.path}`);
+      if (ref.kind === "inflections") {
+        assets.delete(`/${ref.path}`);
+      }
     }
     const related = manifest.shards.find((ref) => ref.key === "b");
-    if (!related) throw new Error("Missing bobcat shard");
+    if (!related) {
+      throw new Error("Missing bobcat shard");
+    }
     assets.delete(`/${related.path}`);
     const results = await lookupDictionary("cat", "en");
     expect(results.map((e) => e.headword)).toEqual(["cat", "catsup"]);
@@ -164,15 +177,21 @@ describe("on-device indexed search", () => {
   });
   it("preserves available lemmas when another lemma shard and headword indexes are unavailable", async () => {
     const ref = manifest.search?.find((r) => r.kind === "inflections");
-    if (!ref) throw new Error("Missing inflection ref");
+    if (!ref) {
+      throw new Error("Missing inflection ref");
+    }
     assets.set(`/${ref.path}`, [["took", ["go", "take"]]]);
     Object.assign(ref, { start: "took", end: "took", entryCount: 1 });
     manifest.search = manifest.search?.filter((r) => r.kind === "headwords" || r === ref) ?? [];
     for (const other of manifest.search ?? []) {
-      if (other !== ref) assets.delete(`/${other.path}`);
+      if (other !== ref) {
+        assets.delete(`/${other.path}`);
+      }
     }
     const missing = manifest.shards.find((r) => r.key === "g");
-    if (!missing) throw new Error("Missing go shard");
+    if (!missing) {
+      throw new Error("Missing go shard");
+    }
     assets.delete(`/${missing.path}`);
     expect(validateManifest(manifest)).toEqual([]);
     const results = await lookupDictionary("took", "en");
@@ -196,10 +215,12 @@ describe("on-device indexed search", () => {
       (r) => r.kind === "headwords" && r.start <= "moun\uffff" && r.end >= "moun",
     );
     expect(ref).toBeDefined();
-    if (!ref) return;
+    if (!ref) {
+      return;
+    }
     const original = assets.get(`/${ref.path}`);
     assets.set(`/${ref.path}`, [["broken", "not a score"]]);
-    await expect(suggestHeadwords("moun", "en")).rejects.toThrow(/Invalid search/);
+    await expect(suggestHeadwords("moun", "en")).rejects.toThrow(/Invalid search/u);
     assets.set(`/${ref.path}`, original);
     expect(await suggestHeadwords("moun", "en")).toContain("mountain");
     const before = vi.mocked(fetch).mock.calls.length;
@@ -223,7 +244,9 @@ describe("search validation and distance", () => {
     expect(validateSearchRows([["cats", ["cat", "cat"]]], "inflections")).toBe(false);
     expect(validateSearchRows([["cat", Number.NaN]], "headwords")).toBe(false);
     const ref = manifest.search?.[0];
-    if (!ref) throw new Error("Missing test ref");
+    if (!ref) {
+      throw new Error("Missing test ref");
+    }
     expect(validateManifest({ ...manifest, search: [ref, ref] })).not.toEqual([]);
     expect(
       validateManifest({ ...manifest, search: [{ ...ref, path: "../outside.json" }] }),

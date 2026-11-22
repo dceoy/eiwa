@@ -10,7 +10,9 @@ export function RecordingPlayer({ recording }: { recording: CommonsRecording }) 
       audio?.pause();
     };
   }, []);
-  if (!isCommonsRecording(recording)) return null;
+  if (!isCommonsRecording(recording)) {
+    return null;
+  }
   return (
     <div class="recording-player">
       <button
@@ -18,10 +20,14 @@ export function RecordingPlayer({ recording }: { recording: CommonsRecording }) 
         class="btn btn-secondary"
         onClick={() => {
           const audio = audioRef.current;
-          if (!audio) return;
+          if (!audio) {
+            return;
+          }
           setFailed(false);
           // Do not even set src until a user requests playback. No prefetch/cache.
-          if (!audio.getAttribute("src")) audio.src = recording.url;
+          if (!audio.getAttribute("src")) {
+            audio.src = recording.url;
+          }
           audio.currentTime = 0;
           void audio.play().catch(() => setFailed(true));
         }}
@@ -33,7 +39,7 @@ export function RecordingPlayer({ recording }: { recording: CommonsRecording }) 
         ref={audioRef}
         preload="none"
         crossOrigin="anonymous"
-        controls
+        controls={true}
         onError={() => setFailed(true)}
       />
       <small>
@@ -43,7 +49,7 @@ export function RecordingPlayer({ recording }: { recording: CommonsRecording }) 
         </a>
         . Streams only when played.
       </small>
-      {failed && <p role="status">Recording unavailable. Try the device voice (Listen) instead.</p>}
+      {!!failed && <p role="status">Recording unavailable. Try the device voice (Listen) instead.</p>}
     </div>
   );
 }

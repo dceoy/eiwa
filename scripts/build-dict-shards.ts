@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { MAX_SHARD_HASH_DEPTH, normalizeHeadword, shardKeyFor } from "../src/dict-normalize";
 import type {
@@ -10,7 +11,6 @@ import type {
   DictManifest,
   DictShardRef,
 } from "../src/dict-types";
-
 import { writeSearchIndexes } from "./build-search-index";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -151,11 +151,17 @@ export function splitShards(
     const children = new Map<string, ShardFile>();
     for (const [normalized, entries] of Object.entries(shard.entries)) {
       const key = shardKeyFor(normalized, shard.lang, depth + 1);
-      for (const entry of entries) addToShard(children, shard.lang, key, normalized, entry);
+      for (const entry of entries) {
+        addToShard(children, shard.lang, key, normalized, entry);
+      }
     }
-    for (const child of children.values()) split(child, depth + 1);
+    for (const child of children.values()) {
+      split(child, depth + 1);
+    }
   }
-  for (const shard of shards.values()) split(shard, 0);
+  for (const shard of shards.values()) {
+    split(shard, 0);
+  }
   return leaves;
 }
 
@@ -246,7 +252,9 @@ async function main() {
     await buildJmdict();
     return;
   }
-  if (source !== "fixtures") throw new Error(`Unknown DICT_SOURCE: ${source}`);
+  if (source !== "fixtures") {
+    throw new Error(`Unknown DICT_SOURCE: ${source}`);
+  }
   const seenIds = new Set<string>();
   await buildDictionary(await loadFixtures("en", seenIds), await loadFixtures("ja", seenIds), {
     "eiwa-fixtures": "0.1.0",

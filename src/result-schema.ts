@@ -54,12 +54,18 @@ function isStringArray(value: unknown): value is string[] {
  * malformed data.
  */
 export function validateAiExplanationOutput(value: unknown): AiExplanationOutput | null {
-  if (typeof value !== "object" || value === null) return null;
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
   const obj = value as Record<string, unknown>;
 
   const translation = obj["translation"] as Record<string, unknown> | undefined;
-  if (typeof translation !== "object" || translation === null) return null;
-  if (typeof translation["primary"] !== "string") return null;
+  if (typeof translation !== "object" || translation === null) {
+    return null;
+  }
+  if (typeof translation["primary"] !== "string") {
+    return null;
+  }
   const alternatives = isStringArray(translation["alternatives"])
     ? translation["alternatives"]
     : [];

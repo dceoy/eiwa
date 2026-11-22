@@ -73,10 +73,14 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     setSpelling([]);
-    if (!result || result.dictionary.length) return;
+    if (!result || result.dictionary.length) {
+      return;
+    }
     void suggestSpellings(result.input, sourceLangFor(result.direction))
       .then((words) => {
-        if (!cancelled) setSpelling(words);
+        if (!cancelled) {
+          setSpelling(words);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -123,12 +127,16 @@ export function App() {
     let cancelled = false;
     void dictionaryManifestInfo()
       .then((info) => {
-        if (!cancelled) setDictInfo({ builtAt: info.builtAt, shardCount: info.shardCount });
+        if (!cancelled) {
+          setDictInfo({ builtAt: info.builtAt, shardCount: info.shardCount });
+        }
       })
       .catch(() => undefined);
     void dictionaryLicenses()
       .then((list) => {
-        if (!cancelled) setLicenses(list);
+        if (!cancelled) {
+          setLicenses(list);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -147,13 +155,17 @@ export function App() {
   useEffect(() => {
     let cancelled = false;
     void probeWebGpuAdapter().then((supported) => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       setWebGpuSupported(supported);
       // A persisted "enabled" from a previous device/browser is meaningless
       // once we know this one has no usable WebGPU adapter — clear it so the
       // Settings checkbox and the AI-only controls it gates don't get stuck
       // showing "on" while permanently disabled.
-      if (!supported) setAiEnabled(false);
+      if (!supported) {
+        setAiEnabled(false);
+      }
     });
     return () => {
       cancelled = true;
@@ -174,7 +186,9 @@ export function App() {
   // fights with a manual toggle (handleToggleAi/handleSelectModel) that
   // already created one.
   useEffect(() => {
-    if (webGpuSupported !== true || !aiEnabled || !modelCached || engineRef.current) return;
+    if (webGpuSupported !== true || !aiEnabled || !modelCached || engineRef.current) {
+      return;
+    }
     const engine = createLocalAiEngine(selectedModelId);
     engineRef.current = engine;
     void engine
@@ -189,9 +203,15 @@ export function App() {
   const handleSubmit = useCallback(
     async (candidate?: string, direction?: Direction) => {
       const query = candidate ?? input;
-      if (query.trim() === "") return;
-      if (candidate) setInput(candidate);
-      if (direction && directionChoice !== "auto") setDirectionChoice(direction);
+      if (query.trim() === "") {
+        return;
+      }
+      if (candidate) {
+        setInput(candidate);
+      }
+      if (direction && directionChoice !== "auto") {
+        setDirectionChoice(direction);
+      }
 
       // Cancel and fully await any previous lookup first, so a stale AI
       // generation can't leave the engine's status as "generating" (or the
@@ -219,7 +239,9 @@ export function App() {
             aiEngine: aiEnabled ? engineRef.current : null,
             ...(selectedDirection ? { direction: selectedDirection } : {}),
           })) {
-            if (!isCurrent()) return;
+            if (!isCurrent()) {
+              return;
+            }
             switch (event.type) {
               case "ai-status":
                 setAiStatus(event.status);
@@ -264,8 +286,12 @@ export function App() {
           // Clear/snapshot invalidates UI events but still lets the cancelled
           // engine settle. Don't leave Settings stuck at "generating".
           const status = engineRef.current?.getStatus();
-          if (status && status !== "generating") setAiStatus(status);
-          if (isCurrent()) setBusy(false);
+          if (status && status !== "generating") {
+            setAiStatus(status);
+          }
+          if (isCurrent()) {
+            setBusy(false);
+          }
         }
       })();
 
@@ -279,14 +305,13 @@ export function App() {
     const engine = engineRef.current;
     const translation = result?.aiTranslation?.primary;
     if (
-      !result ||
-      !translation ||
-      !aiEnabled ||
+      !(result && translation && aiEnabled) ||
       busy ||
       backTranslating ||
       engine?.getStatus() !== "ready"
-    )
+    ) {
       return;
+    }
     const controller = new AbortController();
     abortRef.current = controller;
     const requestId = requestIdRef.current;
@@ -295,10 +320,14 @@ export function App() {
     const run = (async () => {
       try {
         const text = await backTranslate(engine, result.direction, translation, controller.signal);
-        if (requestIdRef.current === requestId && text) setBackTranslation(text);
+        if (requestIdRef.current === requestId && text) {
+          setBackTranslation(text);
+        }
       } finally {
         setBackTranslating(false);
-        if (engineRef.current === engine) setAiStatus(engine.getStatus());
+        if (engineRef.current === engine) {
+          setAiStatus(engine.getStatus());
+        }
       }
     })();
     activeLookupRef.current = run;
@@ -314,8 +343,9 @@ export function App() {
 
   const updateWords = (next: SavedWord[]): boolean => {
     try {
-      if (wordbookLoad.failed)
+      if (wordbookLoad.failed) {
         throw new Error("Existing wordbook could not be read; refusing to overwrite it.");
+      }
       saveWordbook(next);
       setWords(next);
       return true;
@@ -330,8 +360,11 @@ export function App() {
   };
   const updateHistory = (items: HistoryItem[]) => {
     try {
-      if (items.length) localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
-      else localStorage.removeItem(HISTORY_KEY);
+      if (items.length) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+      } else {
+        localStorage.removeItem(HISTORY_KEY);
+      }
       setHistory(items);
     } catch {
       setBanner({ kind: "error", message: "History could not be changed on this device." });
@@ -472,27 +505,28 @@ export function App() {
             ))}
           </section>
         )}
-        {wordbookLoad.failed && (
+        {!!wordbookLoad.failed && (
           <p role="alert">
             Saved wordbook could not be read. It has not been overwritten. Check browser storage or
             restore from a backup.
           </p>
         )}
-        {result && (
+        {!!result && (
           <>
             <div class="wordbook-save">
-              {savedView && <p>Saved dictionary snapshot — content from save time.</p>}
+              {!!savedView && <p>Saved dictionary snapshot — content from save time.</p>}
               <button
                 type="button"
                 class="btn btn-secondary"
                 disabled={!result.dictionary.length || words.some((w) => w.id === wordId(result))}
                 onClick={() => {
                   try {
-                    if (updateWords(mergeWordbook(words, [snapshot(result)])))
+                    if (updateWords(mergeWordbook(words, [snapshot(result)]))) {
                       setBanner({
                         kind: "info",
                         message: "Saved dictionary snapshot to wordbook.",
                       });
+                    }
                   } catch {
                     setBanner({
                       kind: "error",
@@ -520,7 +554,7 @@ export function App() {
         )}
       </main>
 
-      {learningOpen && (
+      {!!learningOpen && (
         <LearningSheet
           {...(banner?.kind === "error" ? { error: banner.message } : {})}
           words={words}
@@ -531,11 +565,15 @@ export function App() {
           onHistoryToggle={(enabled) => {
             try {
               // Erase before disabling; never leave hidden retained queries.
-              if (!enabled) localStorage.removeItem(HISTORY_KEY);
+              if (!enabled) {
+                localStorage.removeItem(HISTORY_KEY);
+              }
               localStorage.setItem(HISTORY_ENABLED_KEY, String(enabled));
               historyOnRef.current = enabled;
               setHistoryOn(enabled);
-              if (!enabled) setHistory([]);
+              if (!enabled) {
+                setHistory([]);
+              }
             } catch {
               setBanner({ kind: "error", message: "History preference could not be saved." });
             }
@@ -546,7 +584,9 @@ export function App() {
             requestIdRef.current++;
             setBusy(false);
             setInput(word.input);
-            if (directionChoice !== "auto") setDirectionChoice(word.direction);
+            if (directionChoice !== "auto") {
+              setDirectionChoice(word.direction);
+            }
             setResult(reopen(word));
             setBackTranslation(null);
             setSavedView(true);

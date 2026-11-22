@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { dictionaryManifestInfo, lookupDictionary, resetDictionaryCaches } from "../src/dict";
 import { normalizeHeadword } from "../src/dict-normalize";
@@ -34,7 +35,9 @@ function nonempty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 function isQuery(value: unknown): value is LookupQuery {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
   const q = value as LookupQuery;
   return (
     nonempty(q.id) &&
@@ -59,15 +62,19 @@ export function parseQueries(text: string): LookupQuery[] {
   const ids = new Set<string>();
   const inputs = new Set<string>();
   const queries: LookupQuery[] = [];
-  for (const [index, line] of text.split(/\r?\n/).entries()) {
-    if (!line.trim()) continue;
+  for (const [index, line] of text.split(/\r?\n/u).entries()) {
+    if (!line.trim()) {
+      continue;
+    }
     let value: unknown;
     try {
       value = JSON.parse(line);
     } catch {
       throw new Error(`queries.jsonl:${index + 1}: invalid JSON`);
     }
-    if (!isQuery(value)) throw new Error(`queries.jsonl:${index + 1}: invalid v1 query`);
+    if (!isQuery(value)) {
+      throw new Error(`queries.jsonl:${index + 1}: invalid v1 query`);
+    }
     const key = `${value.direction}:${normalizeHeadword(value.input, sourceLangFor(value.direction))}`;
     if (ids.has(value.id) || inputs.has(key)) {
       throw new Error(`queries.jsonl:${index + 1}: duplicate id or input/direction`);
@@ -76,7 +83,9 @@ export function parseQueries(text: string): LookupQuery[] {
     inputs.add(key);
     queries.push(value);
   }
-  if (!queries.length) throw new Error("Query set is empty");
+  if (!queries.length) {
+    throw new Error("Query set is empty");
+  }
   return queries;
 }
 
@@ -130,8 +139,7 @@ export function localDictionaryFetch(publicDir: string): typeof fetch {
 
 export function requireJmdict(versions: Record<string, string>): void {
   if (
-    !versions["JMdict_e"] ||
-    !/^[a-f0-9]{64}$/.test(versions["JMdict_e.sha256"] ?? "") ||
+    !(versions["JMdict_e"] && /^[a-f0-9]{64}$/u.test(versions["JMdict_e.sha256"] ?? "")) ||
     Object.hasOwn(versions, "eiwa-fixtures")
   ) {
     throw new Error(

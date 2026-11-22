@@ -38,7 +38,7 @@ it("does not load audio until Play, labels Commons and handles playback failure"
   const audio = view.container.querySelector("audio");
   expect(audio?.getAttribute("preload")).toBe("none");
   expect(audio?.getAttribute("src")).toBeNull();
-  expect(screen.getByRole("link", { name: /Wikimedia Commons/ }).getAttribute("href")).toContain(
+  expect(screen.getByRole("link", { name: /Wikimedia Commons/u }).getAttribute("href")).toContain(
     "File:en-us-run.ogg",
   );
   fireEvent.click(screen.getByRole("button", { name: "Play recording (Commons)" }));
@@ -53,5 +53,5 @@ it("keeps device TTS as the fallback without requiring a recording", () => {
   show(false);
   expect(screen.queryByRole("button", { name: "Play recording (Commons)" })).toBeNull();
   expect(screen.getByRole("region", { name: "Pronunciation" }).textContent).toContain("/rʌn/");
-  expect(screen.getAllByRole("button", { name: /Listen/ }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole("button", { name: /Listen/u }).length).toBeGreaterThan(0);
 });

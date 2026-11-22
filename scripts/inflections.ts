@@ -84,9 +84,9 @@ const irregularAdjectives: Record<string, string[]> = {
   bad: ["worse", "worst"],
 };
 function plural(word: string): string {
-  return /[^aeiou]y$/.test(word)
+  return /[^aeiou]y$/u.test(word)
     ? `${word.slice(0, -1)}ies`
-    : /(?:s|x|z|ch|sh)$/.test(word)
+    : /(?:s|x|z|ch|sh)$/u.test(word)
       ? `${word}es`
       : `${word}s`;
 }
@@ -94,36 +94,41 @@ export function englishForms(word: string, pos: string[]): string[] {
   word = word.toLowerCase();
   const [first = "", ...rest] = word.split(" ");
   const tags = pos.join(" ").toLowerCase();
-  const verb = /verb/.test(tags) && !/adverb/.test(tags);
-  const noun = /noun/.test(tags);
-  const adjective = /adjective|adj-i|adj-na/.test(tags);
-  if (!/^[a-z]+$/.test(first) || !(verb || noun || adjective)) return [];
+  const verb = /verb/u.test(tags) && !/adverb/u.test(tags);
+  const noun = /noun/u.test(tags);
+  const adjective = /adjective|adj-i|adj-na/u.test(tags);
+  if (!(/^[a-z]+$/u.test(first) && (verb || noun || adjective))) {
+    return [];
+  }
   const forms: string[] = [];
   const exceptions = (table: Record<string, string[]>) =>
     Object.hasOwn(table, first) ? table[first] : undefined;
-  if (noun && !rest.length) forms.push(...(exceptions(irregularNouns) ?? [plural(first)]));
+  if (noun && !rest.length) {
+    forms.push(...(exceptions(irregularNouns) ?? [plural(first)]));
+  }
   // Double only unambiguous one-syllable CVC stems; do not invent e.g.
   // "visitted". Wider irregular/lexical coverage belongs in sourced data.
-  const cvc = /^[^aeiou]+[aeiou][bdgmnprt]$/.test(first);
+  const cvc = /^[^aeiou]+[aeiou][bdgmnprt]$/u.test(first);
   const doubled = cvc ? first + first.slice(-1) : first;
-  if (verb)
+  if (verb) {
     forms.push(
       ...(exceptions(irregularVerbs) ?? [
         plural(first),
-        first.endsWith('e')
+        first.endsWith("e")
           ? `${first}d`
-          : /[^aeiou]y$/.test(first)
+          : /[^aeiou]y$/u.test(first)
             ? `${first.slice(0, -1)}ied`
             : `${doubled}ed`,
-        first.endsWith('ie')
+        first.endsWith("ie")
           ? `${first.slice(0, -2)}ying`
-          : /[^e]e$/.test(first)
+          : /[^e]e$/u.test(first)
             ? `${first.slice(0, -1)}ing`
             : `${doubled}ing`,
       ]),
     );
+  }
   if (adjective && !rest.length) {
-    const stem = /[^aeiou]y$/.test(first) ? `${first.slice(0, -1)}i` : doubled;
+    const stem = /[^aeiou]y$/u.test(first) ? `${first.slice(0, -1)}i` : doubled;
     forms.push(
       ...(exceptions(irregularAdjectives) ??
         (first.length <= 6
@@ -153,9 +158,9 @@ export function japaneseForms(word: string, pos: string[]): string[] {
       `${stem + te}いた`,
     );
   };
-  if (/Ichidan verb/.test(tags) && word.endsWith("る")) {
+  if (/Ichidan verb/u.test(tags) && word.endsWith("る")) {
     addVerb(word.slice(0, -1), "", "", "て", "た");
-  } else if (/Godan verb/.test(tags)) {
+  } else if (/Godan verb/u.test(tags)) {
     const endings: Record<string, string[]> = {
       う: ["い", "わ", "って", "った"],
       く: ["き", "か", "いて", "いた"],
@@ -170,34 +175,37 @@ export function japaneseForms(word: string, pos: string[]): string[] {
     const ending = endings[word.slice(-1)];
     if (ending) {
       const [i = "", a = "", te = "", ta = ""] = ending;
-      const iku = /Iku\/Yuku/.test(tags);
+      const iku = /Iku\/Yuku/u.test(tags);
       addVerb(word.slice(0, -1), i, a, iku ? "って" : te, iku ? "った" : ta);
     }
-  } else if (/suru verb - included/.test(tags) && word.endsWith("する")) {
+  } else if (/suru verb - included/u.test(tags) && word.endsWith("する")) {
     addVerb(word.slice(0, -2), "し", "し", "して", "した");
-  } else if (/Kuru verb/.test(tags)) {
-    if (word.endsWith("来る"))
+  } else if (/Kuru verb/u.test(tags)) {
+    if (word.endsWith("来る")) {
       forms.push(
         ...["来た", "来て", "来ます", "来ました", "来ない", "来なかった"].map(
           (s) => word.slice(0, -2) + s,
         ),
       );
-    if (word.endsWith("くる"))
+    }
+    if (word.endsWith("くる")) {
       forms.push(
         ...["きた", "きて", "きます", "きました", "こない", "こなかった"].map(
           (s) => word.slice(0, -2) + s,
         ),
       );
+    }
   }
-  if (/adjective \(keiyoushi\)/.test(tags) && word.endsWith("い")) {
+  if (/adjective \(keiyoushi\)/u.test(tags) && word.endsWith("い")) {
     const stem =
-      /yoi\/ii class/.test(tags) && word.endsWith("いい")
+      /yoi\/ii class/u.test(tags) && word.endsWith("いい")
         ? `${word.slice(0, -2)}よ`
         : word.slice(0, -1);
     forms.push(`${stem}かった`, `${stem}くない`, `${stem}くなかった`, `${stem}くて`);
   }
-  if (/adjectival nouns|na-adjective/.test(tags))
+  if (/adjectival nouns|na-adjective/u.test(tags)) {
     forms.push(`${word}だった`, `${word}ではない`, `${word}じゃない`, `${word}でした`);
+  }
   return forms;
 }
 

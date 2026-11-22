@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { normalizeHeadword, resolveShardKey } from "../src/dict-normalize";
 import type { DictionaryEntry, DictManifest } from "../src/dict-types";
@@ -98,8 +99,9 @@ async function main() {
     const bytes = Buffer.byteLength(content);
     totalBytes += bytes;
     largestBytes = Math.max(largestBytes, bytes);
-    if (bytes !== ref.bytes || bytes >= SHARD_TARGET_BYTES || sha256(content) !== ref.checksum)
+    if (bytes !== ref.bytes || bytes >= SHARD_TARGET_BYTES || sha256(content) !== ref.checksum) {
       errors.push(`${ref.path}: checksum/size mismatch or oversized index`);
+    }
     const rows: unknown = JSON.parse(content);
     if (!validateSearchRows(rows, ref.kind)) {
       errors.push(`${ref.path}: invalid sorted search rows`);
@@ -109,31 +111,45 @@ async function main() {
       rows.length !== ref.entryCount ||
       rows[0]?.[0] !== ref.start ||
       rows.at(-1)?.[0] !== ref.end
-    )
+    ) {
       errors.push(`${ref.path}: count/range mismatch`);
+    }
     for (const [word, value] of rows) {
-      if (normalizeHeadword(word, ref.lang) !== word)
+      if (normalizeHeadword(word, ref.lang) !== word) {
         errors.push(`${ref.path}: unnormalized key ${word}`);
+      }
       if (ref.kind === "headwords") {
         indexWords[ref.lang].add(word);
-        if (!headwords[ref.lang].has(word)) errors.push(`${ref.path}: missing headword ${word}`);
+        if (!headwords[ref.lang].has(word)) {
+          errors.push(`${ref.path}: missing headword ${word}`);
+        }
       } else if (Array.isArray(value)) {
-        for (const lemma of value) lemmaTargets.push({ lang: ref.lang, lemma });
+        for (const lemma of value) {
+          lemmaTargets.push({ lang: ref.lang, lemma });
+        }
       }
     }
   }
   if (manifest.search) {
-    for (const lang of ["en", "ja"] as const)
+    for (const lang of ["en", "ja"] as const) {
       for (const word of headwords[lang]) {
-        if (!indexWords[lang].has(word)) errors.push(`Search index omits ${lang}:${word}`);
+        if (!indexWords[lang].has(word)) {
+          errors.push(`Search index omits ${lang}:${word}`);
+        }
       }
-    for (const { lang, lemma } of lemmaTargets)
-      if (!headwords[lang].has(lemma)) errors.push(`Inflection target missing: ${lang}:${lemma}`);
+    }
+    for (const { lang, lemma } of lemmaTargets) {
+      if (!headwords[lang].has(lemma)) {
+        errors.push(`Inflection target missing: ${lang}:${lemma}`);
+      }
+    }
   }
 
   if (errors.length > 0) {
     console.error(`Dictionary validation failed with ${errors.length} issue(s):`);
-    for (const error of errors) console.error(`  - ${error}`);
+    for (const error of errors) {
+      console.error(`  - ${error}`);
+    }
     process.exitCode = 1;
     return;
   }

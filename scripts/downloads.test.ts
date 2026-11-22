@@ -50,7 +50,7 @@ describe("pinned build-time downloads", () => {
     async (lang) => {
       // Invalid UTF-8 and malformed rows must fail at the raw-byte hash gate.
       vi.mocked(fetch).mockResolvedValue(new Response(new Uint8Array([0xff, 0x00])));
-      await expect(loadFrequency(lang)).rejects.toThrow(/checksum mismatch/);
+      await expect(loadFrequency(lang)).rejects.toThrow(/checksum mismatch/u);
       expectNoDiskChanges();
     },
   );
@@ -79,13 +79,13 @@ describe("pinned build-time downloads", () => {
   });
   it("rejects corrupt cached frequency bytes without parsing, downloading or overwriting", async () => {
     vi.mocked(readFile).mockResolvedValue(Buffer.from("not frequency rows"));
-    await expect(loadFrequency("en")).rejects.toThrow(/checksum mismatch/);
+    await expect(loadFrequency("en")).rejects.toThrow(/checksum mismatch/u);
     expect(fetch).not.toHaveBeenCalled();
     expectNoDiskChanges();
   });
   it("rejects unverified JMdict bytes before disk writes or XML decompression", async () => {
     vi.mocked(fetch).mockResolvedValue(new Response("not a gzip archive"));
-    await expect(buildJmdict()).rejects.toThrow(/JMdict SHA-256 mismatch/);
+    await expect(buildJmdict()).rejects.toThrow(/JMdict SHA-256 mismatch/u);
     expect(createReadStream).toHaveBeenCalledExactlyOnceWith(
       path.join(ROOT, ".cache", "jmdict", `JMdict_e-${JMDICT_VERSION}-${JMDICT_SHA256}.gz`),
     );

@@ -39,7 +39,9 @@ export function SettingsSheet({
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
   const pendingModel = modelOptions.find((option) => option.id === pendingModelId);
   const selectedModel = modelOptions.find((option) => option.id === selectedModelId);
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <ModalOverlay onClose={onClose} labelledBy={headingId}>
@@ -76,7 +78,7 @@ export function SettingsSheet({
           />
         </label>
 
-        {aiEnabled && (
+        {!!aiEnabled && (
           <>
             <fieldset class="model-choice">
               <legend>Model</legend>
@@ -88,8 +90,9 @@ export function SettingsSheet({
                     value={option.id}
                     checked={selectedModelId === option.id}
                     onChange={() => {
-                      if (option.requiresConfirmation) setPendingModelId(option.id);
-                      else {
+                      if (option.requiresConfirmation) {
+                        setPendingModelId(option.id);
+                      } else {
                         setPendingModelId(null);
                         onSelectModel(option.id);
                       }

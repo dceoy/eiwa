@@ -34,7 +34,7 @@ describe("truncateSafely", () => {
     const truncated = truncateSafely(input, MAX_INPUT_CHARS);
 
     expect(truncated).toBe("a".repeat(MAX_INPUT_CHARS - 1));
-    expect(truncated.charCodeAt(truncated.length - 1)).toBeLessThan(0xd800);
+    expect(truncated.charCodeAt(truncated.length - 1)).toBeLessThan(0xd8_00);
   });
 });
 
@@ -66,7 +66,9 @@ describe("buildUserPrompt", () => {
       input: "run",
       dictionaryContext: [runEntry],
     });
-    for (const sense of runEntry.senses) expect(prompt).toContain(sense.gloss);
+    for (const sense of runEntry.senses) {
+      expect(prompt).toContain(sense.gloss);
+    }
     expect(prompt).toContain("[D1]");
     expect(prompt).toContain("JMdict");
     expect(prompt).toContain("I run every day.");
@@ -118,7 +120,7 @@ describe("buildUserPrompt", () => {
     const prompt = buildUserPrompt({
       direction: "en-ja",
       input: "run",
-      dictionaryContext: Array(100).fill(huge),
+      dictionaryContext: Array.from({ length: 100 }, () => huge),
     });
     const context =
       prompt.split(
