@@ -41,7 +41,7 @@ function hotEntries(lang: DictLang, prefix: string): DictionaryEntry[] {
     id: `${lang}:${i}`,
     lang,
     headword: `${prefix}${i}`,
-    reading: lang === "ja" ? `カ${i}` : undefined,
+    ...(lang === "ja" ? { reading: `カ${i}` } : {}),
     pos: [],
     translations: [{ text: "test", lang: "en" }],
     senses: [{ gloss: "test" }],
@@ -72,7 +72,7 @@ describe("adaptive shard routing", () => {
       vi.stubGlobal(
         "fetch",
         vi.fn(async (url: string) => {
-          if (url === "/dict/manifest.json")
+          if (url === "/dict/manifest.json") {
             return Response.json({
               schemaVersion: 1,
               builtAt: "2026-11-07",
@@ -80,8 +80,11 @@ describe("adaptive shard routing", () => {
               shards: refs,
               licenses: [{ name: "Test", license: "CC0-1.0" }],
             });
-          const ref = refs.find((ref) => url.startsWith(`/${ref.path}?`));
-          if (!ref) throw new Error(`Unexpected fetch ${url}`);
+          }
+          const ref = refs.find((candidate) => url.startsWith(`/${candidate.path}?`));
+          if (!ref) {
+            throw new Error(`Unexpected fetch ${url}`);
+          }
           return Response.json({ entries: shards.get(ref.key)?.entries });
         }),
       );
@@ -95,8 +98,9 @@ describe("adaptive shard routing", () => {
       }
       for (const entry of input) {
         expect(await lookupDictionary(entry.headword, lang)).toContainEqual(entry);
-        if (entry.reading)
+        if (entry.reading) {
           expect(await lookupDictionary(entry.reading, lang)).toContainEqual(entry);
+        }
       }
       expect(await lookupDictionary(`${prefix}missing`, lang)).toEqual([]);
     });
@@ -104,7 +108,7 @@ describe("adaptive shard routing", () => {
 
   it("fails closed when one lookup bucket alone exceeds the budget", () => {
     expect(() => splitShards(groupByShard(hotEntries("en", "s").slice(0, 1), "en"), 10)).toThrow(
-      /Cannot split/,
+      /Cannot split/u,
     );
   });
 

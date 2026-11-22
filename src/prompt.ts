@@ -33,9 +33,10 @@ export function buildSystemPrompt(): string {
   ].join("\n");
 }
 
+const quote = (text: string, cap = 240) => JSON.stringify(truncateSafely(text, cap));
+
 function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
   const lines: string[] = [];
-  const quote = (text: string, cap = 240) => JSON.stringify(truncateSafely(text, cap));
   // Prefix/substring suggestions aren't senses of the leading headword.
   const headwordEntries = entries.filter((entry) => entry.headword === entries[0]?.headword);
   for (const [i, entry] of headwordEntries.slice(0, MAX_CONTEXT_ENTRIES).entries()) {
@@ -46,8 +47,12 @@ function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
         .map((s) => quote(s.name, 80))
         .join(", ")}`,
     );
-    if (entry.match) lines.push(`Match: ${entry.match.kind} for ${quote(entry.match.query, 64)}`);
-    if (entry.reading) lines.push(`Reading: ${quote(entry.reading, 64)}`);
+    if (entry.match) {
+      lines.push(`Match: ${entry.match.kind} for ${quote(entry.match.query, 64)}`);
+    }
+    if (entry.reading) {
+      lines.push(`Reading: ${quote(entry.reading, 64)}`);
+    }
     lines.push(
       `Translations: ${entry.translations
         .slice(0, 3)
@@ -56,10 +61,13 @@ function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
     );
     for (const [n, sense] of entry.senses.slice(0, 3).entries()) {
       lines.push(`${label} sense ${n + 1}: ${quote(sense.gloss)}`);
-      if (sense.translation) lines.push(`Sense translation: ${quote(sense.translation, 80)}`);
+      if (sense.translation) {
+        lines.push(`Sense translation: ${quote(sense.translation, 80)}`);
+      }
     }
-    if (entry.pronunciation?.ipa)
+    if (entry.pronunciation?.ipa) {
       lines.push(`IPA (headword-level): ${quote(entry.pronunciation.ipa, 80)}`);
+    }
     for (const pair of (entry.examples ?? []).slice(0, 1)) {
       lines.push(
         `Example (Tatoeba #${pair.en.id}/#${pair.ja.id}, headword-level): ${quote(pair.en.text, 160)} / ${quote(pair.ja.text, 160)}`,
@@ -72,13 +80,17 @@ function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
   const marker = "\n[Context capped; omitted facts are unknown.]";
   const encoder = new TextEncoder();
   const joined = lines.join("\n");
-  if (encoder.encode(joined).length <= MAX_CONTEXT_BYTES) return joined;
+  if (encoder.encode(joined).length <= MAX_CONTEXT_BYTES) {
+    return joined;
+  }
   // Code-point iteration also avoids cutting emoji or a UTF-8 sequence.
   let bytes = encoder.encode(marker).length;
   let capped = "";
   for (const char of joined) {
     bytes += encoder.encode(char).length;
-    if (bytes > MAX_CONTEXT_BYTES) break;
+    if (bytes > MAX_CONTEXT_BYTES) {
+      break;
+    }
     capped += char;
   }
   return capped + marker;
@@ -91,9 +103,11 @@ function summarizeDictionaryContext(entries: DictionaryEntry[]): string {
  * characters outside the Basic Multilingual Plane).
  */
 export function truncateSafely(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
+  if (text.length <= maxChars) {
+    return text;
+  }
   const isHighSurrogate =
-    text.charCodeAt(maxChars - 1) >= 0xd800 && text.charCodeAt(maxChars - 1) <= 0xdbff;
+    text.charCodeAt(maxChars - 1) >= 0xd8_00 && text.charCodeAt(maxChars - 1) <= 0xdb_ff;
   return text.slice(0, isHighSurrogate ? maxChars - 1 : maxChars);
 }
 

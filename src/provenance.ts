@@ -7,8 +7,14 @@ export const PROVENANCE_LABELS: Record<SectionProvenance, string> = {
 };
 
 export function provenanceFor(hasDictionary: boolean, hasAi: boolean): SectionProvenance | null {
-  if (hasDictionary && hasAi) return "dictionary+ai";
-  if (hasDictionary) return "dictionary";
-  if (hasAi) return "ai";
+  if (hasDictionary && hasAi) {
+    return "dictionary+ai";
+  }
+  if (hasDictionary) {
+    return "dictionary";
+  }
+  if (hasAi) {
+    return "ai";
+  }
   return null;
 }

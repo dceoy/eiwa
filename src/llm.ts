@@ -7,6 +7,8 @@ import { buildSystemPrompt, buildUserPrompt } from "./prompt";
 import { type AiExplanationOutput, validateAiExplanationOutput } from "./result-schema";
 import { loadWebLlm } from "./webllm-cdn";
 
+const FENCED_JSON_RE = /```(?:json)?\s*([\s\S]*?)```/iu;
+
 export type AiStatus = "idle" | "loading-model" | "ready" | "generating" | "failed";
 
 export interface ModelLoadProgress {
@@ -47,7 +49,9 @@ export function isWebGpuSupported(): boolean {
  * already been fetched.
  */
 export async function probeWebGpuAdapter(): Promise<boolean> {
-  if (!isWebGpuSupported()) return false;
+  if (!isWebGpuSupported()) {
+    return false;
+  }
   try {
     const adapter = await navigator.gpu.requestAdapter();
     return adapter !== null;
@@ -69,7 +73,7 @@ export async function clearAllModelCaches(): Promise<void> {
 
 /** Strips ```json fences a model may add despite instructions not to. */
 function extractJsonPayload(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const fenced = text.match(FENCED_JSON_RE);
   return (fenced?.[1] ?? text).trim();
 }
 
@@ -96,8 +100,12 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
       onStatus?.(next);
     };
 
-    if (status === "ready") return;
-    if (initPromise) return initPromise;
+    if (status === "ready") {
+      return;
+    }
+    if (initPromise) {
+      return initPromise;
+    }
 
     if (!isWebGpuSupported()) {
       setStatus("failed");
@@ -129,7 +137,9 @@ export function createLocalAiEngine(modelId: string = DEFAULT_MODEL_ID): AiEngin
     activeEngine: MLCEngineInterface,
     params: ExplainParams,
   ): Promise<AiExplanationOutput> {
-    if (params.signal?.aborted) throw new DOMException("Generation cancelled", "AbortError");
+    if (params.signal?.aborted) {
+      throw new DOMException("Generation cancelled", "AbortError");
+    }
     const onAbort = () => activeEngine.interruptGenerate();
     params.signal?.addEventListener("abort", onAbort, { once: true });
 

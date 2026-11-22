@@ -1,7 +1,7 @@
 export type Direction = "en-ja" | "ja-en";
 
-const JAPANESE_SCRIPT_RE = /[぀-ヿ㐀-䶿一-鿿ｦ-ﾝ]/;
-const LATIN_LETTER_RE = /[A-Za-z]/;
+const JAPANESE_SCRIPT_RE = /[぀-ヿ㐀-䶿一-鿿ｦ-ﾝ]/u;
+const LATIN_LETTER_RE = /[A-Za-z]/u;
 
 /**
  * Detects translation direction from script alone: any Japanese script

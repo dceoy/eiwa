@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useId, useState } from "preact/hooks";
 import type { AiStatus, ModelLoadProgress } from "../llm";
 import type { ModelOption } from "../model-config";
 import { ModalOverlay } from "./ModalOverlay";
@@ -35,15 +35,18 @@ export function SettingsSheet({
   onClearCache,
   onOpenSources,
 }: SettingsSheetProps) {
+  const headingId = useId();
   const [pendingModelId, setPendingModelId] = useState<string | null>(null);
   const pendingModel = modelOptions.find((option) => option.id === pendingModelId);
   const selectedModel = modelOptions.find((option) => option.id === selectedModelId);
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
-    <ModalOverlay onClose={onClose} labelledBy="settings-heading">
+    <ModalOverlay onClose={onClose} labelledBy={headingId}>
       <header class="sheet-header">
-        <h2 id="settings-heading">Settings</h2>
+        <h2 id={headingId}>Settings</h2>
         <button type="button" class="icon-btn" aria-label="Close settings" onClick={onClose}>
           ✕
         </button>
@@ -75,6 +78,7 @@ export function SettingsSheet({
           />
         </label>
 
+        {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
         {aiEnabled && (
           <>
             <fieldset class="model-choice">
@@ -87,8 +91,9 @@ export function SettingsSheet({
                     value={option.id}
                     checked={selectedModelId === option.id}
                     onChange={() => {
-                      if (option.requiresConfirmation) setPendingModelId(option.id);
-                      else {
+                      if (option.requiresConfirmation) {
+                        setPendingModelId(option.id);
+                      } else {
                         setPendingModelId(null);
                         onSelectModel(option.id);
                       }

@@ -3,11 +3,15 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { dictionaryManifestInfo, lookupDictionary, resetDictionaryCaches } from "../src/dict";
 import { normalizeHeadword } from "../src/dict-normalize";
 import type { DictionaryEntry, DictLang } from "../src/dict-types";
 import { sourceLangFor, targetLangFor } from "../src/language";
+
+const LINE_BREAK_RE = /\r?\n/u;
+const SHA256_HEX_RE = /^[a-f0-9]{64}$/u;
 
 export const CATEGORIES = [
   "single-word",
@@ -34,7 +38,9 @@ function nonempty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 function isQuery(value: unknown): value is LookupQuery {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
   const q = value as LookupQuery;
   return (
     nonempty(q.id) &&
@@ -59,15 +65,19 @@ export function parseQueries(text: string): LookupQuery[] {
   const ids = new Set<string>();
   const inputs = new Set<string>();
   const queries: LookupQuery[] = [];
-  for (const [index, line] of text.split(/\r?\n/).entries()) {
-    if (!line.trim()) continue;
+  for (const [index, line] of text.split(LINE_BREAK_RE).entries()) {
+    if (!line.trim()) {
+      continue;
+    }
     let value: unknown;
     try {
       value = JSON.parse(line);
     } catch {
       throw new Error(`queries.jsonl:${index + 1}: invalid JSON`);
     }
-    if (!isQuery(value)) throw new Error(`queries.jsonl:${index + 1}: invalid v1 query`);
+    if (!isQuery(value)) {
+      throw new Error(`queries.jsonl:${index + 1}: invalid v1 query`);
+    }
     const key = `${value.direction}:${normalizeHeadword(value.input, sourceLangFor(value.direction))}`;
     if (ids.has(value.id) || inputs.has(key)) {
       throw new Error(`queries.jsonl:${index + 1}: duplicate id or input/direction`);
@@ -76,7 +86,9 @@ export function parseQueries(text: string): LookupQuery[] {
     inputs.add(key);
     queries.push(value);
   }
-  if (!queries.length) throw new Error("Query set is empty");
+  if (!queries.length) {
+    throw new Error("Query set is empty");
+  }
   return queries;
 }
 
@@ -95,15 +107,14 @@ export function scoreLookup(query: LookupQuery, entries: DictionaryEntry[]): Sco
   const translation = first?.translations[0];
   return {
     exact: entries.some((entry) => normalize(entry.headword) === normalize(query.input)),
-    top1: Boolean(
-      first &&
-        translation?.lang === target &&
-        query.expected.some(
-          (expected) =>
-            normalize(first.headword) === normalize(expected.headword) &&
-            expected.senses.some((sense) => senseMatches(translation.text, sense, target)),
-        ),
-    ),
+    top1:
+      first !== undefined &&
+      translation?.lang === target &&
+      query.expected.some(
+        (expected) =>
+          normalize(first.headword) === normalize(expected.headword) &&
+          expected.senses.some((sense) => senseMatches(translation.text, sense, target)),
+      ),
     miss: entries.length === 0,
   };
 }
@@ -130,8 +141,7 @@ export function localDictionaryFetch(publicDir: string): typeof fetch {
 
 export function requireJmdict(versions: Record<string, string>): void {
   if (
-    !versions.JMdict_e ||
-    !/^[a-f0-9]{64}$/.test(versions["JMdict_e.sha256"] ?? "") ||
+    !(versions["JMdict_e"] && SHA256_HEX_RE.test(versions["JMdict_e.sha256"] ?? "")) ||
     Object.hasOwn(versions, "eiwa-fixtures")
   ) {
     throw new Error(
@@ -170,7 +180,7 @@ async function main() {
       `Manifest SHA-256: ${sha256(manifest)}; built at ${info.builtAt}; ${info.shardCount} shards`,
     );
     console.log(`Source versions: ${JSON.stringify(info.sourceVersions)}`);
-    const results = [];
+    const results: Array<{ query: LookupQuery; entries: DictionaryEntry[]; score: Score }> = [];
     for (const query of queries) {
       // Do not catch lookup failures: a broken asset is not a quality miss.
       const entries = await lookupDictionary(query.input, sourceLangFor(query.direction));

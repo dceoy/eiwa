@@ -1,6 +1,8 @@
 import { normalizeHeadword } from "./dict-normalize";
 import type { DictLang } from "./dict-types";
 
+const LETTER_OR_NUMBER_RE = /[\p{L}\p{N}]/u;
+
 const segmenters = {
   en: new Intl.Segmenter("en", { granularity: "word" }),
   ja: new Intl.Segmenter("ja", { granularity: "word" }),
@@ -14,7 +16,9 @@ const functionWords = new Set(
   ),
 );
 export function isLookupToken(text: string, lang: DictLang): boolean {
-  return /[\p{L}\p{N}]/u.test(text) && (lang !== "en" || !functionWords.has(tokenKey(text, lang)));
+  return (
+    LETTER_OR_NUMBER_RE.test(text) && (lang !== "en" || !functionWords.has(tokenKey(text, lang)))
+  );
 }
 export function tokenKey(text: string, lang: DictLang): string {
   return normalizeHeadword(text, lang);

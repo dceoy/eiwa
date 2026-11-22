@@ -37,7 +37,9 @@ describe("streamed JSON sections", () => {
     const json = JSON.stringify(tricky);
     for (let i = 0; i <= json.length; i++) {
       const progress = parseAiProgress(json.slice(0, i));
-      if (progress) expect(progress.translation).toEqual(tricky.translation);
+      if (progress) {
+        expect(progress.translation).toEqual(tricky.translation);
+      }
     }
     expect(parseAiProgress(json)).toEqual(tricky);
   });

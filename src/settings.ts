@@ -35,9 +35,13 @@ function isDirectionChoice(value: unknown): value is DirectionChoice {
 export function loadSettings(): EiwaSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
+    if (!raw) {
+      return DEFAULT_SETTINGS;
+    }
     const parsed = JSON.parse(raw) as Partial<EiwaSettings> | null;
-    if (!parsed || typeof parsed !== "object") return DEFAULT_SETTINGS;
+    if (!parsed || typeof parsed !== "object") {
+      return DEFAULT_SETTINGS;
+    }
 
     return {
       aiEnabled:

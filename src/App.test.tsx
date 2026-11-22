@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { requestUrl } from "../tests/fetch-input";
 import { App } from "./App";
 import type { AiEngine, AiStatus, ExplainParams } from "./llm";
 import { createLocalAiEngine, probeWebGpuAdapter } from "./llm";
@@ -67,9 +68,13 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.endsWith("/dict/manifest.json")) return jsonResponse(manifest);
-      if (url.includes("/dict/en/c.json")) return jsonResponse(enShard);
+      const url = requestUrl(input);
+      if (url.endsWith("/dict/manifest.json")) {
+        return jsonResponse(manifest);
+      }
+      if (url.includes("/dict/en/c.json")) {
+        return jsonResponse(enShard);
+      }
       return new Response("not found", { status: 404 });
     }),
   );
@@ -95,7 +100,7 @@ describe("App", () => {
         }),
       );
       let params: ExplainParams | undefined;
-      let reject: (error: Error) => void = () => {};
+      let reject!: (error: Error) => void;
       explainMock.mockImplementationOnce((input) => {
         params = input;
         return new Promise((_resolve, rejectPromise) => {
@@ -107,13 +112,13 @@ describe("App", () => {
       });
       render(<App />);
       await waitFor(() => expect(ensureReadyMock).toHaveBeenCalled());
-      fireEvent.input(screen.getByLabelText(/english or japanese/i), {
+      fireEvent.input(screen.getByLabelText(/english or japanese/iu), {
         target: { value: "unlisted sentence" },
       });
-      fireEvent.click(screen.getByRole("button", { name: /^translate$/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^translate$/iu }));
       await waitFor(() => expect(params).toBeDefined());
       expect(screen.queryByRole("heading", { name: "Warnings" })).toBeNull();
-      expect(screen.queryByText(/no dictionary entry was found/i)).toBeNull();
+      expect(screen.queryByText(/no dictionary entry was found/iu)).toBeNull();
       const translation = { primary: "試しの訳", alternatives: [] };
       const output = {
         translation,
@@ -126,16 +131,19 @@ describe("App", () => {
       expect(screen.queryByRole("heading", { name: "Nuance" })).toBeNull();
       params?.onProgress?.({ ...output, nuance: ["後から届く解説"] });
       await waitFor(() => expect(screen.getByText("後から届く解説")).toBeTruthy());
-      if (mode === "cancel") fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-      else reject(new Error("generation-invalid-json"));
+      if (mode === "cancel") {
+        fireEvent.click(screen.getByRole("button", { name: /cancel/iu }));
+      } else {
+        reject(new Error("generation-invalid-json"));
+      }
       await waitFor(() =>
-        expect(screen.getByRole("button", { name: /^translate$/i })).toBeTruthy(),
+        expect(screen.getByRole("button", { name: /^translate$/iu })).toBeTruthy(),
       );
       expect(screen.getByText("試しの訳")).toBeTruthy();
       expect(screen.getByText("後から届く解説")).toBeTruthy();
       expect(screen.queryByRole("alert")).toBeNull();
       expect(screen.queryByRole("heading", { name: "Warnings" })).toBeNull();
-      expect(screen.queryByText(/no dictionary entry was found/i)).toBeNull();
+      expect(screen.queryByText(/no dictionary entry was found/iu)).toBeNull();
     },
   );
 
@@ -168,15 +176,15 @@ describe("App", () => {
     });
     render(<App />);
     await waitFor(() => expect(ensureReadyMock).toHaveBeenCalled());
-    fireEvent.input(screen.getByLabelText(/english or japanese/i), { target: { value: "cat" } });
-    fireEvent.click(screen.getByRole("button", { name: /^translate$/i }));
+    fireEvent.input(screen.getByLabelText(/english or japanese/iu), { target: { value: "cat" } });
+    fireEvent.click(screen.getByRole("button", { name: /^translate$/iu }));
     await waitFor(() => expect(screen.getByRole("heading", { name: "Dictionary" })).toBeTruthy());
-    expect(screen.queryByRole("button", { name: /back-translate/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /back-translate/iu })).toBeNull();
     finish?.();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /back-translate/i })).toBeTruthy(),
+      expect(screen.getByRole("button", { name: /back-translate/iu })).toBeTruthy(),
     );
-    fireEvent.click(screen.getByRole("button", { name: /back-translate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /back-translate/iu }));
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "AI back-translation" })).toBeTruthy(),
     );
@@ -191,35 +199,35 @@ describe("App", () => {
 
   it("discloses Pro size and requires confirmation before creating its engine", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
-    const toggle = screen.getByRole("checkbox", { name: /enable ai/i });
+    fireEvent.click(screen.getByRole("button", { name: /open settings/iu }));
+    const toggle = screen.getByRole("checkbox", { name: /enable ai/iu });
     await waitFor(() => expect(toggle).toHaveProperty("disabled", false));
     fireEvent.click(toggle);
-    const pro = screen.getByRole("radio", { name: /Pro.*2000 MB/i });
+    const pro = screen.getByRole("radio", { name: /Pro.*2000 MB/iu });
     const calls = vi.mocked(createLocalAiEngine).mock.calls.length;
     fireEvent.click(pro);
     expect(createLocalAiEngine).toHaveBeenCalledTimes(calls);
     expect(pro).toHaveProperty("checked", false);
-    fireEvent.click(screen.getByRole("button", { name: /Download Pro.*2000 MB/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Download Pro.*2000 MB/iu }));
     await waitFor(() =>
       expect(createLocalAiEngine).toHaveBeenLastCalledWith("Qwen2.5-3B-Instruct-q4f16_1-MLC"),
     );
   });
   it("renders the header and a usable input on first load", () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: /eiwa/i })).toBeTruthy();
-    expect(screen.getByLabelText(/english or japanese/i)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /translate/i })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("heading", { name: /eiwa/iu })).toBeTruthy();
+    expect(screen.getByLabelText(/english or japanese/iu)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /translate/iu })).toHaveProperty("disabled", true);
   });
 
   it("enables Translate once text is entered, and shows a dictionary-backed result", async () => {
     render(<App />);
-    const textarea = screen.getByLabelText(/english or japanese/i);
+    const textarea = screen.getByLabelText(/english or japanese/iu);
 
     fireEvent.input(textarea, { target: { value: "cat" } });
-    expect(screen.getByRole("button", { name: /translate/i })).toHaveProperty("disabled", false);
+    expect(screen.getByRole("button", { name: /translate/iu })).toHaveProperty("disabled", false);
 
-    fireEvent.click(screen.getByRole("button", { name: /translate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /translate/iu }));
 
     await waitFor(() => {
       expect(screen.getAllByText("猫").length).toBeGreaterThan(0);
@@ -229,13 +237,13 @@ describe("App", () => {
 
   it("clears input and results when Clear is pressed", async () => {
     render(<App />);
-    const textarea = screen.getByLabelText(/english or japanese/i) as HTMLTextAreaElement;
+    const textarea = screen.getByLabelText(/english or japanese/iu) as HTMLTextAreaElement;
 
     fireEvent.input(textarea, { target: { value: "cat" } });
-    fireEvent.click(screen.getByRole("button", { name: /translate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /translate/iu }));
     await waitFor(() => expect(screen.getAllByText("猫").length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole("button", { name: /clear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /clear/iu }));
 
     expect(textarea.value).toBe("");
     expect(screen.queryByText("猫")).toBeNull();
@@ -243,16 +251,16 @@ describe("App", () => {
 
   it("opens the settings sheet and shows the local-inference privacy notice", () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
-    expect(screen.getByText(/nothing you type is sent to a server/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /open settings/iu }));
+    expect(screen.getByText(/nothing you type is sent to a server/iu)).toBeTruthy();
   });
 
   it("settles cleanly (not stuck busy) after rapid repeated submissions of the same query", async () => {
     render(<App />);
-    const textarea = screen.getByLabelText(/english or japanese/i);
+    const textarea = screen.getByLabelText(/english or japanese/iu);
     fireEvent.input(textarea, { target: { value: "cat" } });
 
-    const translateButton = screen.getByRole("button", { name: /translate/i });
+    const translateButton = screen.getByRole("button", { name: /translate/iu });
     fireEvent.click(translateButton);
     fireEvent.click(translateButton);
     fireEvent.click(translateButton);
@@ -262,20 +270,20 @@ describe("App", () => {
     });
     // Busy resolved back to a non-busy state: Translate is rendered again
     // (not stuck showing Cancel), and there is exactly one Dictionary card.
-    expect(screen.getByRole("button", { name: /translate/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /translate/iu })).toBeTruthy();
     expect(screen.getAllByRole("heading", { name: "Dictionary" })).toHaveLength(1);
   });
 
   it("turns AI off when clearing the local cache, instead of leaving it silently disabled", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    fireEvent.click(screen.getByRole("button", { name: /open settings/iu }));
 
-    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/iu });
     await waitFor(() => expect(aiToggle).toHaveProperty("disabled", false));
     fireEvent.click(aiToggle);
     await waitFor(() => expect(aiToggle).toHaveProperty("checked", true));
 
-    fireEvent.click(screen.getByRole("button", { name: /clear local cache/i }));
+    fireEvent.click(screen.getByRole("button", { name: /clear local cache/iu }));
 
     await waitFor(() => expect(aiToggle).toHaveProperty("checked", false));
   });
@@ -293,12 +301,12 @@ describe("App", () => {
     );
 
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    fireEvent.click(screen.getByRole("button", { name: /open settings/iu }));
 
-    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/iu });
     await waitFor(() => expect(aiToggle).toHaveProperty("checked", false));
     expect(aiToggle).toHaveProperty("disabled", true);
-    expect(screen.queryByRole("group", { name: /model/i })).toBeNull();
+    expect(screen.queryByRole("group", { name: /model/iu })).toBeNull();
     expect(ensureReadyMock).not.toHaveBeenCalled();
   });
 
@@ -314,9 +322,9 @@ describe("App", () => {
     );
 
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    fireEvent.click(screen.getByRole("button", { name: /open settings/iu }));
 
-    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/i });
+    const aiToggle = screen.getByRole("checkbox", { name: /enable ai explanations/iu });
     await waitFor(() => expect(aiToggle).toHaveProperty("disabled", false));
 
     // aiEnabled without a known-cached model is not a usable "on" state, so
@@ -324,7 +332,7 @@ describe("App", () => {
     // enabled with no engine behind it — the user can re-check it directly
     // to retry, with no need to uncheck first.
     expect(aiToggle).toHaveProperty("checked", false);
-    expect(screen.queryByRole("group", { name: /model/i })).toBeNull();
+    expect(screen.queryByRole("group", { name: /model/iu })).toBeNull();
     expect(ensureReadyMock).not.toHaveBeenCalled();
   });
 });

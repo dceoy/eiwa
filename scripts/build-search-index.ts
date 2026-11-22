@@ -22,16 +22,21 @@ export function searchRows(entries: DictionaryEntry[], lang: DictLang) {
       ...(lang === "ja" && entry.reading ? [entry.reading] : []),
     ]) {
       const word = normalizeHeadword(raw, lang);
-      if (word)
+      if (word) {
         words.set(
           word,
           Math.max(words.get(word) ?? 0, entry.headwordFrequency ?? entry.frequency ?? 0),
         );
+      }
     }
     for (const raw of [...inflections(entry), ...(entry.inflectionForms ?? [])]) {
       const form = normalizeHeadword(raw, lang);
-      if (!form || form === lemma) continue;
-      if (!forms.has(form)) forms.set(form, new Set());
+      if (!form || form === lemma) {
+        continue;
+      }
+      if (!forms.has(form)) {
+        forms.set(form, new Set());
+      }
       forms.get(form)?.add(lemma);
     }
   }
@@ -49,7 +54,9 @@ export function chunkRows(rows: (HeadwordRow | InflectionRow)[], budget = SEARCH
   let bytes = 2;
   for (const row of rows) {
     const size = Buffer.byteLength(JSON.stringify(row)) + 1;
-    if (size + 2 > budget) throw new Error(`Oversized search row: ${row[0]}`);
+    if (size + 2 > budget) {
+      throw new Error(`Oversized search row: ${row[0]}`);
+    }
     if (bytes + size > budget) {
       chunks.push(chunk);
       chunk = [];
@@ -58,7 +65,9 @@ export function chunkRows(rows: (HeadwordRow | InflectionRow)[], budget = SEARCH
     chunk.push(row);
     bytes += size;
   }
-  if (chunk.length) chunks.push(chunk);
+  if (chunk.length) {
+    chunks.push(chunk);
+  }
   return chunks;
 }
 

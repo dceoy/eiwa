@@ -1,18 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test as it } from "@playwright/test";
 
-test("run shows sourced examples, IPA, etymology and a coarse NGSL tag without AI", async ({
+it("run shows sourced examples, IPA, etymology and a coarse NGSL tag without AI", async ({
   page,
 }) => {
   const external: string[] = [];
   page.on("request", (request) => {
     if (
-      !request.url().startsWith("http://127.0.0.1:") &&
-      !request.url().startsWith("http://localhost:")
-    )
+      !(
+        request.url().startsWith("http://127.0.0.1:") ||
+        request.url().startsWith("http://localhost:")
+      )
+    ) {
       external.push(request.url());
+    }
   });
   await page.goto("/");
-  await page.getByLabel(/english or japanese/i).fill("run");
+  await page.getByLabel(/english or japanese/iu).fill("run");
   await page.getByRole("button", { name: "Translate", exact: true }).click();
   const entry = page
     .locator(".dictionary-entry")
@@ -42,12 +45,12 @@ test("run shows sourced examples, IPA, etymology and a coarse NGSL tag without A
   expect(external).toEqual([]);
 });
 
-for (const query of ["電車", "でんしゃ"])
-  test(`${query} shows Japanese-side bilingual examples and both contributor credits`, async ({
+for (const query of ["電車", "でんしゃ"]) {
+  it(`${query} shows Japanese-side bilingual examples and both contributor credits`, async ({
     page,
   }) => {
     await page.goto("/");
-    await page.getByLabel(/english or japanese/i).fill(query);
+    await page.getByLabel(/english or japanese/iu).fill(query);
     await page.getByRole("button", { name: "Translate", exact: true }).click();
     const entry = page
       .locator(".dictionary-entry")
@@ -59,5 +62,6 @@ for (const query of ["電車", "でんしゃ"])
     await expect(entry.getByText("Don't open before the train stops.")).toBeVisible();
     await expect(entry.getByRole("link", { name: "mrtaistoi", exact: true })).toBeVisible();
     await expect(entry.getByRole("link", { name: "bunbuku", exact: true })).toBeVisible();
-    await expect(entry.getByText(/Examples — dictionary data/)).toBeVisible();
+    await expect(entry.getByText(/Examples — dictionary data/u)).toBeVisible();
   });
+}

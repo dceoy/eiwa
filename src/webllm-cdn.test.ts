@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import packageJson from "../package.json";
+import packageJson from "../package.json" with { type: "json" };
 import { loadWebLlm, WEBLLM_CDN_URL, WEBLLM_SHA256, WEBLLM_VERSION } from "./webllm-cdn";
 
 describe("WEBLLM_VERSION", () => {
   it("matches the @mlc-ai/web-llm devDependency pin in package.json", () => {
-    const pinned = packageJson.devDependencies["@mlc-ai/web-llm"].replace(/^[\^~]/, "");
+    const pinned = packageJson.devDependencies["@mlc-ai/web-llm"].replace(/^[\^~]/u, "");
     expect(WEBLLM_VERSION).toBe(pinned);
   });
 
@@ -15,7 +15,7 @@ describe("WEBLLM_VERSION", () => {
   it("has a pinned SHA-256 hash alongside it", () => {
     // Guards against a version bump that forgets to recompute WEBLLM_SHA256
     // (see the recompute instructions next to it in src/webllm-cdn.ts).
-    expect(WEBLLM_SHA256).toMatch(/^[0-9a-f]{64}$/);
+    expect(WEBLLM_SHA256).toMatch(/^[0-9a-f]{64}$/u);
   });
 });
 

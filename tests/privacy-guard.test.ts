@@ -10,14 +10,14 @@ const SCAN_DIRS = ["src", "worker"];
 // these identifiers show up in application code, something added analytics
 // or a remote logging call that this project deliberately does not want.
 const FORBIDDEN_PATTERNS = [
-  /\bgtag\(/,
-  /google-analytics\.com/,
-  /googletagmanager\.com/,
-  /plausible\(/,
-  /\bmixpanel\b/i,
-  /\bsegment\.(track|identify)\(/,
-  /sentry\.(init|captureMessage|captureException)/i,
-  /navigator\.sendBeacon/,
+  /\bgtag\(/u,
+  /google-analytics\.com/u,
+  /googletagmanager\.com/u,
+  /plausible\(/u,
+  /\bmixpanel\b/iu,
+  /\bsegment\.(track|identify)\(/u,
+  /sentry\.(init|captureMessage|captureException)/iu,
+  /navigator\.sendBeacon/u,
 ];
 
 async function listFiles(dir: string): Promise<string[]> {
@@ -25,8 +25,12 @@ async function listFiles(dir: string): Promise<string[]> {
   const files = await Promise.all(
     entries.map(async (entry) => {
       const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) return listFiles(fullPath);
-      if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) return [fullPath];
+      if (entry.isDirectory()) {
+        return listFiles(fullPath);
+      }
+      if (/\.(ts|tsx)$/u.test(entry.name) && !/\.test\.tsx?$/u.test(entry.name)) {
+        return [fullPath];
+      }
       return [];
     }),
   );
@@ -54,6 +58,6 @@ describe("privacy guard: no analytics or remote logging", () => {
 
   it("the Worker only ever calls request.json/text from within /api/health guard, i.e. never", async () => {
     const workerIndex = await readFile(path.join(ROOT, "worker", "index.ts"), "utf8");
-    expect(workerIndex).not.toMatch(/request\.(json|text|arrayBuffer|formData)\(/);
+    expect(workerIndex).not.toMatch(/request\.(json|text|arrayBuffer|formData)\(/u);
   });
 });

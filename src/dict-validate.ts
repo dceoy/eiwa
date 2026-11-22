@@ -1,6 +1,9 @@
 import type { DictionaryEntry, DictManifest } from "./dict-types";
 import { isCommonsRecording } from "./recording";
 
+const SEARCH_INDEX_PATH_RE = /^dict\/search\/[a-z0-9-]+\.json$/u;
+const SHA256_CHECKSUM_RE = /^sha256:[a-f0-9]{64}$/u;
+
 export interface ValidationIssue {
   path: string;
   message: string;
@@ -30,7 +33,7 @@ export function validateManifest(value: unknown): ValidationIssue[] {
       if (!isNonEmptyString(shard?.path)) {
         issues.push({ path: `manifest.shards[${index}].path`, message: "missing shard path" });
       }
-      if (!isNonEmptyString(shard?.checksum) || !shard.checksum.startsWith("sha256:")) {
+      if (!(isNonEmptyString(shard?.checksum) && shard.checksum.startsWith("sha256:"))) {
         issues.push({
           path: `manifest.shards[${index}].checksum`,
           message: "missing or malformed sha256 checksum",
@@ -45,9 +48,7 @@ export function validateManifest(value: unknown): ValidationIssue[] {
     });
   }
   if (manifest.search !== undefined) {
-    if (!Array.isArray(manifest.search))
-      issues.push({ path: "manifest.search", message: "expected an array" });
-    else {
+    if (Array.isArray(manifest.search)) {
       const paths = new Set<string>();
       const ends = new Map<string, string>();
       for (const ref of manifest.search) {
@@ -57,9 +58,11 @@ export function validateManifest(value: unknown): ValidationIssue[] {
         }
         const group = `${ref.lang}:${ref.kind}`;
         if (
-          !["en", "ja"].includes(ref.lang) ||
-          !["headwords", "inflections"].includes(ref.kind) ||
-          !/^dict\/search\/[a-z0-9-]+\.json$/.test(ref.path) ||
+          !(
+            ["en", "ja"].includes(ref.lang) &&
+            ["headwords", "inflections"].includes(ref.kind) &&
+            SEARCH_INDEX_PATH_RE.test(ref.path)
+          ) ||
           paths.has(ref.path) ||
           !isNonEmptyString(ref.start) ||
           !isNonEmptyString(ref.end) ||
@@ -70,7 +73,7 @@ export function validateManifest(value: unknown): ValidationIssue[] {
           !Number.isInteger(ref.bytes) ||
           ref.bytes <= 0 ||
           ref.bytes >= 1024 * 1024 ||
-          !/^sha256:[a-f0-9]{64}$/.test(ref.checksum)
+          !SHA256_CHECKSUM_RE.test(ref.checksum)
         ) {
           issues.push({
             path: "manifest.search",
@@ -80,6 +83,8 @@ export function validateManifest(value: unknown): ValidationIssue[] {
         paths.add(ref.path);
         ends.set(group, ref.end);
       }
+    } else {
+      issues.push({ path: "manifest.search", message: "expected an array" });
     }
   }
   if (!Array.isArray(manifest.licenses) || manifest.licenses.length === 0) {
@@ -96,7 +101,9 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
   }
   const entry = value as Partial<DictionaryEntry>;
 
-  if (!isNonEmptyString(entry.id)) issues.push({ path: `${path}.id`, message: "missing id" });
+  if (!isNonEmptyString(entry.id)) {
+    issues.push({ path: `${path}.id`, message: "missing id" });
+  }
   if (!isNonEmptyString(entry.headword)) {
     issues.push({ path: `${path}.headword`, message: "missing headword" });
   }
@@ -118,21 +125,24 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
   if (
     entry.etymology !== undefined &&
     (!isNonEmptyString(entry.etymology) || entry.etymology.length > 600)
-  )
+  ) {
     issues.push({
       path: `${path}.etymology`,
       message: "expected a trimmed etymology (up to 600 characters)",
     });
+  }
   if (
     entry.pronunciation?.ipa !== undefined &&
     (!isNonEmptyString(entry.pronunciation.ipa) || entry.pronunciation.ipa.length > 202)
-  )
+  ) {
     issues.push({ path: `${path}.pronunciation.ipa`, message: "invalid or oversized IPA" });
+  }
   if (
     entry.pronunciation?.recording !== undefined &&
     (entry.lang !== "en" || !isCommonsRecording(entry.pronunciation.recording))
-  )
+  ) {
     issues.push({ path: `${path}.pronunciation.recording`, message: "invalid Commons recording" });
+  }
   for (const [field, cap] of [
     ["inflectionForms", 24],
     ["derivedWords", 8],
@@ -144,41 +154,46 @@ export function validateDictionaryEntry(value: unknown, path: string): Validatio
       (!Array.isArray(values) ||
         values.length > cap ||
         values.some((v) => !isNonEmptyString(v) || v.length > 64))
-    )
+    ) {
       issues.push({ path: `${path}.${field}`, message: "invalid or oversized lexical terms" });
+    }
   }
   if (entry.examples !== undefined) {
     if (!Array.isArray(entry.examples) || entry.examples.length > 3) {
       issues.push({ path: `${path}.examples`, message: "expected up to three sourced pairs" });
-    } else
+    } else {
       for (const pair of entry.examples) {
         for (const lang of ["en", "ja"] as const) {
           const sentence = pair?.[lang];
           if (
-            !sentence ||
-            !Number.isSafeInteger(sentence.id) ||
+            !(sentence && Number.isSafeInteger(sentence.id)) ||
             sentence.id <= 0 ||
             !isNonEmptyString(sentence.text) ||
             sentence.text.length > (lang === "en" ? 240 : 120) ||
             !isNonEmptyString(sentence.author) ||
             sentence.author === "\\N"
-          )
+          ) {
             issues.push({
               path: `${path}.examples`,
               message: "missing sentence ID, bounded text or contributor attribution",
             });
+          }
         }
       }
+    }
     if (
-      !Array.isArray(entry.source) ||
-      !entry.source.some(
-        (source) =>
-          source?.name === "Tatoeba contributors" &&
-          source.license === "CC BY 2.0 FR" &&
-          source.licenseUrl === "https://creativecommons.org/licenses/by/2.0/fr/",
+      !(
+        Array.isArray(entry.source) &&
+        entry.source.some(
+          (source) =>
+            source?.name === "Tatoeba contributors" &&
+            source.license === "CC BY 2.0 FR" &&
+            source.licenseUrl === "https://creativecommons.org/licenses/by/2.0/fr/",
+        )
       )
-    )
+    ) {
       issues.push({ path: `${path}.examples`, message: "missing Tatoeba license attribution" });
+    }
   }
   if (!Array.isArray(entry.translations) || entry.translations.length === 0) {
     issues.push({ path: `${path}.translations`, message: "expected at least one translation" });

@@ -15,6 +15,13 @@ import type {
 import { type CommonsRecording, isCommonsRecording } from "../src/recording";
 import { depthArchive, depthVersions } from "./depth-sources";
 
+const CONTROL_CHARACTERS_RE = /[\r\n\t]/u;
+const LOWERCASE_ENGLISH_RE = /^[a-z]+$/u;
+const ENGLISH_WORD_SEQUENCE_RE = /^[a-z]+(?:[ '-][a-z]+)*$/iu;
+const ENGLISH_WORD_RE = /^[a-z]+$/iu;
+const WHITESPACE_ONLY_RE = /^\s+$/u;
+const DIGITS_ONLY_RE = /^\d+$/u;
+
 export const TATOEBA_SOURCE: DictionarySource = {
   name: "Tatoeba contributors",
   license: "CC BY 2.0 FR",
@@ -50,7 +57,12 @@ export async function* fileLines(file: string, gzip = false): AsyncGenerator<str
   const stream = gzip ? input.pipe(createGunzip()) : input;
   input.on("error", (error) => stream.destroy(error));
   try {
-    for await (const line of createInterface({ input: stream, crlfDelay: Infinity })) yield line;
+    for await (const line of createInterface({
+      input: stream,
+      crlfDelay: Number.POSITIVE_INFINITY,
+    })) {
+      yield line;
+    }
   } finally {
     stream.destroy();
     input.destroy();
@@ -64,10 +76,16 @@ export async function* archiveLines(file: string, tar = false): AsyncGenerator<s
   });
   const exited = once(child, "close");
   try {
-    for await (const line of createInterface({ input: child.stdout, crlfDelay: Infinity }))
+    for await (const line of createInterface({
+      input: child.stdout,
+      crlfDelay: Number.POSITIVE_INFINITY,
+    })) {
       yield line;
+    }
     const [code] = await exited;
-    if (code !== 0) throw new Error(`Decompression failed (${code}): ${file}`);
+    if (code !== 0) {
+      throw new Error(`Decompression failed (${code}): ${file}`);
+    }
   } finally {
     child.kill();
   }
@@ -92,12 +110,18 @@ interface LexicalData {
   forms: string[];
 }
 function appendUnique(target: string[], values: string[], cap: number) {
-  for (const value of values)
-    if (target.length < cap && !target.includes(value)) target.push(value);
+  for (const value of values) {
+    if (target.length < cap && !target.includes(value)) {
+      target.push(value);
+    }
+  }
 }
 function term(value: string | undefined): value is string {
   return (
-    typeof value === "string" && value.length > 0 && value.length <= 64 && !/[\r\n\t]/.test(value)
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= 64 &&
+    !CONTROL_CHARACTERS_RE.test(value)
   );
 }
 function usableForm(tags: string[] = []): boolean {
@@ -127,22 +151,34 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
   };
   let scanned = 0;
   for await (const line of lines) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {
+      continue;
+    }
     const row = JSON.parse(line) as WiktextractRow;
     scanned++;
-    if (row.lang_code !== "en" || !term(row.word)) continue;
+    if (row.lang_code !== "en" || !term(row.word)) {
+      continue;
+    }
     const word = normalizeHeadword(row.word, "en");
     // Form-of records only contribute morphology to existing lemmas. Never
     // copy an inflected pronunciation/etymology onto the lemma itself.
     for (const sense of row.senses ?? []) {
-      if (!usableForm(sense.tags)) continue;
+      if (!usableForm(sense.tags)) {
+        continue;
+      }
       for (const target of sense.form_of ?? []) {
-        if (!term(target.word)) continue;
+        if (!term(target.word)) {
+          continue;
+        }
         const lemma = normalizeHeadword(target.word, "en");
-        if (words.has(lemma) && lemma !== word) appendUnique(get(lemma).forms, [word], MAX_FORMS);
+        if (words.has(lemma) && lemma !== word) {
+          appendUnique(get(lemma).forms, [word], MAX_FORMS);
+        }
       }
     }
-    if (!words.has(word)) continue;
+    if (!words.has(word)) {
+      continue;
+    }
     const out = get(word);
     for (const sound of row.sounds ?? []) {
       for (const url of [sound.mp3_url, sound.ogg_url]) {
@@ -150,8 +186,9 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
         if (
           isCommonsRecording(audio) &&
           (!out.recording || (!out.recording.url.endsWith(".mp3") && audio.url.endsWith(".mp3")))
-        )
+        ) {
           out.recording = audio;
+        }
       }
     }
     appendUnique(
@@ -162,10 +199,11 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
       2,
     );
     if (!out.etymology && row.etymology_text) {
-      const text = row.etymology_text.replace(/\s+/g, " ").trim();
-      if (text)
+      const text = row.etymology_text.replace(/\s+/gu, " ").trim();
+      if (text) {
         out.etymology =
           text.length <= MAX_ETYMOLOGY ? text : `${text.slice(0, MAX_ETYMOLOGY - 1)}…`;
+      }
     }
     appendUnique(
       out.derived,
@@ -181,7 +219,7 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
       out.forms,
       (row.forms ?? []).flatMap((item) =>
         term(item.form) &&
-        /^[a-z]+(?:[ '-][a-z]+)*$/i.test(item.form) &&
+        ENGLISH_WORD_SEQUENCE_RE.test(item.form) &&
         usableForm(item.tags) &&
         item.form !== word
           ? [normalizeHeadword(item.form, "en")]
@@ -190,7 +228,9 @@ export async function parseWiktextract(lines: AsyncIterable<string>, words: Set<
       MAX_FORMS,
     );
   }
-  if (!scanned) throw new Error("Empty Wiktextract input");
+  if (!scanned) {
+    throw new Error("Empty Wiktextract input");
+  }
   return { data, scanned };
 }
 
@@ -198,10 +238,13 @@ export async function ngslRanks(lines: AsyncIterable<string>): Promise<Map<strin
   const ranks = new Map<string, number>();
   for await (const line of lines) {
     const [word, rank] = line.split(",");
-    if (word && /^[a-z]+$/i.test(word) && Number.isInteger(Number(rank)) && Number(rank) > 0)
+    if (word && ENGLISH_WORD_RE.test(word) && Number.isInteger(Number(rank)) && Number(rank) > 0) {
       ranks.set(normalizeHeadword(word, "en"), Number(rank));
+    }
   }
-  if (!ranks.size) throw new Error("NGSL contains no ranked words");
+  if (!ranks.size) {
+    throw new Error("NGSL contains no ranked words");
+  }
   return ranks;
 }
 export function coarseLevel(rank: number | undefined): DictionaryEntry["level"] {
@@ -218,9 +261,10 @@ export async function sentenceMap(lines: AsyncIterable<string>, language: "eng" 
       text.length > (language === "eng" ? 240 : 120) ||
       !author ||
       author === "\\N" ||
-      !/^\d+$/.test(id ?? "")
-    )
+      !DIGITS_ONLY_RE.test(id ?? "")
+    ) {
       continue;
+    }
     sentences.set(Number(id), { id: Number(id), text, author });
   }
   return sentences;
@@ -235,16 +279,24 @@ export function exampleHeadwords(text: string, lang: DictLang, words: Set<string
   const found = new Set<string>();
   const parts = [...segments[lang].segment(normalizeHeadword(text, lang))];
   for (let i = 0; i < parts.length; i++) {
-    if (!parts[i]?.isWordLike) continue;
+    if (!parts[i]?.isWordLike) {
+      continue;
+    }
     let span = "";
     let count = 0;
     for (let j = i; j < parts.length && count < 4; j++) {
       const part = parts[j];
-      if (!part || (!part.isWordLike && !/^\s+$/.test(part.segment))) break;
+      if (!(part && (part.isWordLike || WHITESPACE_ONLY_RE.test(part.segment)))) {
+        break;
+      }
       span += part.segment;
-      if (!part.isWordLike) continue;
+      if (!part.isWordLike) {
+        continue;
+      }
       count++;
-      if (words.has(span)) found.add(span);
+      if (words.has(span)) {
+        found.add(span);
+      }
     }
   }
   return [...found];
@@ -262,7 +314,7 @@ export async function indexExamples(
     ja: new Map<string, DictionaryExample[]>(),
   };
   const costs = { en: new Map<string, number>(), ja: new Map<string, number>() };
-  for (const lang of ["en", "ja"] as const)
+  for (const lang of ["en", "ja"] as const) {
     for (const entry of entries[lang]) {
       const word = normalizeHeadword(entry.headword, lang);
       // JA reading aliases serialize the same entry twice; account for both.
@@ -270,6 +322,7 @@ export async function indexExamples(
         lang === "ja" && entry.reading && normalizeHeadword(entry.reading, lang) !== word ? 2 : 1;
       costs[lang].set(word, (costs[lang].get(word) ?? 0) + copies);
     }
+  }
   const words = { en: new Set(costs.en.keys()), ja: new Set(costs.ja.keys()) };
   const bytes = { en: 0, ja: 0 };
   let eligibleLinks = 0;
@@ -278,30 +331,39 @@ export async function indexExamples(
     // links.csv contains both directions. Select EN→JA once; output supports both lookups.
     const english = en.get(left ?? 0);
     const japanese = ja.get(right ?? 0);
-    if (!english || !japanese) continue;
+    if (!(english && japanese)) {
+      continue;
+    }
     eligibleLinks++;
     const pair = { en: english, ja: japanese };
     const size = Buffer.byteLength(JSON.stringify(pair)) + 1;
     for (const lang of ["en", "ja"] as const) {
-      if (bytes[lang] >= budget) continue;
+      if (bytes[lang] >= budget) {
+        continue;
+      }
       for (const word of exampleHeadwords(pair[lang].text, lang, words[lang])) {
         const list = index[lang].get(word) ?? [];
         if (
           list.length >= MAX_EXAMPLES ||
           list.some((p) => p.en.id === english.id && p.ja.id === japanese.id)
-        )
+        ) {
           continue;
+        }
         const cost =
           (size + (list.length ? 0 : Buffer.byteLength(JSON.stringify(TATOEBA_SOURCE)) + 16)) *
           (costs[lang].get(word) ?? 1);
-        if (bytes[lang] + cost > budget) continue;
+        if (bytes[lang] + cost > budget) {
+          continue;
+        }
         list.push(pair);
         index[lang].set(word, list);
         bytes[lang] += cost;
       }
     }
   }
-  if (!eligibleLinks) throw new Error("No eligible Tatoeba EN–JA links");
+  if (!eligibleLinks) {
+    throw new Error("No eligible Tatoeba EN–JA links");
+  }
   return { index, bytes, eligibleLinks };
 }
 
@@ -316,15 +378,24 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
     const word = normalizeHeadword(entry.headword, "en");
     const lexical = data.get(word);
     if (lexical) {
-      if (lexical.ipa.length || lexical.recording)
+      if (lexical.ipa.length || lexical.recording) {
         entry.pronunciation = {
           ...(lexical.ipa.length ? { ipa: lexical.ipa.join("; ") } : {}),
           ...(lexical.recording ? { recording: lexical.recording } : {}),
         };
-      if (lexical.etymology) entry.etymology = lexical.etymology;
-      if (lexical.derived.length) entry.derivedWords = lexical.derived;
-      if (lexical.related.length) entry.relatedWords = lexical.related;
-      if (lexical.forms.length) entry.inflectionForms = lexical.forms;
+      }
+      if (lexical.etymology) {
+        entry.etymology = lexical.etymology;
+      }
+      if (lexical.derived.length) {
+        entry.derivedWords = lexical.derived;
+      }
+      if (lexical.related.length) {
+        entry.relatedWords = lexical.related;
+      }
+      if (lexical.forms.length) {
+        entry.inflectionForms = lexical.forms;
+      }
       if (
         lexical.ipa.length ||
         lexical.recording ||
@@ -332,14 +403,20 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
         lexical.derived.length ||
         lexical.related.length ||
         lexical.forms.length
-      )
+      ) {
         entry.source.push({
           ...WIKTEXTRACT_SOURCE,
           url: `https://en.wiktionary.org/wiki/${encodeURIComponent(entry.headword)}#English`,
         });
+      }
     }
-    if (/^[a-z]+$/.test(word)) {
-      entry.level = coarseLevel(ranks.get(word));
+    if (LOWERCASE_ENGLISH_RE.test(word)) {
+      const level = coarseLevel(ranks.get(word));
+      if (level === undefined) {
+        delete entry.level;
+      } else {
+        entry.level = level;
+      }
       entry.source.push(NGSL_SOURCE);
     }
   }
@@ -355,7 +432,7 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
     japanese,
     { en, ja },
   );
-  for (const lang of ["en", "ja"] as const)
+  for (const lang of ["en", "ja"] as const) {
     for (const entry of lang === "en" ? en : ja) {
       const pairs = examples.index[lang].get(normalizeHeadword(entry.headword, lang));
       if (pairs) {
@@ -363,6 +440,7 @@ export async function enrichDictionary(en: DictionaryEntry[], ja: DictionaryEntr
         entry.source.push(TATOEBA_SOURCE);
       }
     }
+  }
   console.log(
     `Tatoeba: ${examples.eligibleLinks} eligible links; EN ${examples.index.en.size} words / ${examples.bytes.en} budget bytes; JA ${examples.index.ja.size} words / ${examples.bytes.ja} budget bytes.`,
   );

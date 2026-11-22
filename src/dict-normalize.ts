@@ -1,22 +1,24 @@
 import type { DictLang } from "./dict-types";
 
+const ENGLISH_SHARD_LETTER_RE = /[a-z]/u;
+
 export const MAX_SHARD_HASH_DEPTH = 8;
 
 /** Stable FNV-1a over UTF-16; shared by the builder and browser, not a checksum. */
 function routingHash(text: string): string {
-  let hash = 0x811c9dc5;
+  let hash = 0x81_1c_9d_c5;
   for (let i = 0; i < text.length; i += 1) {
-    hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+    hash = Math.imul(hash ^ text.charCodeAt(i), 0x01_00_01_93);
   }
   return (hash >>> 0).toString(16).padStart(MAX_SHARD_HASH_DEPTH, "0");
 }
 
-const FULLWIDTH_TO_HALFWIDTH_RE = /[！-～]/g;
-const KATAKANA_RE = /[ァ-ヺ]/g;
+const FULLWIDTH_TO_HALFWIDTH_RE = /[！-～]/gu;
+const KATAKANA_RE = /[ァ-ヺ]/gu;
 
 function foldFullwidthAscii(text: string): string {
   return text.replace(FULLWIDTH_TO_HALFWIDTH_RE, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
+    String.fromCharCode(ch.charCodeAt(0) - 0xfe_e0),
   );
 }
 
@@ -45,8 +47,8 @@ export function normalizeHeadword(raw: string, lang: DictLang): string {
  * (hiragana-folded) character, since most entries carry a kana reading.
  */
 export function shardKeyFor(normalized: string, lang: DictLang, hashDepth = 0): string {
-  const first = [...normalized][0] ?? "";
-  const base = lang === "en" ? (/[a-z]/.test(first) ? first : "_") : first || "_";
+  const first = Array.from(normalized)[0] ?? "";
+  const base = lang === "en" ? (ENGLISH_SHARD_LETTER_RE.test(first) ? first : "_") : first || "_";
   return hashDepth > 0 ? `${base}~${routingHash(normalized).slice(0, hashDepth)}` : base;
 }
 
@@ -58,7 +60,9 @@ export function resolveShardKey(
 ): string | undefined {
   for (let depth = MAX_SHARD_HASH_DEPTH; depth >= 0; depth -= 1) {
     const key = shardKeyFor(normalized, lang, depth);
-    if (keys.has(key)) return key;
+    if (keys.has(key)) {
+      return key;
+    }
   }
   return undefined;
 }

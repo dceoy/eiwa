@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useId, useState } from "preact/hooks";
 import {
   exportWordbook,
   type HistoryItem,
@@ -24,16 +24,17 @@ export interface LearningSheetProps {
   onClose: () => void;
 }
 export function LearningSheet(props: LearningSheetProps) {
+  const headingId = useId();
   const [message, setMessage] = useState("");
   return (
-    <ModalOverlay onClose={props.onClose} labelledBy="learning-heading">
+    <ModalOverlay onClose={props.onClose} labelledBy={headingId}>
       <header class="sheet-header">
-        <h2 id="learning-heading">Wordbook &amp; history</h2>
+        <h2 id={headingId}>Wordbook &amp; history</h2>
         <button type="button" class="icon-btn" onClick={props.onClose} aria-label="Close wordbook">
           ✕
         </button>
       </header>
-      {props.error && <p role="alert">{props.error}</p>}
+      {!!props.error && <p role="alert">{props.error}</p>}
       <section class="settings-section" aria-label="Saved words">
         <h3>Wordbook</h3>
         <p class="settings-note">
@@ -64,7 +65,9 @@ export function LearningSheet(props: LearningSheetProps) {
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
               event.currentTarget.value = "";
-              if (!file) return;
+              if (!file) {
+                return;
+              }
               if (file.size > MAX_IMPORT_BYTES) {
                 setMessage("Wordbook exceeds 4 MiB.");
                 return;
@@ -74,14 +77,16 @@ export function LearningSheet(props: LearningSheetProps) {
                 .then((text) => {
                   setMessage("");
                   const words = mergeWordbook(props.words, parseWordbook(text));
-                  if (props.onWords(words))
+                  if (props.onWords(words)) {
                     setMessage("Imported. Existing snapshots kept; new entries appended.");
+                  }
+                  return undefined;
                 })
                 .catch(() => setMessage("Import failed: invalid wordbook. Nothing changed."));
             }}
           />
         </label>
-        {message && <p role="status">{message}</p>}
+        {!!message && <p role="status">{message}</p>}
         {props.words.length === 0 && <p>No saved words yet.</p>}
         <ol class="saved-words">
           {props.words.map((word, i) => (

@@ -5,7 +5,7 @@
     "suspicious": "error",
     "perf": "error"
   },
-  "plugins": ["oxc", "typescript"],
+  "plugins": ["import", "oxc", "promise", "typescript", "unicorn"],
   "options": {
     "typeAware": true,
     "denyWarnings": true,
@@ -15,7 +15,14 @@
     {
       "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
-        "typescript/no-floating-promises": "off"
+        "typescript/no-floating-promises": "off",
+        "typescript/unbound-method": "off"
+      }
+    },
+    {
+      "files": ["src/main.tsx"],
+      "rules": {
+        "import/no-unassigned-import": "off"
       }
     }
   ],
@@ -23,6 +30,7 @@
     "eslint/no-await-in-loop": "off",
     "eslint/no-shadow": "off",
     "typescript/no-unsafe-type-assertion": "off",
-    "typescript/no-unnecessary-type-assertion": "off"
+    "typescript/no-unnecessary-type-assertion": "off",
+    "unicorn/no-array-sort": "off"
   }
 }

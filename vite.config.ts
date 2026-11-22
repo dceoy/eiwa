@@ -1,10 +1,10 @@
-import preact from "@preact/preset-vite";
+import preactPreset from "@preact/preset-vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
-    preact(),
+    preactPreset(),
     VitePWA({
       strategies: "generateSW",
       registerType: "autoUpdate",
@@ -41,7 +41,7 @@ export default defineConfig({
         globPatterns: ["**/*.{html,css,js,webmanifest,png,svg}"],
         globIgnores: ["dict/**"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//, /^\/dict\//],
+        navigateFallbackDenylist: [/^\/api\//u, /^\/dict\//u],
       },
     }),
   ],

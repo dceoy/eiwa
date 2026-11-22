@@ -20,6 +20,8 @@ import {
   validateSearchRows,
 } from "./search-index";
 
+const SENTENCE_PUNCTUATION_RE = /[.!?。！？]/u;
+
 const MANIFEST_URL = "/dict/manifest.json";
 
 let manifestPromise: Promise<DictManifest> | null = null;
@@ -44,7 +46,9 @@ async function fetchManifest(): Promise<Response> {
     return response;
   } catch (error) {
     const cached = await matchCachedManifest(MANIFEST_URL);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
     throw error;
   }
 }
@@ -115,15 +119,18 @@ async function loadSearch(ref: SearchIndexRef): Promise<HeadwordRow[] | Inflecti
   if (!pending) {
     pending = (async () => {
       const response = await cachedFetch(`/${ref.path}?v=${encodeURIComponent(ref.checksum)}`);
-      if (!response.ok) throw new Error(`Failed to load search index ${ref.path}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load search index ${ref.path}`);
+      }
       const data: unknown = await response.json();
       if (
         !validateSearchRows(data, ref.kind) ||
         data.length !== ref.entryCount ||
         data[0]?.[0] !== ref.start ||
         data.at(-1)?.[0] !== ref.end
-      )
+      ) {
         throw new Error(`Invalid search index ${ref.path}`);
+      }
       return data;
     })().catch((error: unknown) => {
       searchCache.delete(ref.path);
@@ -141,8 +148,9 @@ async function headwords(lang: DictLang, prefix?: string): Promise<HeadwordRow[]
       ref.lang !== lang ||
       ref.kind !== "headwords" ||
       (prefix && (ref.end < prefix || ref.start > `${prefix}\uffff`))
-    )
+    ) {
       continue;
+    }
     rows.push(...((await loadSearch(ref)) as HeadwordRow[]));
   }
   return rows;
@@ -158,10 +166,14 @@ export async function resolveHeadwords(terms: string[], lang: DictLang): Promise
       ref.lang !== lang ||
       ref.kind !== "headwords" ||
       ![...queries].some((q) => q >= ref.start && q <= ref.end)
-    )
+    ) {
       continue;
-    for (const [word] of (await loadSearch(ref).catch(() => [])) as HeadwordRow[])
-      if (queries.has(word)) found.add(word);
+    }
+    for (const [word] of (await loadSearch(ref).catch(() => [])) as HeadwordRow[]) {
+      if (queries.has(word)) {
+        found.add(word);
+      }
+    }
   }
   return found;
 }
@@ -169,7 +181,9 @@ export async function resolveHeadwords(terms: string[], lang: DictLang): Promise
 /** Prefix-only typing assistance: fetch only intersecting sorted ranges. */
 export async function suggestHeadwords(query: string, lang: DictLang): Promise<string[]> {
   const q = normalizeHeadword(query, lang);
-  if (!q || q.length > MAX_SEARCH_LENGTH) return [];
+  if (!q || q.length > MAX_SEARCH_LENGTH) {
+    return [];
+  }
   return (await headwords(lang, q))
     .filter(([word]) => word.startsWith(q))
     .sort(rankHeadwords)
@@ -180,7 +194,9 @@ export async function suggestHeadwords(query: string, lang: DictLang): Promise<s
 /** Suggestions are never silently treated as dictionary hits. */
 export async function suggestSpellings(query: string, lang: DictLang): Promise<string[]> {
   const q = normalizeHeadword(query, lang);
-  if (q.length < 3 || q.length > MAX_SEARCH_LENGTH || /[.!?。！？]/.test(q)) return [];
+  if (q.length < 3 || q.length > MAX_SEARCH_LENGTH || SENTENCE_PUNCTUATION_RE.test(q)) {
+    return [];
+  }
   const limit = q.length < 5 ? 1 : 2;
   return (await headwords(lang))
     .map((row) => ({ row, distance: editDistance(q, row[0], limit) }))
@@ -191,7 +207,9 @@ export async function suggestSpellings(query: string, lang: DictLang): Promise<s
 }
 async function exactEntries(normalized: string, lang: DictLang): Promise<DictionaryEntry[]> {
   const key = resolveShardKey(normalized, lang, shardKeys[lang]);
-  if (!key) return [];
+  if (!key) {
+    return [];
+  }
   const entries = await loadShard(lang, key);
   return Object.hasOwn(entries, normalized) ? (entries[normalized] ?? []) : [];
 }
@@ -199,14 +217,20 @@ async function exactEntries(normalized: string, lang: DictLang): Promise<Diction
 /** Exact > lemma > prefix > substring; frequency orders each tier. No AI. */
 export async function lookupDictionary(query: string, lang: DictLang): Promise<DictionaryEntry[]> {
   const q = normalizeHeadword(query, lang);
-  if (!q) return [];
+  if (!q) {
+    return [];
+  }
   const manifest = await loadManifest();
   const result = [...(await exactEntries(q, lang))].slice(0, RESULT_LIMIT);
-  if (q.length > MAX_SEARCH_LENGTH || !manifest.search) return result;
+  if (q.length > MAX_SEARCH_LENGTH || !manifest.search) {
+    return result;
+  }
   const seen = new Set(result.map((entry) => entry.id));
   const add = (entries: DictionaryEntry[], kind: "inflection" | "prefix" | "partial") => {
     for (const entry of entries) {
-      if (result.length >= RESULT_LIMIT) break;
+      if (result.length >= RESULT_LIMIT) {
+        break;
+      }
       if (!seen.has(entry.id)) {
         result.push({ ...entry, match: { kind, query: q } });
         seen.add(entry.id);
@@ -217,9 +241,16 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
   // already loaded, and let independent enrichment candidates still succeed.
   const lemmas = new Set<string>();
   for (const ref of manifest.search) {
-    if (ref.kind !== "inflections" || ref.lang !== lang || q < ref.start || q > ref.end) continue;
-    for (const [form, targets] of (await loadSearch(ref).catch(() => [])) as InflectionRow[])
-      if (form === q) for (const target of targets) lemmas.add(target);
+    if (ref.kind !== "inflections" || ref.lang !== lang || q < ref.start || q > ref.end) {
+      continue;
+    }
+    for (const [form, targets] of (await loadSearch(ref).catch(() => [])) as InflectionRow[]) {
+      if (form === q) {
+        for (const target of targets) {
+          lemmas.add(target);
+        }
+      }
+    }
   }
   const resolved = (
     await Promise.all([...lemmas].map((lemma) => exactEntries(lemma, lang).catch(() => [])))
@@ -230,7 +261,9 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
     ),
     "inflection",
   );
-  if (result.length >= RESULT_LIMIT || q.length < 2) return result;
+  if (result.length >= RESULT_LIMIT || q.length < 2) {
+    return result;
+  }
   const rows = await headwords(lang).catch(() => []);
   const prefix = rows
     .filter(([word]) => word !== q && word.startsWith(q))
@@ -244,7 +277,9 @@ export async function lookupDictionary(query: string, lang: DictLang): Promise<D
     ["prefix", prefix],
     ["partial", partial],
   ] as const) {
-    for (const [word] of candidates) add(await exactEntries(word, lang).catch(() => []), kind);
+    for (const [word] of candidates) {
+      add(await exactEntries(word, lang).catch(() => []), kind);
+    }
   }
   return result;
 }

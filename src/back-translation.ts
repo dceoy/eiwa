@@ -9,13 +9,15 @@ export async function backTranslate(
   translation: string,
   signal?: AbortSignal,
 ): Promise<string | null> {
-  if (engine.getStatus() !== "ready" || !translation.trim() || signal?.aborted) return null;
+  if (engine.getStatus() !== "ready" || !translation.trim() || signal?.aborted) {
+    return null;
+  }
   try {
     const output = await engine.explain({
       direction: direction === "en-ja" ? "ja-en" : "en-ja",
       input: translation,
       dictionaryContext: [],
-      signal,
+      ...(signal ? { signal } : {}),
     });
     return signal?.aborted ? null : output.translation.primary.trim() || null;
   } catch {

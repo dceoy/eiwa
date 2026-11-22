@@ -40,7 +40,7 @@ describe("compact search indexes", () => {
     expect(chunks.length).toBeGreaterThan(1);
     expect(chunks.flat()).toEqual(rows);
     expect(chunks.every((chunk) => Buffer.byteLength(JSON.stringify(chunk)) <= 80)).toBe(true);
-    expect(() => chunkRows([["oversized", 0]], 5)).toThrow(/Oversized/);
+    expect(() => chunkRows([["oversized", 0]], 5)).toThrow(/Oversized/u);
   });
 });
 describe("published frequency ranking", () => {
@@ -49,7 +49,7 @@ describe("published frequency ranking", () => {
     expect(scores.get("cat")).toBe(2004);
     expect(frequencyScore("take off", "en", scores)).toBe(scores.get("off"));
     expect(frequencyScore("unknown phrase", "en", scores)).toBe(0);
-    expect(() => parseFrequency("bad data", "en")).toThrow(/Malformed/);
+    expect(() => parseFrequency("bad data", "en")).toThrow(/Malformed/u);
   });
   it("uses JMdict markers for JA, corpus scores for reverse candidates, preserves sense order", () => {
     expect(priorityScore(["ichi1", "ichi1"])).toBe(priorityScore(["ichi1"]));

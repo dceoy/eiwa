@@ -17,6 +17,8 @@
     "noUnusedParameters": true,
     "verbatimModuleSyntax": true,
     "noImplicitReturns": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true
   }
 }

@@ -13,7 +13,7 @@ afterEach(cleanup);
 it("shows license URLs and adaptation/attribution notes from depth sources", () => {
   render(
     <SourcesModal
-      open
+      open={true}
       onClose={() => undefined}
       licenses={[
         {
@@ -34,8 +34,8 @@ it("shows license URLs and adaptation/attribution notes from depth sources", () 
 });
 
 it("shows the production manifest's EDRDG attribution, license and link", () => {
-  render(<SourcesModal open onClose={() => undefined} licenses={[source]} />);
+  render(<SourcesModal open={true} onClose={() => undefined} licenses={[source]} />);
   expect(screen.getByText(source.name)).toBeTruthy();
-  expect(screen.getByText(/CC BY-SA 4.0/)).toBeTruthy();
+  expect(screen.getByText(/CC BY-SA 4.0/u)).toBeTruthy();
   expect(screen.getByRole("link", { name: source.url }).getAttribute("href")).toBe(source.url);
 });

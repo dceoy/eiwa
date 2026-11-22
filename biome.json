@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -37,16 +37,18 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended",
+      "preset": "all",
       "correctness": {
-        "useQwikValidLexicalScope": "off"
+        "useQwikValidLexicalScope": "off",
+        "useImportExtensions": "off"
       },
       "complexity": {
         "useLiteralKeys": "off"
       },
       "style": {
         "useExportsLast": "off",
-        "noExcessiveLinesPerFile": "off"
+        "noExcessiveLinesPerFile": "off",
+        "noDefaultExport": "off"
       }
     }
   },
@@ -54,5 +56,196 @@
     "parser": {
       "allowComments": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noReactNativeRawText": "off"
+          },
+          "suspicious": {
+            "noUnknownAttribute": "off"
+          },
+          "performance": {
+            "noJsxPropsBind": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "playwright.config.ts",
+        "vitest.config.ts",
+        "vite.config.ts",
+        "scripts/**",
+        "tests/**"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noNodejsModules": "off"
+          },
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["playwright.config.ts", "tests/e2e/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnresolvedImports": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "tests/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noMisplacedAssertion": "off",
+            "noConditionalExpect": "off",
+            "useAwait": "off"
+          },
+          "performance": {
+            "useTopLevelRegex": "off",
+            "noDelete": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noVoid": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/dict.ts", "src/llm.ts", "worker/index.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/check-depth-lookups.ts", "scripts/check-jmdict-lookups.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noMisplacedAssertion": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/build-data-depth.ts",
+        "scripts/build-dict-shards.ts",
+        "scripts/inflections.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useMaxParams": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/build-data-depth.ts", "scripts/frequency.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noDelete": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/dict-validate.ts", "scripts/validate-dict.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnnecessaryConditions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/speech.ts", "tests/e2e/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useGlobalThis": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**/*.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useBaseline": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/build-data-depth.ts",
+        "scripts/eval-lookup.ts",
+        "src/App.tsx",
+        "src/components/InputBar.tsx",
+        "src/components/RecordingPlayer.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noUnnecessaryConditions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/App.tsx",
+        "src/components/InputBar.tsx",
+        "src/components/LearningSheet.tsx",
+        "src/components/ResultView.tsx",
+        "src/llm-worker.ts",
+        "src/lookup.ts",
+        "src/lookup.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noUselessUndefined": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["scripts/build-dict-shards.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useObjectSpread": "off"
+          }
+        }
+      }
+    }
+  ]
 }

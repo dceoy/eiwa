@@ -5,8 +5,12 @@
  *   pnpm run smoke:url https://<subdomain>.workers.dev
  */
 
+import process from "node:process";
+
+const TRAILING_SLASHES_RE = /\/+$/u;
+
 function normalizeBaseUrl(input: string): string {
-  return input.replace(/\/+$/, "");
+  return input.replace(TRAILING_SLASHES_RE, "");
 }
 
 async function checkHomepage(baseUrl: string): Promise<string[]> {
@@ -60,7 +64,9 @@ async function main() {
 
   if (errors.length > 0) {
     console.error(`Smoke test failed against ${baseUrl}:`);
-    for (const error of errors) console.error(`  - ${error}`);
+    for (const error of errors) {
+      console.error(`  - ${error}`);
+    }
     process.exitCode = 1;
     return;
   }

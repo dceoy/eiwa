@@ -51,7 +51,7 @@ it("labels lexical depth as dictionary facts with per-sentence contributor links
   expect(screen.getByRole("link", { name: "Alice" }).getAttribute("href")).toContain(
     "/user/profile/Alice",
   );
-  expect(screen.getByText(/Examples — dictionary data/)).toBeTruthy();
+  expect(screen.getByText(/Examples — dictionary data/u)).toBeTruthy();
   expect(screen.getByText("/rʌn/")).toBeTruthy();
   expect(screen.getByText("Test etymology")).toBeTruthy();
   expect(screen.getByText("Test source terms")).toBeTruthy();
@@ -85,7 +85,7 @@ it("frames the AI translation separately from the dictionary baseline", () => {
   expect(baseline.getByText("猫")).toBeTruthy();
   expect(baseline.getByText("Dictionary")).toBeTruthy();
   expect(baseline.queryByText("ねこ")).toBeNull();
-  expect(baseline.queryByText(/ニャンコ/)).toBeNull();
+  expect(baseline.queryByText(/ニャンコ/u)).toBeNull();
   const ai = within(screen.getByRole("region", { name: "AI translation" }));
   expect(ai.getByText("ねこ")).toBeTruthy();
   expect(ai.getByText("AI explanation")).toBeTruthy();

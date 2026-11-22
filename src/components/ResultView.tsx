@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useId, useState } from "preact/hooks";
 import { copyToClipboard } from "../clipboard";
 import { resolveHeadwords } from "../dict";
 import type { DictLang } from "../dict-types";
@@ -11,7 +11,9 @@ import { RecordingPlayer } from "./RecordingPlayer";
 
 function ProvenanceTag({ hasDictionary, hasAi }: { hasDictionary: boolean; hasAi: boolean }) {
   const label = provenanceFor(hasDictionary, hasAi);
-  if (!label) return null;
+  if (!label) {
+    return null;
+  }
   return <span class="provenance-tag">{PROVENANCE_LABELS[label]}</span>;
 }
 
@@ -24,9 +26,12 @@ function CopyButton({ text }: { text: string }) {
       aria-label="Copy to clipboard"
       onClick={() => {
         void copyToClipboard(text).then((ok) => {
-          if (!ok) return;
+          if (!ok) {
+            return undefined;
+          }
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
+          return undefined;
         });
       }}
     >
@@ -36,7 +41,9 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function SpeakButton({ text, lang }: { text: string; lang: "en" | "ja" }) {
-  if (!isSpeechSynthesisSupported() || text.trim() === "") return null;
+  if (!isSpeechSynthesisSupported() || text.trim() === "") {
+    return null;
+  }
   return (
     <button
       type="button"
@@ -62,6 +69,7 @@ export function ResultView({
   backTranslation?: string | null;
   backTranslating?: boolean;
 }) {
+  const headingPrefix = useId();
   const [resolved, setResolved] = useState<{ en: Set<string>; ja: Set<string> }>({
     en: new Set(),
     ja: new Set(),
@@ -69,35 +77,52 @@ export function ResultView({
   useEffect(() => {
     let cancelled = false;
     setResolved({ en: new Set(), ja: new Set() });
-    if (!onLookup) return;
+    if (!onLookup) {
+      return undefined;
+    }
     const terms = { en: new Set<string>(), ja: new Set<string>() };
-    const add = (text: string, lang: DictLang) => {
-      terms[lang].add(tokenKey(text, lang));
-      for (const token of lookupTokens(text, lang))
-        if (isLookupToken(token, lang)) terms[lang].add(tokenKey(token, lang));
+    const add = (term: string, lang: DictLang) => {
+      terms[lang].add(tokenKey(term, lang));
+      for (const token of lookupTokens(term, lang)) {
+        if (isLookupToken(token, lang)) {
+          terms[lang].add(tokenKey(token, lang));
+        }
+      }
     };
     for (const entry of result.dictionary) {
       add(entry.headword, entry.lang);
-      for (const t of entry.translations) add(t.text, t.lang);
+      for (const t of entry.translations) {
+        add(t.text, t.lang);
+      }
       for (const s of entry.senses) {
         add(s.gloss, "en");
-        for (const example of s.examples ?? []) add(example, entry.lang);
+        for (const example of s.examples ?? []) {
+          add(example, entry.lang);
+        }
       }
-      for (const pair of entry.examples ?? [])
-        for (const lang of ["en", "ja"] as const) add(pair[lang].text, lang);
+      for (const pair of entry.examples ?? []) {
+        for (const lang of ["en", "ja"] as const) {
+          add(pair[lang].text, lang);
+        }
+      }
     }
     void Promise.all([
       resolveHeadwords([...terms.en], "en").catch(() => new Set<string>()),
       resolveHeadwords([...terms.ja], "ja").catch(() => new Set<string>()),
     ]).then(([en, ja]) => {
-      if (!cancelled) setResolved({ en, ja });
+      if (!cancelled) {
+        setResolved({ en, ja });
+      }
+      return undefined;
     });
     return () => {
       cancelled = true;
     };
   }, [result, onLookup]);
   const text = (value: string, lang: DictLang, known = false) => {
-    if (!onLookup) return value;
+    if (!onLookup) {
+      return value;
+    }
     const button = (word: string, key: number) => (
       <button
         key={key}
@@ -110,7 +135,9 @@ export function ResultView({
         {word}
       </button>
     );
-    if (known || resolved[lang].has(tokenKey(value, lang))) return button(value, 0);
+    if (known || resolved[lang].has(tokenKey(value, lang))) {
+      return button(value, 0);
+    }
     let count = 0;
     return lookupTokens(value, lang).map((token, i) => {
       if (count < 4 && isLookupToken(token, lang) && resolved[lang].has(tokenKey(token, lang))) {
@@ -136,9 +163,9 @@ export function ResultView({
   return (
     <div class="result-view">
       {result.translation.primary !== "" && (
-        <section class="card" aria-labelledby="translation-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-translation-heading`}>
           <header class="card-header">
-            <h2 id="translation-heading">Translation</h2>
+            <h2 id={`${headingPrefix}-translation-heading`}>Translation</h2>
             <ProvenanceTag hasDictionary={hasDict} hasAi={!hasDict && hasAi} />
           </header>
           {(result.dictionary[0]?.match?.kind === "prefix" ||
@@ -161,11 +188,12 @@ export function ResultView({
         </section>
       )}
 
+      {/* biome-ignore lint/suspicious/noLeakedRender: This value is strictly boolean. */}
       {hasDict && result.aiTranslation && (
-        <section class="card" aria-labelledby="ai-translation-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-ai-translation-heading`}>
           <header class="card-header">
-            <h2 id="ai-translation-heading">AI translation</h2>
-            <ProvenanceTag hasDictionary={false} hasAi />
+            <h2 id={`${headingPrefix}-ai-translation-heading`}>AI translation</h2>
+            <ProvenanceTag hasDictionary={false} hasAi={true} />
           </header>
           <p class="translation-primary">
             <span lang={targetLang}>{result.aiTranslation.primary}</span>
@@ -180,38 +208,39 @@ export function ResultView({
         </section>
       )}
 
-      {result.aiTranslation?.primary && (onBackTranslate || backTranslating || backTranslation) && (
-        <section class="card" aria-label="AI back-translation check">
-          {(onBackTranslate || backTranslating) && (
-            <button
-              type="button"
-              class="btn btn-secondary"
-              disabled={!onBackTranslate || backTranslating}
-              onClick={onBackTranslate}
-            >
-              {backTranslating ? "Checking…" : "Back-translate AI translation"}
-            </button>
-          )}
-          {backTranslation && (
-            <div aria-live="polite">
-              <h2>AI back-translation</h2>
-              <ProvenanceTag hasDictionary={false} hasAi />
-              <p lang={sourceLang}>{backTranslation}</p>
-              <p class="settings-note">
-                AI output for nuance verification, not dictionary data or a guarantee of accuracy.
-              </p>
-            </div>
-          )}
-        </section>
-      )}
+      {!!result.aiTranslation?.primary &&
+        (onBackTranslate || backTranslating || backTranslation) && (
+          <section class="card" aria-label="AI back-translation check">
+            {!!(onBackTranslate || backTranslating) && (
+              <button
+                type="button"
+                class="btn btn-secondary"
+                disabled={!onBackTranslate || backTranslating}
+                onClick={onBackTranslate}
+              >
+                {backTranslating ? "Checking…" : "Back-translate AI translation"}
+              </button>
+            )}
+            {!!backTranslation && (
+              <div aria-live="polite">
+                <h2>AI back-translation</h2>
+                <ProvenanceTag hasDictionary={false} hasAi={true} />
+                <p lang={sourceLang}>{backTranslation}</p>
+                <p class="settings-note">
+                  AI output for nuance verification, not dictionary data or a guarantee of accuracy.
+                </p>
+              </div>
+            )}
+          </section>
+        )}
 
       {hasDict && (
-        <section class="card" aria-labelledby="dictionary-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-dictionary-heading`}>
           <header class="card-header">
-            <h2 id="dictionary-heading">Dictionary</h2>
-            <ProvenanceTag hasDictionary hasAi={false} />
+            <h2 id={`${headingPrefix}-dictionary-heading`}>Dictionary</h2>
+            <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
-          {onLookup && (
+          {!!onLookup && (
             <p class="settings-note">
               Underlined terms: tap to look up. Only dictionary-resolved terms are marked (up to
               four per text).
@@ -222,19 +251,19 @@ export function ResultView({
               <li key={entry.id} class="dictionary-entry">
                 <div class="dictionary-entry-head">
                   <strong lang={entry.lang}>{text(entry.headword, entry.lang, true)}</strong>
-                  {entry.level && (
+                  {!!entry.level && (
                     <span class="pos-tags" title="Eiwa coarse NGSL band (not CEFR/SVL)">
                       {entry.level} · NGSL
                     </span>
                   )}
-                  {entry.match && (
+                  {!!entry.match && (
                     <span class="pos-tags">
                       {entry.match.kind === "inflection"
                         ? `Inflected form: ${entry.match.query} → ${entry.headword}`
                         : `${entry.match.kind === "prefix" ? "Prefix" : "Partial"} match`}
                     </span>
                   )}
-                  {entry.reading && (
+                  {!!entry.reading && (
                     <span class="reading" lang={entry.lang}>
                       （{entry.reading}）
                     </span>
@@ -257,7 +286,10 @@ export function ResultView({
                   ))}
                 </ol>
                 {entry.source
-                  .filter((source) => source.name.includes("Wiktionary") && source.url)
+                  .filter(
+                    (source): source is typeof source & { url: string } =>
+                      source.name.includes("Wiktionary") && !!source.url,
+                  )
                   .map((source) => (
                     <p key={source.url}>
                       <a href={source.url} target="_blank" rel="noreferrer">
@@ -316,9 +348,9 @@ export function ResultView({
       )}
 
       {result.nuance.length > 0 && (
-        <section class="card" aria-labelledby="nuance-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-nuance-heading`}>
           <header class="card-header">
-            <h2 id="nuance-heading">Nuance</h2>
+            <h2 id={`${headingPrefix}-nuance-heading`}>Nuance</h2>
             <ProvenanceTag hasDictionary={false} hasAi={true} />
           </header>
           <ul lang="ja">
@@ -330,9 +362,9 @@ export function ResultView({
       )}
 
       {(result.correction.corrected !== null || result.correction.explanation !== null) && (
-        <section class="card" aria-labelledby="correction-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-correction-heading`}>
           <header class="card-header">
-            <h2 id="correction-heading">Writing correction</h2>
+            <h2 id={`${headingPrefix}-correction-heading`}>Writing correction</h2>
             <ProvenanceTag hasDictionary={false} hasAi={true} />
           </header>
           {result.correction.corrected !== null && (
@@ -350,9 +382,9 @@ export function ResultView({
       )}
 
       {result.etymology !== null && (
-        <section class="card" aria-labelledby="etymology-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-etymology-heading`}>
           <header class="card-header">
-            <h2 id="etymology-heading">Etymology</h2>
+            <h2 id={`${headingPrefix}-etymology-heading`}>Etymology</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <p class="collapsible-text" lang="en">
@@ -362,21 +394,21 @@ export function ResultView({
       )}
 
       {result.pronunciation !== null && (
-        <section class="card" aria-labelledby="pronunciation-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-pronunciation-heading`}>
           <header class="card-header">
-            <h2 id="pronunciation-heading">Pronunciation</h2>
+            <h2 id={`${headingPrefix}-pronunciation-heading`}>Pronunciation</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <p class="pronunciation">
-            {result.pronunciation.ipa && <span class="ipa">{result.pronunciation.ipa}</span>}
-            {result.pronunciation.kana && (
+            {!!result.pronunciation.ipa && <span class="ipa">{result.pronunciation.ipa}</span>}
+            {!!result.pronunciation.kana && (
               <span class="kana" lang="ja">
                 {result.pronunciation.kana}
               </span>
             )}
             <SpeakButton text={result.pronunciation.audioText ?? result.input} lang={sourceLang} />
           </p>
-          {result.pronunciation.recording && (
+          {!!result.pronunciation.recording && (
             <RecordingPlayer
               key={result.pronunciation.recording.url}
               recording={result.pronunciation.recording}
@@ -386,9 +418,9 @@ export function ResultView({
       )}
 
       {result.derivedWords.length > 0 && (
-        <section class="card" aria-labelledby="derived-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-derived-heading`}>
           <header class="card-header">
-            <h2 id="derived-heading">Derived words</h2>
+            <h2 id={`${headingPrefix}-derived-heading`}>Derived words</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <p lang={sourceLang}>{result.derivedWords.join(", ")}</p>
@@ -396,9 +428,9 @@ export function ResultView({
       )}
 
       {examples.length > 0 && (
-        <section class="card" aria-labelledby="examples-heading">
+        <section class="card" aria-labelledby={`${headingPrefix}-examples-heading`}>
           <header class="card-header">
-            <h2 id="examples-heading">Examples</h2>
+            <h2 id={`${headingPrefix}-examples-heading`}>Examples</h2>
             <ProvenanceTag hasDictionary={true} hasAi={false} />
           </header>
           <ul lang={sourceLang}>
@@ -410,9 +442,9 @@ export function ResultView({
       )}
 
       {result.warnings.length > 0 && (
-        <section class="card card--warning" aria-labelledby="warnings-heading">
+        <section class="card card--warning" aria-labelledby={`${headingPrefix}-warnings-heading`}>
           <header class="card-header">
-            <h2 id="warnings-heading">Warnings</h2>
+            <h2 id={`${headingPrefix}-warnings-heading`}>Warnings</h2>
           </header>
           <ul>
             {result.warnings.map((warning) => (
@@ -423,9 +455,9 @@ export function ResultView({
       )}
 
       {sources.length > 0 && (
-        <section class="card card--muted" aria-labelledby="sources-heading">
+        <section class="card card--muted" aria-labelledby={`${headingPrefix}-sources-heading`}>
           <header class="card-header">
-            <h2 id="sources-heading">Sources</h2>
+            <h2 id={`${headingPrefix}-sources-heading`}>Sources</h2>
           </header>
           <ul class="sources-list">
             {sources.map((source) => (
@@ -438,7 +470,7 @@ export function ResultView({
                 ) : (
                   source.license
                 )}
-                {source.url && (
+                {!!source.url && (
                   <>
                     {" "}
                     ·{" "}
@@ -447,7 +479,7 @@ export function ResultView({
                     </a>
                   </>
                 )}
-                {source.attribution && <p>{source.attribution}</p>}
+                {!!source.attribution && <p>{source.attribution}</p>}
               </li>
             ))}
           </ul>

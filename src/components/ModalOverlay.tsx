@@ -27,10 +27,14 @@ export function ModalOverlay({ onClose, labelledBy, children }: ModalOverlayProp
         onCloseRef.current();
         return;
       }
-      if (event.key !== "Tab" || !dialog) return;
+      if (event.key !== "Tab" || !dialog) {
+        return;
+      }
 
       const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-      if (items.length === 0) return;
+      if (items.length === 0) {
+        return;
+      }
       const first = items[0];
       const last = items[items.length - 1];
 

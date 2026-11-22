@@ -20,7 +20,7 @@ describe("pinned WebLLM model registry", () => {
       const record = prebuiltAppConfig.model_list.find((m) => m.model_id === option.id);
       expect(record, option.id).toBeDefined();
       expect(record?.model).toContain(option.id);
-      expect(record?.model_lib).toMatch(/webgpu\.wasm$/);
+      expect(record?.model_lib).toMatch(/webgpu\.wasm$/u);
     }
   });
 });

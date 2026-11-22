@@ -5,6 +5,8 @@ import type { Direction } from "./language";
 import { mergeResult } from "./result-merge";
 import type { EiwaResult } from "./result-schema";
 
+const HTTP_URL_RE = /^https?:\/\//u;
+
 export const WORDBOOK_KEY = "eiwa:wordbook:v1";
 export const HISTORY_KEY = "eiwa:history:v1";
 export const HISTORY_ENABLED_KEY = "eiwa:history-enabled:v1";
@@ -44,7 +46,9 @@ export function reopen(word: SavedWord): EiwaResult {
   });
 }
 function isItem(value: unknown): value is HistoryItem & Record<string, unknown> {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object") {
+    return false;
+  }
   const item = value as HistoryItem;
   return (
     typeof item.input === "string" &&
@@ -57,11 +61,13 @@ function strings(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === "string");
 }
 function safeLink(value: unknown): boolean {
-  return value === undefined || (typeof value === "string" && /^https?:\/\//.test(value));
+  return value === undefined || (typeof value === "string" && HTTP_URL_RE.test(value));
 }
 /** Imports are untrusted files: validate every field consumed by ResultView. */
 function isEntry(value: unknown): value is DictionaryEntry {
-  if (validateDictionaryEntry(value, "entry").length) return false;
+  if (validateDictionaryEntry(value, "entry").length) {
+    return false;
+  }
   const e = value as DictionaryEntry;
   return (
     strings(e.pos) &&
@@ -101,37 +107,45 @@ export function exportWordbook(words: SavedWord[]): string {
   return JSON.stringify({ schemaVersion: 1, words }, null, 2);
 }
 export function parseWordbook(text: string): SavedWord[] {
-  if (new Blob([text]).size > MAX_IMPORT_BYTES) throw new Error("Wordbook exceeds 4 MiB.");
+  if (new Blob([text]).size > MAX_IMPORT_BYTES) {
+    throw new Error("Wordbook exceeds 4 MiB.");
+  }
   const data = JSON.parse(text) as { schemaVersion?: unknown; words?: unknown } | null;
-  if (data?.schemaVersion !== 1 || !Array.isArray(data.words) || data.words.length > MAX_SAVED)
+  if (data?.schemaVersion !== 1 || !Array.isArray(data.words) || data.words.length > MAX_SAVED) {
     throw new Error("Invalid wordbook (expected version 1, up to 200 entries).");
+  }
   const ids = new Set<string>();
   for (const word of data.words) {
     if (
       !isItem(word) ||
-      typeof word.savedAt !== "string" ||
-      !Number.isFinite(Date.parse(word.savedAt)) ||
-      word.id !== wordId(word) ||
-      ids.has(word.id) ||
-      !Array.isArray(word.dictionary) ||
-      !word.dictionary.length ||
-      word.dictionary.length > 30 ||
-      !word.dictionary.every(isEntry)
-    )
+      typeof word["savedAt"] !== "string" ||
+      !Number.isFinite(Date.parse(word["savedAt"])) ||
+      word["id"] !== wordId(word) ||
+      ids.has(word["id"]) ||
+      !Array.isArray(word["dictionary"]) ||
+      !word["dictionary"].length ||
+      word["dictionary"].length > 30 ||
+      !word["dictionary"].every(isEntry)
+    ) {
       throw new Error("Invalid wordbook entry.");
-    ids.add(word.id);
+    }
+    ids.add(word["id"]);
   }
   return data.words as SavedWord[];
 }
 export function mergeWordbook(current: SavedWord[], imported: SavedWord[]): SavedWord[] {
   const ids = new Set(current.map((w) => w.id));
   const merged = [...current, ...imported.filter((w) => !ids.has(w.id))];
-  if (merged.length > MAX_SAVED) throw new Error("Wordbook is full (200 entries).");
+  if (merged.length > MAX_SAVED) {
+    throw new Error("Wordbook is full (200 entries).");
+  }
   return merged;
 }
 export function moveWord(words: SavedWord[], index: number, delta: number): SavedWord[] {
   const target = index + delta;
-  if (index < 0 || index >= words.length || target < 0 || target >= words.length) return words;
+  if (index < 0 || index >= words.length || target < 0 || target >= words.length) {
+    return words;
+  }
   const next = [...words];
   [next[index], next[target]] = [next[target] as SavedWord, next[index] as SavedWord];
   return next;
@@ -153,7 +167,9 @@ export function historyEnabled(): boolean {
   }
 }
 export function loadHistory(): HistoryItem[] {
-  if (!historyEnabled()) return [];
+  if (!historyEnabled()) {
+    return [];
+  }
   try {
     const value: unknown = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]");
     return Array.isArray(value) ? value.filter(isItem).slice(0, 50) : [];
