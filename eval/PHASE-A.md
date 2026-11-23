@@ -63,7 +63,7 @@ Every rate uses the row's query count. Exact and top-1 are independent metrics.
   English side has two useful top-1 results under the strict curated proxy.
   Existing literal headwords still precede lemma matches (`children`, `books`,
   etc.), but annotated lemma entries are included below them.
-- The extra exact hits are from stripping the infinitive `to ` in the bounded
+- The extra exact hits are from stripping the infinitive `to` prefix and its following space in the bounded
   primary-gloss EN index, not counting lemma/prefix/substring hits as exact.
 - Miss means no returned dictionary entries, including related matches. A
   partial/prefix match can therefore reduce misses without being useful top-1.

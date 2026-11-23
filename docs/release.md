@@ -95,7 +95,7 @@ Completed on 2026-11-15 via the claim flow above: a production build from
 `main` (`b960eb6`) was deployed with `wrangler deploy --temporary` and the
 owner claimed it into their permanent Cloudflare account.
 
-- Production URL: https://eiwa.pool-minotaurasaurus.workers.dev
+- Production URL: <https://eiwa.pool-minotaurasaurus.workers.dev>
 - First claimed version ID: `3e5ec851-0586-4cc9-b9da-7c87faf9c19b`
 
 No CI workflow deploys anywhere automatically. To update production, run
