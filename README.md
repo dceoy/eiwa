@@ -147,7 +147,7 @@ configured.
 Japanese lookup indexes written forms and kana readings. English lookup is
 an intentionally limited reverse index: **normalized first gloss of the first
 sense only**, at most four words / 64 characters using ASCII letters, spaces,
-apostrophes or hyphens; verb infinitives drop leading `to ` for lemma lookup.
+apostrophes or hyphens; verb infinitives drop the leading `to` prefix and its following space for lemma lookup.
 Other glosses, explanatory glosses and arbitrary sentences are not indexed.
 Entries retain up to three applicable senses and three glosses per sense;
 JMdict's own examples and extended metadata are omitted. Shards automatically split to
