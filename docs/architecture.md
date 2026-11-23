@@ -126,7 +126,7 @@ frequency; authored sense order and source order on score ties are preserved.
 The reverse EN index emits **one entry per JMdict entry**, only for the
 first gloss of its first sense: exact normalized ASCII headword-style
 strings of at most four words / 64 characters (letters, spaces, hyphens,
-apostrophes). Verb infinitives drop `to ` so morphology can target the lemma.
+apostrophes). Verb infinitives drop the `to` prefix and its following space so morphology can target the lemma.
 Typed explanatory/figurative/literal glosses are excluded. Up to three compatible
 JA spellings per EN entry are frequency-ranked; EN entries rank by their target
 JA counts with commonness as tie-breaker. A common word may still miss if it only
@@ -266,7 +266,7 @@ See [ai-quality.md](./ai-quality.md) for verification and on-device limitations.
 `@mlc-ai/web-llm` ships as a single pre-bundled ESM file
 (`lib/index.js`, ~6 MB). Cloudflare Workers Static Assets rejects any
 uploaded file over 5 MiB
-(https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/) —
+([Cloudflare Static Assets limits](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)) —
 this was discovered by actually running `wrangler deploy --temporary` after
 wiring up the engine, not just by building locally. Bundling the library
 into our own static assets is therefore not possible under this hosting
