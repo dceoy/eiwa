@@ -15,7 +15,7 @@ it("keeps Lite default and requires explicit Pro confirmation with size disclosu
 
 describe("pinned WebLLM model registry", () => {
   it("contains all offered model IDs and their WebGPU libraries", () => {
-    expect(WEBLLM_VERSION).toBe("0.2.87");
+    expect(WEBLLM_VERSION).toBe("0.2.89");
     for (const option of MODEL_OPTIONS) {
       const record = prebuiltAppConfig.model_list.find((m) => m.model_id === option.id);
       expect(record, option.id).toBeDefined();

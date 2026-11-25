@@ -25,7 +25,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
       "Larger download with more capable explanations. Recommended for laptops/desktops.",
   },
   {
-    // Verified in @mlc-ai/web-llm 0.2.87 prebuiltAppConfig (lib/index.js).
+    // Verified in @mlc-ai/web-llm 0.2.89 prebuiltAppConfig (lib/index.js).
     id: "Qwen2.5-3B-Instruct-q4f16_1-MLC",
     label: "Pro",
     approxDownloadSizeMb: 2000,
