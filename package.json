@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
-    "@cloudflare/workers-types": "5.20261117.1",
+    "@cloudflare/workers-types": "5.20261118.1",
     "@mlc-ai/web-llm": "0.2.89",
     "@playwright/test": "1.65.1",
     "@preact/preset-vite": "2.10.6",
@@ -54,8 +54,8 @@
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vite-plugin-pwa": "2.0.0",
-    "vitest": "5.1.0",
-    "wrangler": "4.164.0"
+    "vitest": "5.1.1",
+    "wrangler": "4.165.0"
   },
   "packageManager": "pnpm@11.8.0",
   "devEngines": {
