@@ -11,7 +11,7 @@
  * `import type` / `typeof import(...)` are erased at build time and never
  * pull the runtime code into our bundle.
  */
-export const WEBLLM_VERSION = "0.2.87";
+export const WEBLLM_VERSION = "0.2.89";
 
 /**
  * SHA-256 (hex) of the exact bytes jsDelivr serves at WEBLLM_CDN_URL for
@@ -22,7 +22,7 @@ export const WEBLLM_VERSION = "0.2.87";
  * `webllm-cdn.test.ts` fails if this drifts from WEBLLM_VERSION without
  * being updated deliberately.
  */
-export const WEBLLM_SHA256 = "3bff4c55cd2f0200711517341babcebe7a91a8ef85b983420439fcf26835a674";
+export const WEBLLM_SHA256 = "2655840c7eb90cd8b310a3e3394a91fae30d20012fd8274e9291d688e88325b5";
 
 export const WEBLLM_CDN_URL = `https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@${WEBLLM_VERSION}/lib/index.js`;
 

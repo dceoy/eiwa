@@ -59,10 +59,11 @@ export function validateAiExplanationOutput(value: unknown): AiExplanationOutput
   }
   const obj = value as Record<string, unknown>;
 
-  const translation = obj["translation"] as Record<string, unknown> | undefined;
-  if (typeof translation !== "object" || translation === null) {
+  const translationRaw: unknown = obj["translation"];
+  if (typeof translationRaw !== "object" || translationRaw === null) {
     return null;
   }
+  const translation = translationRaw as Record<string, unknown>;
   if (typeof translation["primary"] !== "string") {
     return null;
   }
